@@ -63,11 +63,11 @@ export interface FilmList {
   id: string;
   name: string;
   description: string;
-  films: Film[]; // Can be partial film object
+  films: Film[];
 }
 
 export interface LoggedFilm {
-  film: Film; // Can be partial film object
+  film: Film;
   rating: number;
   review?: string;
   loggedDate: string;
