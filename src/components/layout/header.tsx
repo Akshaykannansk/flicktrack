@@ -2,9 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Film, Search } from 'lucide-react';
+import { Film, Search, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 const navLinks = [
   { href: '/', label: 'Browse' },
@@ -51,6 +52,15 @@ export default function Header() {
                 className="pl-10 w-64 bg-secondary focus:bg-background"
               />
             </form>
+            <Link href="/profile" passHref>
+              <Button
+                variant={pathname === '/profile' ? 'secondary' : 'ghost'}
+                size="icon"
+                aria-label="Profile"
+              >
+                <User className="h-5 w-5" />
+              </Button>
+            </Link>
           </div>
         </div>
       </div>

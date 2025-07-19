@@ -1,0 +1,73 @@
+import Image from 'next/image';
+import Link from 'next/link';
+import { userData, films } from '@/lib/data';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { User, Settings, Film } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import { FilmCard } from '@/components/film-card';
+
+// Mock data for user's favorite films
+const favoriteFilms = [films[0], films[4], films[2], films[7]];
+
+export default function ProfilePage() {
+  const journalCount = userData.journal.length;
+  const watchlistCount = userData.watchlist.length;
+
+  return (
+    <div className="space-y-8">
+      <div className="flex flex-col md:flex-row items-center gap-6">
+        <div className="relative">
+          <Image
+            src="https://placehold.co/128x128.png"
+            alt="User Avatar"
+            width={128}
+            height={128}
+            className="rounded-full border-4 border-primary shadow-lg"
+            data-ai-hint="profile avatar"
+          />
+        </div>
+        <div className="text-center md:text-left">
+          <h1 className="text-4xl font-headline font-bold tracking-tighter">Alex Doe</h1>
+          <p className="text-muted-foreground mt-1">alex.doe</p>
+          <div className="flex justify-center md:justify-start space-x-4 text-sm text-muted-foreground mt-3">
+             <span><strong className="text-primary-foreground">{journalCount}</strong> Films</span>
+             <span><strong className="text-primary-foreground">{watchlistCount}</strong> on Watchlist</span>
+          </div>
+          <Button variant="outline" className="mt-4">
+            <Settings className="mr-2 h-4 w-4" />
+            Edit Profile
+          </Button>
+        </div>
+      </div>
+      
+      <Separator />
+
+      <div>
+        <h2 className="text-2xl font-headline font-semibold mb-4">Favorite Films</h2>
+        {favoriteFilms.length > 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 md:gap-6">
+            {favoriteFilms.map((film) => (
+               <FilmCard key={film.id} film={film} />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-10 border-2 border-dashed rounded-lg">
+            <h3 className="text-lg font-semibold">No favorite films selected.</h3>
+            <p className="text-muted-foreground mt-1">Edit your profile to add your top 4.</p>
+          </div>
+        )}
+      </div>
+
+       <div>
+        <h2 className="text-2xl font-headline font-semibold mb-4">Recent Activity</h2>
+        <Card>
+            <CardContent className="p-6">
+                <p className="text-muted-foreground">Your recent journal entries will appear here.</p>
+            </CardContent>
+        </Card>
+      </div>
+
+    </div>
+  );
+}
