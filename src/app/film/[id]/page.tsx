@@ -5,6 +5,7 @@ import { Star, Bookmark, PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { LogFilmDialog } from '@/components/log-film-dialog';
 
 export function generateStaticParams() {
   return films.map((film) => ({
@@ -53,9 +54,11 @@ export default function FilmDetailPage({ params }: { params: { id: string } }) {
             <span className="font-bold text-lg text-primary-foreground">{film.averageRating.toFixed(1)}</span>
           </div>
           <div className="flex flex-wrap gap-4 pt-4">
-            <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground">
-                <PlusCircle className="mr-2 h-5 w-5" /> Log Film
-            </Button>
+            <LogFilmDialog film={film}>
+              <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground">
+                  <PlusCircle className="mr-2 h-5 w-5" /> Log Film
+              </Button>
+            </LogFilmDialog>
             <Button size="lg" variant="outline">
                 <Bookmark className="mr-2 h-5 w-5" /> Add to Watchlist
             </Button>
