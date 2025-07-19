@@ -8,7 +8,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { cn } from '@/lib/utils';
-import type { Film } from '@/lib/types';
+import type { FilmDetails } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
@@ -48,7 +48,7 @@ const logFilmSchema = z.object({
 type LogFilmFormValues = z.infer<typeof logFilmSchema>;
 
 interface LogFilmDialogProps {
-  film: Film;
+  film: Pick<FilmDetails, 'id' | 'title'>;
   children: React.ReactNode;
 }
 

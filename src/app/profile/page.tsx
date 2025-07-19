@@ -1,14 +1,25 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { userData, films } from '@/lib/data';
+import { userData } from '@/lib/data';
+import { films as staticFilms } from '@/lib/static-data';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { User, Settings, Film } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { FilmCard } from '@/components/film-card';
+import type { Film as FilmType } from '@/lib/types';
 
-// Mock data for user's favorite films
-const favoriteFilms = [films[0], films[4], films[2], films[7]];
+
+// Mock data for user's favorite films - needs to be adapted to the new Film type
+const favoriteFilms: FilmType[] = [staticFilms[0], staticFilms[4], staticFilms[2], staticFilms[7]].map(f => ({
+    id: f.id,
+    title: f.title,
+    poster_path: f.posterUrl.replace('https://placehold.co/400x600.png', '/aQPeznSu7VTrrdpacdU3c6xlnhe.jpg'), // Temp mapping
+    release_date: f.releaseDate,
+    vote_average: f.averageRating * 2,
+    overview: f.plot,
+}));
+
 
 export default function ProfilePage() {
   const journalCount = userData.journal.length;

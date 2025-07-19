@@ -1,24 +1,23 @@
-import { films } from '@/lib/data';
+import { getFilmDetails, IMAGE_BASE_URL } from '@/lib/tmdb';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
-import { Star, Bookmark, PlusCircle } from 'lucide-react';
+import { Star, Bookmark, PlusCircle, Film as FilmIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { LogFilmDialog } from '@/components/log-film-dialog';
+// We will need to create a new LogFilmDialog that works with TMDB data
+// import { LogFilmDialog } from '@/components/log-film-dialog';
 
-export function generateStaticParams() {
-  return films.map((film) => ({
-    id: film.id,
-  }));
-}
-
-export default function FilmDetailPage({ params }: { params: { id: string } }) {
-  const film = films.find((f) => f.id === params.id);
+export default async function FilmDetailPage({ params }: { params: { id: string } }) {
+  const film = await getFilmDetails(params.id);
 
   if (!film) {
     notFound();
   }
+
+  const posterUrl = film.poster_path ? `${IMAGE_BASE_URL}w500${film.poster_path}` : 'https://placehold.co/400x600.png';
+  const year = film.release_date ? new Date(film.release_date).getFullYear() : 'N/A';
+  const rating = film.vote_average / 2; // Convert 10-point scale to 5-star scale
 
   return (
     <div>
@@ -26,7 +25,7 @@ export default function FilmDetailPage({ params }: { params: { id: string } }) {
         <div className="w-full md:w-1/3 lg:w-1/4 flex-shrink-0">
           <div className="aspect-[2/3] relative rounded-lg overflow-hidden shadow-lg shadow-primary/10">
             <Image
-              src={film.posterUrl}
+              src={posterUrl}
               alt={`Poster for ${film.title}`}
               fill
               className="object-cover"
@@ -40,25 +39,29 @@ export default function FilmDetailPage({ params }: { params: { id: string } }) {
           <div>
             <h1 className="text-4xl lg:text-5xl font-headline font-bold tracking-tighter">{film.title}</h1>
             <div className="flex items-center space-x-4 text-muted-foreground mt-2">
-              <span>{film.year}</span>
-              <span>Directed by <span className="text-primary-foreground font-semibold">{film.director}</span></span>
+              <span>{year}</span>
+              {film.director && <span>Directed by <span className="text-primary-foreground font-semibold">{film.director.name}</span></span>}
+               {film.runtime && <span>{film.runtime} min</span>}
             </div>
+          </div>
+          <div className="flex items-center space-x-2">
+             {film.genres.map(genre => <Badge key={genre.id} variant="outline">{genre.name}</Badge>)}
           </div>
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-1 text-primary">
-                <span className="sr-only">Average rating: {film.averageRating} out of 5 stars</span>
-                {[...Array(Math.floor(film.averageRating))].map((_, i) => <Star key={`full-${i}`} aria-hidden="true" className="w-5 h-5 fill-current" />)}
-                {film.averageRating % 1 !== 0 && <Star key="half" aria-hidden="true" className="w-5 h-5 fill-current" style={{ clipPath: 'inset(0 50% 0 0)' }} />}
-                {[...Array(5-Math.ceil(film.averageRating))].map((_, i) => <Star key={`empty-${i}`} aria-hidden="true" className="w-5 h-5" />)}
+                <span className="sr-only">Average rating: {rating.toFixed(1)} out of 5 stars</span>
+                {[...Array(Math.floor(rating))].map((_, i) => <Star key={`full-${i}`} aria-hidden="true" className="w-5 h-5 fill-current" />)}
+                {rating % 1 >= 0.25 && rating % 1 < 0.75 && <Star key="half" aria-hidden="true" className="w-5 h-5 fill-current" style={{ clipPath: 'inset(0 50% 0 0)' }} />}
+                {[...Array(5-Math.ceil(rating))].map((_, i) => <Star key={`empty-${i}`} aria-hidden="true" className="w-5 h-5" />)}
             </div>
-            <span className="font-bold text-lg text-primary-foreground">{film.averageRating.toFixed(1)}</span>
+            <span className="font-bold text-lg text-primary-foreground">{film.vote_average.toFixed(1)} / 10</span>
           </div>
           <div className="flex flex-wrap gap-4 pt-4">
-            <LogFilmDialog film={film}>
+            {/* <LogFilmDialog film={film}> */}
               <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground">
                   <PlusCircle className="mr-2 h-5 w-5" /> Log Film
               </Button>
-            </LogFilmDialog>
+            {/* </LogFilmDialog> */}
             <Button size="lg" variant="outline">
                 <Bookmark className="mr-2 h-5 w-5" /> Add to Watchlist
             </Button>
@@ -66,13 +69,33 @@ export default function FilmDetailPage({ params }: { params: { id: string } }) {
           <Separator className="my-6 !mt-8" />
           <div>
             <h2 className="text-2xl font-headline font-semibold">Plot Summary</h2>
-            <p className="mt-2 text-muted-foreground leading-relaxed max-w-prose">{film.plot}</p>
+            <p className="mt-2 text-muted-foreground leading-relaxed max-w-prose">{film.overview || 'No summary available.'}</p>
           </div>
            <div>
             <h2 className="text-2xl font-headline font-semibold">Cast</h2>
-            <div className="flex flex-wrap gap-2 mt-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-2">
               {film.cast.map((actor) => (
-                <Badge key={actor} variant="secondary">{actor}</Badge>
+                <div key={actor.id} className="flex items-center gap-3">
+                  <div className="relative w-12 h-12 rounded-full overflow-hidden bg-secondary flex-shrink-0">
+                    {actor.profile_path ? (
+                       <Image
+                          src={`${IMAGE_BASE_URL}w185${actor.profile_path}`}
+                          alt={actor.name}
+                          fill
+                          className="object-cover"
+                          sizes="48px"
+                        />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                        <FilmIcon className="w-6 h-6" />
+                      </div>
+                    )}
+                  </div>
+                   <div>
+                    <p className="font-semibold text-sm">{actor.name}</p>
+                    <p className="text-xs text-muted-foreground">{actor.character}</p>
+                  </div>
+                </div>
               ))}
             </div>
           </div>

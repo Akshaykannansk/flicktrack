@@ -1,13 +1,14 @@
-import { films } from '@/lib/data';
+import { getPopularMovies, getTopRatedMovies, getNowPlayingMovies, IMAGE_BASE_URL } from '@/lib/tmdb';
+import type { Film } from '@/lib/types';
 import { FilmCard } from '@/components/film-card';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 
-export default function HomePage() {
-  const popularFilms = [...films].sort((a, b) => b.popularity - a.popularity);
-  const topRatedFilms = [...films].sort((a, b) => b.averageRating - a.averageRating);
-  const recentFilms = [...films].sort((a, b) => new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime());
+export default async function HomePage() {
+  const popularFilms = await getPopularMovies();
+  const topRatedFilms = await getTopRatedMovies();
+  const recentFilms = await getNowPlayingMovies();
 
-  const Section = ({ title, films }: { title: string, films: typeof popularFilms }) => (
+  const Section = ({ title, films }: { title: string, films: Film[] }) => (
     <section className="space-y-4">
       <h2 className="text-2xl font-headline font-bold text-primary-foreground tracking-tight">{title}</h2>
       <Carousel opts={{ align: "start", dragFree: true }}>
@@ -34,7 +35,7 @@ export default function HomePage() {
       <div className="space-y-12">
         <Section title="Popular Films" films={popularFilms} />
         <Section title="Top Rated Films" films={topRatedFilms} />
-        <Section title="Recent Releases" films={recentFilms} />
+        <Section title="Now Playing" films={recentFilms} />
       </div>
     </div>
   );

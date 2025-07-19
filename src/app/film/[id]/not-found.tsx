@@ -9,7 +9,7 @@ export default function NotFound() {
       <h2 className="mt-6 text-3xl font-headline font-bold">Film Not Found</h2>
       <p className="mt-2 text-muted-foreground">Sorry, we couldn't find the film you were looking for.</p>
       <Button asChild className="mt-6">
-        <Link href="/">Return to Browsing</Link>
+        <Link href="/">Return Home</Link>
       </Button>
     </div>
   );

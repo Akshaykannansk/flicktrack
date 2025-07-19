@@ -1,25 +1,73 @@
+export interface PaginatedResponse<T> {
+  page: number;
+  results: T[];
+  total_pages: number;
+  total_results: number;
+}
+
 export interface Film {
   id: string;
   title: string;
-  director: string;
-  year: number;
-  cast: string[];
-  plot: string;
-  posterUrl: string;
-  averageRating: number;
-  popularity: number;
-  releaseDate: string;
+  poster_path: string | null;
+  release_date: string;
+  vote_average: number;
+  overview: string;
 }
+
+export interface Genre {
+  id: number;
+  name: string;
+}
+
+export interface CastMember {
+  id: number;
+  name: string;
+  character: string;
+  profile_path: string | null;
+}
+
+export interface CrewMember {
+  id: number;
+  name: string;
+  job: string;
+}
+
+export interface Video {
+    id: string;
+    iso_639_1: string;
+    iso_3166_1: string;
+    key: string;
+    name: string;
+    site: string;
+    size: number;
+    type: string;
+}
+
+export interface FilmDetails {
+  id: string;
+  title: string;
+  overview: string;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  release_date: string;
+  vote_average: number;
+  genres: Genre[];
+  runtime: number;
+  cast: CastMember[];
+  director?: CrewMember;
+  trailer: Video | null;
+}
+
 
 export interface FilmList {
   id: string;
   name: string;
   description: string;
-  films: Film[];
+  films: Film[]; // Can be partial film object
 }
 
 export interface LoggedFilm {
-  film: Film;
+  film: Film; // Can be partial film object
   rating: number;
   review?: string;
   loggedDate: string;
