@@ -11,6 +11,13 @@ export interface Film {
   releaseDate: string;
 }
 
+export interface FilmList {
+  id: string;
+  name: string;
+  description: string;
+  films: Film[];
+}
+
 export interface LoggedFilm {
   film: Film;
   rating: number;
@@ -21,6 +28,7 @@ export interface LoggedFilm {
 export interface UserData {
   watchlist: Film[];
   journal: LoggedFilm[];
+  lists: FilmList[];
 }
 
 export type FilmRecommendation = {

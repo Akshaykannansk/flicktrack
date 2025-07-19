@@ -180,4 +180,24 @@ export const userData: UserData = {
       loggedDate: '2023-12-11',
     },
   ],
+  lists: [
+    {
+      id: 'essential-sci-fi',
+      name: 'Essential Sci-Fi',
+      description: 'A collection of must-watch science fiction films that have defined the genre.',
+      films: [films[2], films[6], films[8], films[10], films[7]]
+    },
+    {
+      id: 'mind-benders',
+      name: 'Mind-Bending Movies',
+      description: 'Films that will make you question reality and leave you thinking long after the credits roll.',
+      films: [films[0], films[2], films[11], films[1]]
+    },
+    {
+      id: 'modern-masterpieces',
+      name: 'Modern Masterpieces (2010s-)',
+      description: 'The best films from the 2010s onwards that are destined to become classics.',
+      films: [films[3], films[7], films[8], films[9], films[11]]
+    }
+  ]
 };

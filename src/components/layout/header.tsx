@@ -11,6 +11,7 @@ const navLinks = [
   { href: '/', label: 'Home' },
   { href: '/films', label: 'Films' },
   { href: '/journal', label: 'Journal' },
+  { href: '/lists', label: 'Lists' },
   { href: '/watchlist', label: 'Watchlist' },
   { href: '/recommendations', label: 'For You' },
 ];
@@ -36,7 +37,7 @@ export default function Header() {
                   href={link.href}
                   className={cn(
                     'text-sm font-medium transition-colors hover:text-primary',
-                    pathname === link.href ? 'text-primary-foreground font-semibold' : 'text-muted-foreground'
+                    pathname.startsWith(link.href) && link.href !== '/' || pathname === link.href ? 'text-primary-foreground font-semibold' : 'text-muted-foreground'
                   )}
                 >
                   {link.label}
