@@ -8,9 +8,10 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
 const navLinks = [
-  { href: '/', label: 'Browse' },
-  { href: '/watchlist', label: 'Watchlist' },
+  { href: '/', label: 'Home' },
+  { href: '/films', label: 'Films' },
   { href: '/journal', label: 'Journal' },
+  { href: '/watchlist', label: 'Watchlist' },
   { href: '/recommendations', label: 'For You' },
 ];
 
@@ -35,7 +36,7 @@ export default function Header() {
                   href={link.href}
                   className={cn(
                     'text-sm font-medium transition-colors hover:text-primary',
-                    pathname === link.href ? 'text-primary' : 'text-muted-foreground'
+                    pathname === link.href ? 'text-primary-foreground font-semibold' : 'text-muted-foreground'
                   )}
                 >
                   {link.label}
@@ -49,7 +50,7 @@ export default function Header() {
               <Input
                 type="search"
                 placeholder="Search films..."
-                className="pl-10 w-64 bg-secondary focus:bg-background"
+                className="pl-10 w-64 bg-secondary focus:bg-background border-secondary"
               />
             </form>
             <Link href="/profile" passHref>
