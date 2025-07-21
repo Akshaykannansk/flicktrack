@@ -1,8 +1,6 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
@@ -11,72 +9,71 @@ datasource db {
 }
 
 model User {
-  id            String    @id
-  email         String    @unique
-  name          String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  journalEntries JournalEntry[]
-  watchlistItems WatchlistItem[]
-  filmLists     FilmList[]
+  id          String       @id
+  email       String       @unique
+  name        String?
+  journal     JournalEntry[]
+  watchlist   WatchlistItem[]
+  lists       FilmList[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 }
 
 model Film {
-  id            Int      @id @unique
+  id            Int             @id
   title         String
-  overview      String?  @db.Text
+  overview      String?
   posterPath    String?
   releaseDate   String?
   voteAverage   Float?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
   journalEntries JournalEntry[]
   watchlistItems WatchlistItem[]
   lists         FilmOnList[]
 }
 
 model JournalEntry {
-  id         String   @id @default(cuid())
+  id         Int      @id @default(autoincrement())
+  userId     String
+  filmId     Int
   rating     Float
-  review     String?  @db.Text
+  review     String?
   loggedDate DateTime
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId     String
-  film       Film     @relation(fields: [filmId], references: [id], onDelete: Cascade)
-  filmId     Int
+  film       Film     @relation(fields: [filmId], references: [id])
 
   @@unique([userId, filmId, loggedDate])
 }
 
 model WatchlistItem {
+  id        Int      @id @default(autoincrement())
   userId    String
   filmId    Int
   addedAt   DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  film      Film     @relation(fields: [filmId], references: [id], onDelete: Cascade)
+  film      Film     @relation(fields: [filmId], references: [id])
 
-  @@id([userId, filmId])
+  @@unique([userId, filmId])
 }
 
 model FilmList {
   id          String       @id @default(cuid())
+  userId      String
   name        String
   description String?
-  userId      String
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  films       FilmOnList[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  films       FilmOnList[]
 }
 
 model FilmOnList {
-  listId   String
-  filmId   Int
-  list     FilmList @relation(fields: [listId], references: [id], onDelete: Cascade)
-  film     Film     @relation(fields: [filmId], references: [id], onDelete: Cascade)
-  addedAt  DateTime @default(now())
+  listId    String
+  filmId    Int
+  addedAt   DateTime @default(now())
+  list      FilmList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  film      Film     @relation(fields: [filmId], references: [id])
 
   @@id([listId, filmId])
 }

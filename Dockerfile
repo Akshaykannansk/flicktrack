@@ -1,33 +1,26 @@
-# 1. Install dependencies
-FROM node:20-alpine AS deps
-WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm install --frozen-lockfile
+# Use an official Node.js runtime as a parent image
+FROM node:20-slim
 
-# 2. Build application
-FROM node:20-alpine AS builder
+# Set the working directory in the container
 WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+
+# Install openssl, which is a dependency for Prisma
+RUN apt-get update && apt-get install -y openssl
+
+# Copy package.json and package-lock.json (or yarn.lock)
+COPY package*.json ./
+
+# Install app dependencies
+RUN npm install
+
+# Copy the rest of the application's code
 COPY . .
-ENV NEXT_TELEMETRY_DISABLED 1
+
+# Generate Prisma Client
 RUN npm run build
 
-# 3. Production image
-FROM node:20-alpine AS runner
-WORKDIR /app
-
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED 1
-
-# Automatically leverage output traces to reduce image size
-# https://nextjs.org/docs/advanced-features/output-file-tracing
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-COPY --from=builder --chown=nextjs:nodejs /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
-
-# The CMD instruction should be in docker-compose.yml
-# This allows for more flexibility and easier overrides.
+# Make port 9002 available to the world outside this container
 EXPOSE 9002
 
-CMD ["node", "server.js"]
+# Define the command to run the app
+CMD ["npm", "run", "start"]
