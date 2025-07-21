@@ -1,32 +1,25 @@
-# Use the official Node.js 20 image as a base.
+# Use a specific Node.js version for consistency
 FROM node:20-slim
 
-# Install necessary packages for Prisma and PostgreSQL client.
-# The 'openssl' package is explicitly installed to help Prisma detect the correct version.
-RUN apt-get update && apt-get install -y procps openssl postgresql-client && rm -rf /var/lib/apt/lists/*
-
-# Set the working directory in the container.
+# Set the working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json to leverage Docker cache.
-COPY package*.json ./
+# Install necessary dependencies, including OpenSSL and PostgreSQL client
+RUN apt-get update && apt-get install -y openssl postgresql-client && rm -rf /var/lib/apt/lists/*
 
-# Install project dependencies.
+# Copy package.json and package-lock.json first to leverage Docker layer caching
+COPY package.json ./
+COPY package-lock.json ./
+
+# Install npm dependencies
 RUN npm install
 
-# Copy the rest of the application code.
+# Copy the rest of the application code
 COPY . .
 
-# Make the wait script executable.
-RUN chmod +x ./wait-for-postgres.sh
+# Make the wait script executable
+RUN chmod +x /app/wait-for-postgres.sh
 
-# Expose the port the app will run on.
-EXPOSE 9002
-
-# The CMD instruction specifies the command to run when the container starts.
-# It's overridden by the command in docker-compose.yml but is good practice to include.
+# The command to run the application will be specified in docker-compose.yml
+# This allows for different commands for development vs. production
 CMD ["npm", "run", "dev"]
-
-# The ENTRYPOINT is what is executed when the container starts.
-# It runs our wait script first, and then executes the command (CMD) passed to it.
-ENTRYPOINT ["./wait-for-postgres.sh", "db"]
