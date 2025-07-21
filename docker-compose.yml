@@ -1,0 +1,38 @@
+services:
+  app:
+    build: .
+    ports:
+      - "9002:9002"
+    depends_on:
+      - db
+      - cache
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/flicktrack
+      - REDIS_URL=redis://cache:6379
+      - TMDB_API_KEY=${TMDB_API_KEY}
+    env_file:
+      - .env
+
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      - POSTGRES_DB=flicktrack
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  cache:
+    image: redis:7
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  postgres_data:
+  redis_data:
