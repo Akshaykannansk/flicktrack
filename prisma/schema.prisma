@@ -1,0 +1,93 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String @id @default(cuid())
+  email        String @unique
+  name         String?
+  avatarUrl    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  journalEntries JournalEntry[]
+  watchListItems WatchlistItem[]
+  lists          FilmList[]
+}
+
+model Film {
+  id           Int      @id @unique
+  title        String
+  overview     String?
+  posterPath   String?
+  releaseDate  String?
+  voteAverage  Float?
+  
+  journalEntries JournalEntry[]
+  watchListItems WatchlistItem[]
+  lists          FilmOnList[]
+}
+
+model JournalEntry {
+  id        String   @id @default(cuid())
+  rating    Float
+  review    String?
+  loggedDate DateTime
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  filmId Int
+  film   Film   @relation(fields: [filmId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, filmId])
+}
+
+model WatchlistItem {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  filmId Int
+  film   Film   @relation(fields: [filmId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, filmId])
+}
+
+
+model FilmList {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  
+  userId      String
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  films       FilmOnList[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model FilmOnList {
+  film   Film     @relation(fields: [filmId], references: [id], onDelete: Cascade)
+  filmId Int
+  list   FilmList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  listId String
+  
+  assignedAt DateTime @default(now())
+
+  @@id([filmId, listId])
+}

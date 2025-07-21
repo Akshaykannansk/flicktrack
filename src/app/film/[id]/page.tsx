@@ -5,8 +5,7 @@ import { Star, Bookmark, PlusCircle, Film as FilmIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-// We will need to create a new LogFilmDialog that works with TMDB data
-// import { LogFilmDialog } from '@/components/log-film-dialog';
+import { LogFilmDialog } from '@/components/log-film-dialog';
 
 export default async function FilmDetailPage({ params }: { params: { id: string } }) {
   const film = await getFilmDetails(params.id);
@@ -57,11 +56,11 @@ export default async function FilmDetailPage({ params }: { params: { id: string 
             <span className="font-bold text-lg text-primary-foreground">{film.vote_average.toFixed(1)} / 10</span>
           </div>
           <div className="flex flex-wrap gap-4 pt-4">
-            {/* <LogFilmDialog film={film}> */}
+            <LogFilmDialog film={film}>
               <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground">
                   <PlusCircle className="mr-2 h-5 w-5" /> Log Film
               </Button>
-            {/* </LogFilmDialog> */}
+            </LogFilmDialog>
             <Button size="lg" variant="outline">
                 <Bookmark className="mr-2 h-5 w-5" /> Add to Watchlist
             </Button>

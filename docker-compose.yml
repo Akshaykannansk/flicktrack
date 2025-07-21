@@ -1,15 +1,20 @@
 services:
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "9002:9002"
     depends_on:
-      - db
-      - cache
+      db:
+        condition: service_healthy
+      cache:
+        condition: service_started
     environment:
-      - DATABASE_URL=postgresql://user:password@db:5432/flicktrack
+      - DATABASE_URL=postgresql://user:password@db:5432/flicktrack?schema=public
       - REDIS_URL=redis://cache:6379
       - TMDB_API_KEY=${TMDB_API_KEY}
+      - NEXT_PUBLIC_SITE_URL=http://localhost:9002
     env_file:
       - .env
 
@@ -24,6 +29,11 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d flicktrack"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   cache:
     image: redis:7
@@ -32,6 +42,11 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:

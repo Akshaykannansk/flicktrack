@@ -65,18 +65,43 @@ export function LogFilmDialog({ film, children }: LogFilmDialogProps) {
     },
   });
 
-  function onSubmit(data: LogFilmFormValues) {
-    // In a real app, you would save this data to your backend
-    console.log({
-      filmId: film.id,
-      ...data,
-    });
-    setOpen(false);
-    toast({
-      title: 'Film Logged!',
-      description: `You've successfully logged "${film.title}".`,
-    });
-    form.reset();
+  async function onSubmit(data: LogFilmFormValues) {
+    try {
+      const response = await fetch('/api/journal', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          filmId: parseInt(film.id, 10),
+          rating: data.rating,
+          review: data.review,
+          loggedDate: data.watchedDate.toISOString(),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to log film.');
+      }
+
+      setOpen(false);
+      toast({
+        title: 'Film Logged!',
+        description: `You've successfully logged "${film.title}".`,
+      });
+      form.reset();
+      // Optionally, you could trigger a re-fetch of the journal data here
+      // if you pass down a callback or use a state management library.
+       window.location.reload(); // Simple refresh for now
+
+    } catch (error) {
+       console.error(error);
+       toast({
+        variant: 'destructive',
+        title: 'Uh oh! Something went wrong.',
+        description: 'There was a problem with your request.',
+      });
+    }
   }
 
   return (
@@ -168,7 +193,9 @@ export function LogFilmDialog({ film, children }: LogFilmDialogProps) {
               />
             </div>
             <DialogFooter>
-              <Button type="submit">Save Log Entry</Button>
+              <Button type="submit" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting ? 'Saving...' : 'Save Log Entry'}
+              </Button>
             </DialogFooter>
           </form>
         </Form>
