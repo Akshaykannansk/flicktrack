@@ -1,15 +1,18 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { z } from 'zod';
-
-// For this prototype, we'll use a hardcoded user ID.
-const USER_ID = 'user_2jvcJkLgQf9Qz3gYtH8rXz9Ew1B';
+import { auth } from '@clerk/nextjs/server';
 
 // GET all watchlist items for the user
 export async function GET() {
   try {
+    const { userId } = auth();
+    if (!userId) {
+      return new NextResponse('Unauthorized', { status: 401 });
+    }
+    
     const watchlistItems = await prisma.watchlistItem.findMany({
-      where: { userId: USER_ID },
+      where: { userId: userId },
       include: {
         film: true,
       },
@@ -43,6 +46,11 @@ const watchlistActionSchema = z.object({
 // POST a new film to the watchlist
 export async function POST(request: Request) {
   try {
+    const { userId } = auth();
+    if (!userId) {
+      return new NextResponse('Unauthorized', { status: 401 });
+    }
+    
     const body = await request.json();
     const validation = watchlistActionSchema.safeParse(body);
 
@@ -54,7 +62,7 @@ export async function POST(request: Request) {
 
     const newItem = await prisma.watchlistItem.create({
       data: {
-        userId: USER_ID,
+        userId: userId,
         filmId,
       },
     });
@@ -72,6 +80,11 @@ export async function POST(request: Request) {
 // DELETE a film from the watchlist
 export async function DELETE(request: Request) {
   try {
+    const { userId } = auth();
+    if (!userId) {
+      return new NextResponse('Unauthorized', { status: 401 });
+    }
+    
     const body = await request.json();
     const validation = watchlistActionSchema.safeParse(body);
 
@@ -84,7 +97,7 @@ export async function DELETE(request: Request) {
     await prisma.watchlistItem.delete({
       where: {
         userId_filmId: {
-          userId: USER_ID,
+          userId: userId,
           filmId,
         },
       },

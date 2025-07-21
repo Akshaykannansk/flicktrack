@@ -1,20 +1,22 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { z } from 'zod';
-
-// For this prototype, we'll use a hardcoded user ID.
-const USER_ID = 'user_2jvcJkLgQf9Qz3gYtH8rXz9Ew1B';
+import { auth } from '@clerk/nextjs/server';
 
 // GET all lists for the user
 export async function GET() {
   try {
+    const { userId } = auth();
+    if (!userId) {
+        return new NextResponse('Unauthorized', { status: 401 });
+    }
+
     const lists = await prisma.filmList.findMany({
-      where: { userId: USER_ID },
+      where: { userId: userId },
       include: {
         _count: {
           select: { films: true },
         },
-        // Include a few film posters for the preview
         films: {
           take: 4,
           include: {
@@ -35,7 +37,6 @@ export async function GET() {
       },
     });
     
-    // Transform data to match frontend expectation (string IDs)
     const responseData = lists.map(list => ({
         ...list,
         films: list.films.map(f => ({

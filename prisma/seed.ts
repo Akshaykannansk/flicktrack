@@ -3,38 +3,35 @@ import { films as staticFilms } from '../src/lib/static-data';
 
 const prisma = new PrismaClient();
 
-const USER_ID = 'user_2jvcJkLgQf9Qz3gYtH8rXz9Ew1B'; // Dummy user ID
+const USER_ID = 'user_2jvcJkLgQf9Qz3gYtH8rXz9Ew1B';
 
 async function main() {
   console.log('Start seeding...');
 
-  const userCount = await prisma.user.count();
-  // Only seed if there are no users
-  if (userCount > 0) {
-    console.log('Database has already been seeded. Skipping.');
-    return;
-  }
-
-  // Create a sample user
-  const user = await prisma.user.create({
-    data: {
+  const user = await prisma.user.upsert({
+    where: { id: USER_ID },
+    update: {},
+    create: {
       id: USER_ID,
       email: 'alex.doe@example.com',
       name: 'Alex Doe',
     },
   });
-  console.log(`Created user: ${user.name}`);
+  console.log(`Upserted user: ${user.name}`);
 
   // Create films in the database
   const filmCreatePromises = staticFilms.map(film => {
+    const filmId = parseInt(film.id, 10);
+    if (isNaN(filmId)) return Promise.resolve();
+
     return prisma.film.upsert({
-      where: { id: parseInt(film.id, 10) || Math.floor(Math.random() * 100000) },
+      where: { id: filmId },
       update: {},
       create: {
-        id: parseInt(film.id, 10) || Math.floor(Math.random() * 100000),
+        id: filmId,
         title: film.title,
         overview: film.plot,
-        posterPath: film.posterUrl.includes('placehold.co') ? null : film.posterUrl.split('/').pop(),
+        posterPath: film.posterUrl.includes('placehold.co') ? null : film.posterUrl,
         releaseDate: film.releaseDate,
         voteAverage: film.averageRating * 2,
       },
@@ -43,7 +40,6 @@ async function main() {
   await Promise.all(filmCreatePromises);
   console.log(`Upserted ${staticFilms.length} films.`);
 
-  // Create Journal Entries
   const journalEntries = [
     { filmId: 680, rating: 5, review: "An absolute masterpiece. The non-linear storytelling is brilliant and every scene is iconic.", loggedDate: new Date("2023-10-26") },
     { filmId: 155, rating: 4.5, review: "Heath Ledger's performance as the Joker is legendary. A gripping and intelligent superhero film.", loggedDate: new Date("2023-10-22") },
@@ -51,13 +47,15 @@ async function main() {
   ];
 
   for (const entry of journalEntries) {
-    await prisma.journalEntry.create({
-      data: { ...entry, userId: user.id },
+    await prisma.journalEntry.upsert({
+      where: { userId_filmId_loggedDate: { userId: user.id, filmId: entry.filmId, loggedDate: entry.loggedDate } },
+      update: {},
+      create: { ...entry, userId: user.id },
     });
   }
-  console.log(`Created ${journalEntries.length} journal entries.`);
+  console.log(`Upserted ${journalEntries.length} journal entries.`);
 
-  // Create Watchlist
+
   const watchlistItems = [
       { filmId: 27205 }, // Inception
       { filmId: 157336 }, // Interstellar
@@ -66,45 +64,57 @@ async function main() {
   ];
 
   for (const item of watchlistItems) {
-      await prisma.watchlistItem.create({
-          data: { ...item, userId: user.id }
+      await prisma.watchlistItem.upsert({
+          where: { userId_filmId: { userId: user.id, filmId: item.filmId } },
+          update: {},
+          create: { ...item, userId: user.id }
       })
   }
-  console.log(`Created ${watchlistItems.length} watchlist items.`);
+  console.log(`Upserted ${watchlistItems.length} watchlist items.`);
 
-
-  // Create Lists
-  const list1 = await prisma.filmList.create({
-    data: {
+  const list1 = await prisma.filmList.upsert({
+    where: { id: 'clerk_list_1' },
+    update: {},
+    create: {
+      id: 'clerk_list_1',
       name: 'Mind-Bending Movies',
       description: 'Films that will make you question reality.',
       userId: user.id,
     },
   });
 
-  const list2 = await prisma.filmList.create({
-    data: {
+  const list2 = await prisma.filmList.upsert({
+     where: { id: 'clerk_list_2' },
+    update: {},
+    create: {
+      id: 'clerk_list_2',
       name: 'Modern Sci-Fi Essentials',
       description: 'Must-see science fiction from the 21st century.',
       userId: user.id,
     },
   });
 
-  // Add films to lists
-  await prisma.filmOnList.createMany({
-    data: [
-      { listId: list1.id, filmId: 27205 }, // Inception
-      { listId: list1.id, filmId: 338952 }, // Arrival
-      { listId: list1.id, filmId: 539961 }, // Everything Everywhere All at Once
+  const list1Films = [
+    { listId: list1.id, filmId: 27205 }, // Inception
+    { listId: list1.id, filmId: 338952 }, // Arrival
+    { listId: list1.id, filmId: 539961 }, // Everything Everywhere All at Once
+  ];
+  
+  const list2Films = [
+    { listId: list2.id, filmId: 157336 }, // Interstellar
+    { listId: list2.id, filmId: 335984 }, // Blade Runner 2049
+    { listId: list2.id, filmId: 338952 }, // Arrival
+    { listId: list2.id, filmId: 27205 }, // Inception
+  ];
 
-      { listId: list2.id, filmId: 157336 }, // Interstellar
-      { listId: list2.id, filmId: 335984 }, // Blade Runner 2049
-      { listId: list2.id, filmId: 338952 }, // Arrival
-      { listId: list2.id, filmId: 27205 }, // Inception
-    ],
-    skipDuplicates: true,
-  });
-  console.log('Added films to lists.');
+  for (const film of [...list1Films, ...list2Films]) {
+      await prisma.filmOnList.upsert({
+          where: { listId_filmId: { listId: film.listId, filmId: film.filmId } },
+          update: {},
+          create: film
+      });
+  }
+  console.log('Upserted films to lists.');
 
 
   console.log('Seeding finished.');

@@ -1,10 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { z } from 'zod';
-
-// For this prototype, we'll use a hardcoded user ID.
-// In a real app, you'd get this from the user's session.
-const USER_ID = 'user_2jvcJkLgQf9Qz3gYtH8rXz9Ew1B';
+import { auth, clerkClient } from '@clerk/nextjs/server';
 
 const journalEntrySchema = z.object({
   filmId: z.number(),
@@ -13,20 +10,53 @@ const journalEntrySchema = z.object({
   loggedDate: z.string().datetime(),
 });
 
+async function upsertUser(userId: string) {
+    const clerkUser = await clerkClient.users.getUser(userId);
+    if (!clerkUser) {
+        throw new Error('User not found in Clerk');
+    }
+
+    const primaryEmail = clerkUser.emailAddresses.find(e => e.id === clerkUser.primaryEmailAddressId)?.emailAddress;
+
+    if (!primaryEmail) {
+        throw new Error('Primary email not found for user');
+    }
+
+    return await prisma.user.upsert({
+        where: { id: userId },
+        update: {
+            email: primaryEmail,
+            name: clerkUser.fullName,
+        },
+        create: {
+            id: userId,
+            email: primaryEmail,
+            name: clerkUser.fullName,
+        }
+    });
+}
+
+
 // GET all journal entries for the user
 export async function GET() {
   try {
+    const { userId } = auth();
+    if (!userId) {
+      return new NextResponse('Unauthorized', { status: 401 });
+    }
+    
+    await upsertUser(userId);
+
     const journalEntries = await prisma.journalEntry.findMany({
-      where: { userId: USER_ID },
+      where: { userId: userId },
       include: {
-        film: true, // Include the related film data
+        film: true, 
       },
       orderBy: {
         loggedDate: 'desc',
       },
     });
 
-    // We need to transform the data slightly to match the expected front-end LoggedFilm type
     const responseData = journalEntries.map(entry => ({
         film: {
             id: entry.film.id.toString(),
@@ -51,6 +81,12 @@ export async function GET() {
 // POST a new journal entry
 export async function POST(request: Request) {
   try {
+    const { userId } = auth();
+    if (!userId) {
+      return new NextResponse('Unauthorized', { status: 401 });
+    }
+    await upsertUser(userId);
+    
     const body = await request.json();
     const validation = journalEntrySchema.safeParse(body);
 
@@ -60,12 +96,9 @@ export async function POST(request: Request) {
     
     const { filmId, rating, review, loggedDate } = validation.data;
 
-    // In a real app, you would also upsert the film details if they don't exist yet
-    // For now, we assume films from the seed are present.
-
     const newEntry = await prisma.journalEntry.create({
       data: {
-        userId: USER_ID,
+        userId: userId,
         filmId,
         rating,
         review,

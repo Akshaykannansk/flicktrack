@@ -2,14 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Film, Search, User } from 'lucide-react';
+import { Film, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
 
 const navLinks = [
   { href: '/', label: 'Home' },
-  { href: '/films', label: 'Films' },
   { href: '/journal', label: 'Journal' },
   { href: '/lists', label: 'Lists' },
   { href: '/watchlist', label: 'Watchlist' },
@@ -37,7 +37,7 @@ export default function Header() {
                   href={link.href}
                   className={cn(
                     'text-sm font-medium transition-colors hover:text-primary',
-                    pathname.startsWith(link.href) && link.href !== '/' || pathname === link.href ? 'text-primary-foreground font-semibold' : 'text-muted-foreground'
+                    (pathname.startsWith(link.href) && link.href !== '/') || pathname === link.href ? 'text-primary font-semibold' : 'text-muted-foreground'
                   )}
                 >
                   {link.label}
@@ -45,8 +45,8 @@ export default function Header() {
               ))}
             </nav>
           </div>
-          <div className="hidden md:flex items-center space-x-4">
-            <form className="relative">
+          <div className="flex items-center space-x-4">
+            <form className="relative hidden md:block">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
@@ -54,15 +54,14 @@ export default function Header() {
                 className="pl-10 w-64 bg-secondary focus:bg-background border-secondary"
               />
             </form>
-            <Link href="/profile" passHref>
-              <Button
-                variant={pathname === '/profile' ? 'secondary' : 'ghost'}
-                size="icon"
-                aria-label="Profile"
-              >
-                <User className="h-5 w-5" />
-              </Button>
-            </Link>
+            <SignedIn>
+                <UserButton afterSignOutUrl="/" />
+            </SignedIn>
+             <SignedOut>
+                <Button asChild>
+                    <Link href="/sign-in">Sign In</Link>
+                </Button>
+            </SignedOut>
           </div>
         </div>
       </div>

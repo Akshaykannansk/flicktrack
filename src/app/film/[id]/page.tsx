@@ -8,15 +8,18 @@ import { Separator } from '@/components/ui/separator';
 import { LogFilmDialog } from '@/components/log-film-dialog';
 import { WatchlistButton } from '@/components/watchlist-button';
 import prisma from '@/lib/prisma';
-
-// Hardcoded user for prototype
-const USER_ID = 'user_2jvcJkLgQf9Qz3gYtH8rXz9Ew1B';
+import { auth } from '@clerk/nextjs/server';
 
 async function getWatchlistStatus(filmId: number) {
+  const { userId } = auth();
+  if (!userId) {
+    return false;
+  }
+  
   const watchlistItem = await prisma.watchlistItem.findUnique({
     where: {
       userId_filmId: {
-        userId: USER_ID,
+        userId: userId,
         filmId: filmId,
       },
     },
@@ -40,7 +43,7 @@ export default async function FilmDetailPage({ params }: { params: { id: string 
 
   const posterUrl = film.poster_path ? `${IMAGE_BASE_URL}w500${film.poster_path}` : 'https://placehold.co/400x600.png';
   const year = film.release_date ? new Date(film.release_date).getFullYear() : 'N/A';
-  const rating = film.vote_average / 2; // Convert 10-point scale to 5-star scale
+  const rating = film.vote_average / 2;
 
   return (
     <div>
