@@ -7,7 +7,7 @@
     "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
     "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
     "build": "prisma generate && next build",
-    "start": "./wait-for-postgres.sh db npm run db:migrate && next start",
+    "start": "npm run db:migrate && next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "db:migrate": "prisma migrate deploy",

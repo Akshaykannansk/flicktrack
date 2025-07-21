@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: ./wait-for-postgres.sh db npm run dev
+    command: npm run dev
     ports:
       - "9002:9002"
     depends_on:
@@ -11,6 +11,10 @@ services:
         condition: service_healthy
       cache:
         condition: service_started
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
     environment:
       - DATABASE_URL=postgresql://user:password@db:5432/flicktrack?schema=public
       - REDIS_URL=redis://cache:6379
