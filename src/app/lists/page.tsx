@@ -1,11 +1,77 @@
-import { userData } from '@/lib/data';
+'use client';
+
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { List } from 'lucide-react';
+import { List, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
+import { IMAGE_BASE_URL } from '@/lib/tmdb';
+import type { Film as FilmType } from '@/lib/types';
+
+
+interface FilmOnList {
+  film: FilmType;
+}
+
+interface FilmListSummary {
+    id: string;
+    name: string;
+    description: string;
+    films: FilmOnList[];
+    _count: {
+        films: number;
+    }
+}
 
 export default function ListsPage() {
-  const { lists } = userData;
+  const [lists, setLists] = useState<FilmListSummary[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchLists() {
+      try {
+        const response = await fetch('/api/lists');
+        if (!response.ok) {
+          throw new Error('Failed to fetch lists.');
+        }
+        const data = await response.json();
+        setLists(data);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchLists();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center space-x-3">
+          <List className="w-8 h-8 text-primary" />
+          <h1 className="text-4xl font-headline font-bold tracking-tighter">My Lists</h1>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(3)].map((_, i) => (
+                <Card key={i} className="h-full flex flex-col bg-secondary border-transparent">
+                    <CardContent className="p-4 flex-grow">
+                        <Skeleton className="aspect-video rounded-md mb-4" />
+                        <Skeleton className="h-6 w-3/4" />
+                        <Skeleton className="h-4 w-1/4 mt-2" />
+                    </CardContent>
+                </Card>
+            ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return <div className="text-center py-20 text-destructive">{error}</div>;
+  }
 
   return (
     <div className="space-y-8">
@@ -20,24 +86,34 @@ export default function ListsPage() {
             <Link key={list.id} href={`/lists/${list.id}`} className="group block">
               <Card className="h-full flex flex-col bg-secondary border-transparent hover:border-primary/50 transition-colors duration-300">
                 <CardContent className="p-4 flex-grow">
-                  <div className="relative aspect-video rounded-md overflow-hidden mb-4">
-                    <div className="absolute inset-0 grid grid-cols-2 gap-px">
-                       {list.films.slice(0, 4).map((film, index) => (
-                        <div key={film.id} className="relative">
-                           <Image
-                            src={film.posterUrl}
-                            alt=""
-                            fill
-                            className="object-cover"
-                            sizes="10vw"
-                          />
+                  <div className="relative aspect-video rounded-md overflow-hidden mb-4 bg-muted">
+                    {list.films.length > 0 ? (
+                        <div className="absolute inset-0 grid grid-cols-2 gap-px">
+                        {list.films.slice(0, 4).map(({ film }, index) => (
+                            <div key={film.id} className="relative">
+                            {film.poster_path ? (
+                                <Image
+                                    src={`${IMAGE_BASE_URL}w500${film.poster_path}`}
+                                    alt=""
+                                    fill
+                                    className="object-cover"
+                                    sizes="10vw"
+                                />
+                            ) : (
+                                <div className="w-full h-full bg-secondary"></div>
+                            )}
+                            </div>
+                        ))}
                         </div>
-                      ))}
-                    </div>
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                            <List className="w-10 h-10" />
+                        </div>
+                    )}
                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
                   </div>
                   <h2 className="text-xl font-headline font-semibold text-primary-foreground group-hover:text-primary transition-colors">{list.name}</h2>
-                  <p className="text-sm text-muted-foreground mt-1">{list.films.length} films</p>
+                  <p className="text-sm text-muted-foreground mt-1">{list._count.films} {list._count.films === 1 ? 'film' : 'films'}</p>
                 </CardContent>
               </Card>
             </Link>

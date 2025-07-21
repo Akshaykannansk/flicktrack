@@ -1,18 +1,42 @@
 import { getFilmDetails, IMAGE_BASE_URL } from '@/lib/tmdb';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
-import { Star, Bookmark, PlusCircle, Film as FilmIcon } from 'lucide-react';
+import { Star, PlusCircle, Film as FilmIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { LogFilmDialog } from '@/components/log-film-dialog';
+import { WatchlistButton } from '@/components/watchlist-button';
+import prisma from '@/lib/prisma';
+
+// Hardcoded user for prototype
+const USER_ID = 'user_2jvcJkLgQf9Qz3gYtH8rXz9Ew1B';
+
+async function getWatchlistStatus(filmId: number) {
+  const watchlistItem = await prisma.watchlistItem.findUnique({
+    where: {
+      userId_filmId: {
+        userId: USER_ID,
+        filmId: filmId,
+      },
+    },
+  });
+  return !!watchlistItem;
+}
 
 export default async function FilmDetailPage({ params }: { params: { id: string } }) {
+  const filmId = parseInt(params.id, 10);
+  if (isNaN(filmId)) {
+    notFound();
+  }
+
   const film = await getFilmDetails(params.id);
 
   if (!film) {
     notFound();
   }
+
+  const isAlreadyInWatchlist = await getWatchlistStatus(filmId);
 
   const posterUrl = film.poster_path ? `${IMAGE_BASE_URL}w500${film.poster_path}` : 'https://placehold.co/400x600.png';
   const year = film.release_date ? new Date(film.release_date).getFullYear() : 'N/A';
@@ -61,9 +85,7 @@ export default async function FilmDetailPage({ params }: { params: { id: string 
                   <PlusCircle className="mr-2 h-5 w-5" /> Log Film
               </Button>
             </LogFilmDialog>
-            <Button size="lg" variant="outline">
-                <Bookmark className="mr-2 h-5 w-5" /> Add to Watchlist
-            </Button>
+            <WatchlistButton filmId={filmId} initialIsInWatchlist={isAlreadyInWatchlist} />
           </div>
           <Separator className="my-6 !mt-8" />
           <div>

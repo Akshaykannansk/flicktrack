@@ -1,12 +1,63 @@
-import { userData } from '@/lib/data';
+'use client';
+
+import { useEffect, useState } from 'react';
 import { FilmCard } from '@/components/film-card';
-import { Bookmark } from 'lucide-react';
+import { Bookmark, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import type { Film } from '@/lib/types';
+import { Skeleton } from '@/components/ui/skeleton';
+import type { Film as FilmType } from '@/lib/types';
+
+interface WatchlistItem {
+  film: FilmType;
+}
 
 export default function WatchlistPage() {
-  const watchlist = userData.watchlist;
+  const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchWatchlist() {
+      try {
+        const response = await fetch('/api/watchlist');
+        if (!response.ok) {
+          throw new Error('Failed to fetch watchlist.');
+        }
+        const data = await response.json();
+        setWatchlist(data);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchWatchlist();
+  }, []);
+
+  if (isLoading) {
+    return (
+       <div className="space-y-8">
+        <div className="flex items-center space-x-3">
+          <Bookmark className="w-8 h-8 text-primary" />
+          <h1 className="text-4xl font-headline font-bold tracking-tighter">My Watchlist</h1>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+          {[...Array(6)].map((_, i) => (
+             <div key={i} className="space-y-2">
+              <Skeleton className="aspect-[2/3] rounded-lg" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-3 w-1/4" />
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+     return <div className="text-center py-20 text-destructive">{error}</div>;
+  }
 
   return (
     <div className="space-y-8">
@@ -17,8 +68,8 @@ export default function WatchlistPage() {
 
       {watchlist.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
-          {watchlist.map((film) => (
-            <FilmCard key={film.id} film={film as Film} />
+          {watchlist.map(({ film }) => (
+            <FilmCard key={film.id} film={film} />
           ))}
         </div>
       ) : (
