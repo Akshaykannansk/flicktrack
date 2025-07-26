@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit",
     "db:migrate": "prisma migrate deploy",
     "db:seed": "prisma db seed",
+    "migrate-and-dev": "npm run db:migrate && npm run dev",
     "postinstall": "patch-package"
   },
   "dependencies": {
