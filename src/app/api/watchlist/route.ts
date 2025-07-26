@@ -59,6 +59,16 @@ export async function POST(request: Request) {
     }
     
     const { filmId } = validation.data;
+    
+    await prisma.film.upsert({
+      where: { id: filmId },
+      update: {},
+      create: {
+        id: filmId,
+        title: 'Unknown Film', // You might want to fetch this from TMDB
+      },
+    });
+
 
     const newItem = await prisma.watchlistItem.create({
       data: {

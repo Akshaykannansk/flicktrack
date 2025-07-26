@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider      = "prisma-client-js"
   binaryTargets = ["native", "debian-openssl-3.0.x"]
@@ -12,80 +9,88 @@ datasource db {
 }
 
 model User {
-  id            String         @id @unique
+  id            String         @id
   email         String         @unique
   name          String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   journalEntries JournalEntry[]
   watchlistItems WatchlistItem[]
   lists         FilmList[]
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
 }
 
 model Film {
-  id           String         @id @unique
+  id           Int            @id
   title        String
   overview     String?        @db.Text
   posterPath   String?
-  releaseDate  String?
+  releaseDate  DateTime?
   voteAverage  Float?
-  journalEntries JournalEntry[]
-  watchlistItems WatchlistItem[]
-  lists        FilmOnList[]
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
+  journalEntries JournalEntry[]
+  watchlistedBy WatchlistItem[]
+  lists         FilmOnList[]
 
-  @@cache([id])
+  @@index([title])
 }
 
 model JournalEntry {
-  id         Int      @id @default(autoincrement())
+  id         String   @id @default(cuid())
   userId     String
-  filmId     String
+  filmId     Int
   rating     Float
   review     String?  @db.Text
   loggedDate DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   film Film @relation(fields: [filmId], references: [id], onDelete: Cascade)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
   @@unique([userId, filmId, loggedDate])
+  @@index([userId])
+  @@index([filmId])
 }
 
 model WatchlistItem {
-  userId  String
-  filmId  String
-  addedAt DateTime @default(now())
+  userId    String
+  filmId    Int
+  addedAt   DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   film Film @relation(fields: [filmId], references: [id], onDelete: Cascade)
 
   @@id([userId, filmId])
+  @@index([userId])
+  @@index([filmId])
 }
 
 model FilmList {
-  id          String       @id
+  id          String       @id @default(cuid())
   name        String
   description String?      @db.Text
   userId      String
-  films       FilmOnList[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+  isPublic    Boolean      @default(false)
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  films FilmOnList[]
+
+  @@index([userId])
 }
 
 model FilmOnList {
   listId  String
-  filmId  String
+  filmId  Int
   addedAt DateTime @default(now())
 
   list FilmList @relation(fields: [listId], references: [id], onDelete: Cascade)
   film Film     @relation(fields: [filmId], references: [id], onDelete: Cascade)
 
   @@id([listId, filmId])
+  @@index([listId])
+  @@index([filmId])
 }

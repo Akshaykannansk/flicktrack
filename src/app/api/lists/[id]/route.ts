@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { auth } from '@clerk/nextjs/server';
+
 
 // GET a single list with its films
 export async function GET(
@@ -7,9 +9,14 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { userId } = auth();
+    if (!userId) {
+      return new NextResponse('Unauthorized', { status: 401 });
+    }
+
     const listId = params.id;
-    const list = await prisma.filmList.findUnique({
-      where: { id: listId },
+    const list = await prisma.filmList.findFirst({
+      where: { id: listId, userId },
       include: {
         films: {
           include: {
