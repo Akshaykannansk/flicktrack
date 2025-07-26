@@ -29,10 +29,6 @@ const nextConfig: NextConfig = {
         source: '/(.*)',  
           headers: [
           {
-            key: 'Access-Control-Allow-Origin',
-            value: '9000-firebase-studio-1752943405409.cluster-sumfw3zmzzhzkx4mpvz3ogth4y.cloudworkstations.dev',
-          },
-          {
             key: 'Access-Control-Allow-Methods',
             value: 'GET, POST, PUT, DELETE, OPTIONS',
           },
@@ -44,7 +40,10 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  allowedDevOrigins: ['9000-firebase-studio-1752943405409.cluster-sumfw3zmzzhzkx4mpvz3ogth4y.cloudworkstations.dev'],
+  experimental: {
+    allowedForwardedHosts: ['9000-firebase-studio-1752943405409.cluster-sumfw3zmzzhzkx4mpvz3ogth4y.cloudworkstations.dev'],
+    allowedDevOrigins: ['9000-firebase-studio-1752943405409.cluster-sumfw3zmzzhzkx4mpvz3ogth4y.cloudworkstations.dev'],
+  }
 };
 
 export default nextConfig;
