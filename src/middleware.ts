@@ -1,15 +1,14 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 
-const isPublicRoute = createRouteMatcher([
-    '/',
-    '/film/(.*)',
-    '/sign-in(.*)',
-    '/sign-up(.*)',
-    '/api/watchlist', // Required for watchlist button on film pages
+const isProtectedRoute = createRouteMatcher([
+    // Add any routes here that you want to protect
+    // For example: '/dashboard(.*)'
 ]);
 
 export default clerkMiddleware((auth, req) => {
-  if (!isPublicRoute(req)) {
+  // By default, all routes are public.
+  // We only protect the routes that match `isProtectedRoute`.
+  if (isProtectedRoute(req)) {
     auth().protect();
   }
 });
