@@ -1,3 +1,4 @@
+
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { z } from 'zod';
@@ -39,12 +40,12 @@ async function upsertUser(userId: string) {
 
 // GET all journal entries for the user
 export async function GET() {
+  const { userId } = auth();
+  if (!userId) {
+    return new NextResponse('Unauthorized', { status: 401 });
+  }
+  
   try {
-    const { userId } = auth();
-    if (!userId) {
-      return new NextResponse('Unauthorized', { status: 401 });
-    }
-    
     await upsertUser(userId);
 
     const journalEntries = await prisma.journalEntry.findMany({
@@ -80,11 +81,12 @@ export async function GET() {
 
 // POST a new journal entry
 export async function POST(request: Request) {
-  try {
     const { userId } = auth();
     if (!userId) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
+
+  try {
     await upsertUser(userId);
     
     const body = await request.json();
