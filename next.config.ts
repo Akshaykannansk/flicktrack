@@ -44,8 +44,7 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-    allowedDevOrigins: ["http://localhost:9002"],
-  
+  allowedDevOrigins: ["http://localhost:9002"],
 };
 
 export default nextConfig;
