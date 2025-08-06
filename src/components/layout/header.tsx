@@ -6,7 +6,7 @@ import { Film, Search, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
+import { SignedIn, SignedOut, UserButton, useUser } from '@clerk/nextjs';
 import * as React from 'react';
 import type { Film as FilmType } from '@/lib/types';
 import Image from 'next/image';
@@ -23,6 +23,7 @@ const navLinks = [
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
+  const { user } = useUser();
   const [query, setQuery] = React.useState('');
   const [suggestions, setSuggestions] = React.useState<FilmType[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
@@ -153,7 +154,19 @@ export default function Header() {
                  )}
             </div>
             <SignedIn>
+              {user ? (
+                <Link href="/profile">
+                  <Image 
+                    src={user.imageUrl} 
+                    alt={user.fullName ?? 'User profile'}
+                    width={32}
+                    height={32}
+                    className="rounded-full"
+                  />
+                </Link>
+              ) : (
                 <UserButton afterSignOutUrl="/" />
+              )}
             </SignedIn>
              <SignedOut>
                 <Button asChild>
