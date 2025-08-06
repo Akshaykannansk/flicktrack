@@ -3,7 +3,7 @@
 // which interacts with the PostgreSQL database via Prisma.
 // The static film data is still used for seeding the database.
 
-import type { UserData, Film, FilmList, LoggedFilm } from '@/lib/types';
+import type { Film } from '@/lib/types';
 import { films as staticFilms } from './static-data';
 
 // Helper function to convert static film data to the new Film type
@@ -16,17 +16,6 @@ const toFilmType = (f: any): Film => ({
     overview: f.plot
 });
 
-const sampleWatchlist: Film[] = [];
-const sampleJournal: LoggedFilm[] = [];
-const sampleLists: FilmList[] = [];
-
-
-// This is our "database".
-export const userData: UserData = {
-  watchlist: sampleWatchlist,
-  journal: sampleJournal,
-  lists: sampleLists
-};
 
 // This export is for other parts of the app that might still use it.
 export const films = staticFilms.map(toFilmType);
