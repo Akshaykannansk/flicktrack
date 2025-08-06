@@ -10,7 +10,7 @@
     "start": "npm run db:migrate && next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "db:migrate": "prisma migrate deploy",
+    "db:migrate": "prisma db push",
     "db:seed": "prisma db seed",
     "migrate-and-dev": "npm run db:migrate && npm run dev",
     "postinstall": "patch-package"
