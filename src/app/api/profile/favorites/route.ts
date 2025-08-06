@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { auth } from '@clerk/nextjs/server';
 import { z } from 'zod';
+import { getFilmDetails } from '@/lib/tmdb';
 
 const favoriteFilmsSchema = z.object({
   filmIds: z.array(z.number()).max(4, 'You can only have up to 4 favorite films.'),
@@ -50,16 +51,29 @@ export async function POST(request: Request) {
 
     const { filmIds } = validation.data;
     
-    // Ensure films exist in the DB, create if not
+    // Fetch film details from TMDB and upsert them into our database
     for (const filmId of filmIds) {
-        await prisma.film.upsert({
-            where: {id: filmId },
-            update: {},
-            create: {
-                id: filmId,
-                title: "Unknown Film" // This will be updated later if needed
-            }
-        })
+        const filmDetails = await getFilmDetails(filmId.toString());
+        if (filmDetails) {
+            await prisma.film.upsert({
+                where: { id: filmId },
+                update: {
+                    title: filmDetails.title,
+                    overview: filmDetails.overview,
+                    posterPath: filmDetails.poster_path,
+                    releaseDate: filmDetails.release_date ? new Date(filmDetails.release_date) : null,
+                    voteAverage: filmDetails.vote_average,
+                },
+                create: {
+                    id: filmId,
+                    title: filmDetails.title,
+                    overview: filmDetails.overview,
+                    posterPath: filmDetails.poster_path,
+                    releaseDate: filmDetails.release_date ? new Date(filmDetails.release_date) : null,
+                    voteAverage: filmDetails.vote_average,
+                },
+            });
+        }
     }
     
     // Update user's favorite films

@@ -1,14 +1,15 @@
 import type { Film, FilmDetails, PaginatedResponse, Video } from './types';
+import redis from './redis';
 
 const API_BASE_URL = 'https://api.themoviedb.org/3';
 const API_KEY = process.env.TMDB_API_KEY;
 
 export const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/';
 
+const CACHE_EXPIRATION_SECONDS = 60 * 60 * 24; // 24 hours
+
 async function fetchFromTMDB<T>(endpoint: string, params: Record<string, string> = {}): Promise<T | null> {
   if (!API_KEY) {
-    // Return a default structure that won't break the app if API key is missing.
-    // The calling functions are responsible for handling this null case.
     console.warn('TMDB_API_KEY is not defined. Returning empty data.');
     return null;
   }
@@ -21,12 +22,11 @@ async function fetchFromTMDB<T>(endpoint: string, params: Record<string, string>
 
   try {
     const response = await fetch(url.toString(), {
-      next: { revalidate: 3600 } // Revalidate cache every hour
+      next: { revalidate: 3600 } // Revalidate cache every hour for Next.js fetch
     });
 
     if (!response.ok) {
       console.error(`Failed to fetch from TMDB endpoint: ${endpoint}`, await response.text());
-      // Instead of throwing, we'll return null to be handled gracefully.
       return null;
     }
     return response.json();
@@ -64,28 +64,59 @@ export async function getNowPlayingMovies(): Promise<Film[]> {
 }
 
 export async function getFilmDetails(id: string): Promise<FilmDetails | null> {
-  const data = await fetchFromTMDB<any>(`movie/${id}`, { append_to_response: 'credits,videos' });
-  
-  if (!data) {
-    return null;
-  }
+    const cacheKey = `film:${id}`;
 
-  const mainTrailer = data.videos?.results?.find((v: Video) => v.site === 'YouTube' && v.type === 'Trailer');
-  
-  return {
-      id: data.id.toString(),
-      title: data.title,
-      overview: data.overview,
-      poster_path: data.poster_path,
-      backdrop_path: data.backdrop_path,
-      release_date: data.release_date,
-      vote_average: data.vote_average,
-      genres: data.genres || [],
-      runtime: data.runtime,
-      cast: data.credits?.cast?.slice(0, 10) || [],
-      director: data.credits?.crew?.find((person: any) => person.job === 'Director'),
-      trailer: mainTrailer || null,
-  };
+    if (!redis.isOpen) {
+        await redis.connect().catch(err => console.error('Failed to connect to Redis for getFilmDetails:', err));
+    }
+    
+    try {
+        if (redis.isOpen) {
+            const cachedFilm = await redis.get(cacheKey);
+            if (cachedFilm) {
+                console.log(`CACHE HIT for film: ${id}`);
+                return JSON.parse(cachedFilm);
+            }
+        }
+    } catch (error) {
+        console.error("Redis GET error:", error);
+    }
+
+    console.log(`CACHE MISS for film: ${id}. Fetching from TMDB.`);
+    const data = await fetchFromTMDB<any>(`movie/${id}`, { append_to_response: 'credits,videos' });
+    
+    if (!data) {
+        return null;
+    }
+
+    const mainTrailer = data.videos?.results?.find((v: Video) => v.site === 'YouTube' && v.type === 'Trailer');
+    
+    const filmDetails: FilmDetails = {
+        id: data.id.toString(),
+        title: data.title,
+        overview: data.overview,
+        poster_path: data.poster_path,
+        backdrop_path: data.backdrop_path,
+        release_date: data.release_date,
+        vote_average: data.vote_average,
+        genres: data.genres || [],
+        runtime: data.runtime,
+        cast: data.credits?.cast?.slice(0, 10) || [],
+        director: data.credits?.crew?.find((person: any) => person.job === 'Director'),
+        trailer: mainTrailer || null,
+    };
+
+    try {
+        if (redis.isOpen) {
+            await redis.set(cacheKey, JSON.stringify(filmDetails), {
+                EX: CACHE_EXPIRATION_SECONDS
+            });
+        }
+    } catch (error) {
+        console.error("Redis SET error:", error);
+    }
+    
+    return filmDetails;
 }
 
 export async function searchFilms(query: string): Promise<Film[]> {
