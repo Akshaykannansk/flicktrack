@@ -1,6 +1,8 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
-  provider      = "prisma-client-js"
-  binaryTargets = ["native", "debian-openssl-3.0.x"]
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -9,30 +11,30 @@ datasource db {
 }
 
 model User {
-  id            String         @id
-  email         String         @unique
-  name          String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  journalEntries JournalEntry[]
-  watchlistItems WatchlistItem[]
-  lists         FilmList[]
+  id              String         @id
+  email           String         @unique
+  name            String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  journalEntries  JournalEntry[]
+  filmLists       FilmList[]
+  watchlistItems  WatchlistItem[]
+  favoriteFilms   Film[]         @relation("UserFavoriteFilms")
 }
 
 model Film {
-  id           Int            @id
-  title        String
-  overview     String?        @db.Text
-  posterPath   String?
-  releaseDate  DateTime?
-  voteAverage  Float?
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  id            Int              @id
+  title         String
+  overview      String?          @db.Text
+  posterPath    String?
+  releaseDate   DateTime?        @db.Date
+  voteAverage   Float?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
   journalEntries JournalEntry[]
-  watchlistedBy WatchlistItem[]
-  lists         FilmOnList[]
-
-  @@index([title])
+  filmLists     FilmOnList[]
+  watchlistItems WatchlistItem[]
+  favoritedBy   User[]           @relation("UserFavoriteFilms")
 }
 
 model JournalEntry {
@@ -41,56 +43,42 @@ model JournalEntry {
   filmId     Int
   rating     Float
   review     String?  @db.Text
-  loggedDate DateTime
+  loggedDate DateTime @db.Date
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  film Film @relation(fields: [filmId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  film       Film     @relation(fields: [filmId], references: [id], onDelete: Cascade)
 
   @@unique([userId, filmId, loggedDate])
-  @@index([userId])
-  @@index([filmId])
 }
 
 model WatchlistItem {
   userId    String
   filmId    Int
   addedAt   DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  film Film @relation(fields: [filmId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  film      Film     @relation(fields: [filmId], references: [id], onDelete: Cascade)
 
   @@id([userId, filmId])
-  @@index([userId])
-  @@index([filmId])
 }
 
 model FilmList {
   id          String       @id @default(cuid())
   name        String
-  description String?      @db.Text
+  description String?
   userId      String
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
-  isPublic    Boolean      @default(false)
-
-  user  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  films FilmOnList[]
-
-  @@index([userId])
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  films       FilmOnList[]
 }
 
 model FilmOnList {
   listId  String
   filmId  Int
   addedAt DateTime @default(now())
-
-  list FilmList @relation(fields: [listId], references: [id], onDelete: Cascade)
-  film Film     @relation(fields: [filmId], references: [id], onDelete: Cascade)
+  list    FilmList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  film    Film     @relation(fields: [filmId], references: [id], onDelete: Cascade)
 
   @@id([listId, filmId])
-  @@index([listId])
-  @@index([filmId])
 }
