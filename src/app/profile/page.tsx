@@ -8,7 +8,8 @@ import { FilmCard } from '@/components/film-card';
 import type { Film as FilmType } from '@/lib/types';
 import { currentUser } from '@clerk/nextjs/server';
 import prisma from '@/lib/prisma';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
+import { getFilmDetails } from '@/lib/tmdb';
 
 async function getUserStats(userId: string) {
     const userWithFavorites = await prisma.user.findUnique({
@@ -22,31 +23,35 @@ async function getUserStats(userId: string) {
 
     const journalCount = await prisma.journalEntry.count({ where: { userId } });
     const watchlistCount = await prisma.watchlistItem.count({ where: { userId } });
+
+    const favoriteFilmsDetails = await Promise.all(
+        userWithFavorites.favoriteFilms.map(film => getFilmDetails(film.id.toString()))
+    );
     
-    return { journalCount, watchlistCount, favoriteFilms: userWithFavorites.favoriteFilms };
+    // Filter out any null results in case a film wasn't found
+    const validFavoriteFilms = favoriteFilmsDetails.filter(Boolean) as FilmType[];
+
+    return { journalCount, watchlistCount, favoriteFilms: validFavoriteFilms };
 }
 
 
 export default async function ProfilePage() {
   const user = await currentUser();
   if (!user) {
-    // This should not happen due to middleware, but it's good practice
-    return <div>Not logged in</div>;
+    redirect("/sign-in");
   }
-  
+
   const stats = await getUserStats(user.id);
   
   if (!stats) {
-      // This could happen if the user from Clerk doesn't exist in our DB yet.
-      // A more robust solution would be to create the user here if they don't exist.
       await prisma.user.create({
           data: {
               id: user.id,
               email: user.emailAddresses[0]?.emailAddress ?? '',
               name: user.fullName
           }
-      });
-      // Rerun stats after creation
+      }).catch(e => console.error("Failed to create user on profile page", e));
+      
       const newStats = await getUserStats(user.id);
       if (!newStats) notFound();
       return <ProfileContent user={user} stats={newStats} />;
@@ -58,14 +63,6 @@ export default async function ProfilePage() {
 // Extracted to a new component to make the logic clearer
 function ProfileContent({ user, stats }: { user: NonNullable<Awaited<ReturnType<typeof currentUser>>>, stats: NonNullable<Awaited<ReturnType<typeof getUserStats>>> }) {
     const { journalCount, watchlistCount, favoriteFilms } = stats;
-
-    const favoriteFilmsTyped: FilmType[] = favoriteFilms.map(f => ({
-      ...f,
-      id: f.id.toString(),
-      poster_path: f.posterPath,
-      release_date: f.releaseDate ? f.releaseDate.toISOString() : null,
-      vote_average: f.voteAverage
-    }));
 
     return (
         <div className="space-y-8">
@@ -110,7 +107,7 @@ function ProfileContent({ user, stats }: { user: NonNullable<Awaited<ReturnType<
                 <h2 className="text-2xl font-headline font-semibold mb-4">Favorite Films</h2>
                 {favoriteFilms.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 md:gap-6">
-                    {favoriteFilmsTyped.map((film) => (
+                    {favoriteFilms.map((film) => (
                     <FilmCard key={film.id} film={film} />
                     ))}
                 </div>
