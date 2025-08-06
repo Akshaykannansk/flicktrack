@@ -38,7 +38,8 @@ export function FavoriteFilmsForm({ initialFavorites }: FavoriteFilmsFormProps) 
     try {
         const response = await fetch(`/api/search/suggestions?q=${encodeURIComponent(newQuery)}`);
         const data = await response.json();
-        setSearchResults(data);
+        const filmResults = data.films || [];
+        setSearchResults(filmResults);
     } catch (error) {
         console.error('Failed to fetch search suggestions:', error);
     } finally {
@@ -135,9 +136,10 @@ export function FavoriteFilmsForm({ initialFavorites }: FavoriteFilmsFormProps) 
                                 className="object-cover"
                                 sizes="25vw"
                                 />
-                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                                     <Button variant="destructive" size="icon" onClick={() => removeFilm(film.id)}>
                                         <X className="h-5 w-5" />
+                                        <span className="sr-only">Remove {film.title}</span>
                                     </Button>
                                 </div>
                             </div>

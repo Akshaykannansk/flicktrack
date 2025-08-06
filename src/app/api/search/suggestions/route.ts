@@ -24,6 +24,6 @@ export async function GET(request: Request) {
     return NextResponse.json(suggestions);
   } catch (error) {
     console.error('Failed to fetch search suggestions:', error);
-    return NextResponse.json({ error: 'Failed to fetch search suggestions' }, { status: 500 });
+    return NextResponse.json({ films: [], users: [] });
   }
 }

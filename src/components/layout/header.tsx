@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Film, Search, Loader2, User as UserIcon, Clapperboard } from 'lucide-react';
+import { Film, Search, Loader2, User as UserIcon, Clapperboard, Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,12 @@ import * as React from 'react';
 import type { Film as FilmType, PublicUser } from '@/lib/types';
 import Image from 'next/image';
 import { IMAGE_BASE_URL } from '@/lib/tmdb-isomorphic';
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from "@/components/ui/sheet"
+
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -33,6 +39,7 @@ export default function Header() {
   const [suggestions, setSuggestions] = React.useState<Suggestions>({ films: [], users: [] });
   const [isLoading, setIsLoading] = React.useState(false);
   const [isSuggestionsVisible, setIsSuggestionsVisible] = React.useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const searchContainerRef = React.useRef<HTMLDivElement>(null);
 
 
@@ -47,8 +54,9 @@ export default function Header() {
   }, []);
   
   React.useEffect(() => {
-    // Hide suggestions when navigating to a new page
+    // Hide suggestions and close mobile menu when navigating
     setIsSuggestionsVisible(false);
+    setIsMobileMenuOpen(false);
     setQuery('');
   }, [pathname]);
 
@@ -82,15 +90,46 @@ export default function Header() {
       setIsSuggestionsVisible(false);
     }
   };
+  
+  const MobileNav = () => (
+    <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+        <SheetTrigger asChild>
+            <Button variant="ghost" className="md:hidden">
+                <Menu className="h-6 w-6" />
+                <span className="sr-only">Open menu</span>
+            </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+            <nav className="flex flex-col gap-4 mt-8">
+                {navLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={cn(
+                    'text-lg font-medium transition-colors hover:text-primary',
+                    (pathname.startsWith(link.href) && link.href !== '/') || pathname === link.href ? 'text-primary font-semibold' : 'text-muted-foreground'
+                  )}
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+        </SheetContent>
+    </Sheet>
+  );
 
   return (
     <header className="bg-background/80 backdrop-blur-sm sticky top-0 z-50 border-b border-border">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          <div className="flex items-center space-x-8">
+          <div className="flex items-center space-x-4 md:space-x-8">
+            <div className="md:hidden">
+                <MobileNav />
+            </div>
             <Link href="/" className="flex items-center space-x-2">
               <Film className="w-8 h-8 text-primary" />
-              <span className="font-headline text-2xl font-bold text-primary-foreground">
+              <span className="font-headline text-2xl font-bold text-primary-foreground hidden sm:inline">
                 FlickTrack
               </span>
             </Link>
@@ -110,14 +149,14 @@ export default function Header() {
             </nav>
           </div>
           <div className="flex items-center space-x-4">
-            <div className="relative hidden md:block" ref={searchContainerRef}>
+            <div className="relative" ref={searchContainerRef}>
                 <form onSubmit={handleSearchSubmit}>
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                         type="search"
                         name="q"
-                        placeholder="Search films or users..."
-                        className="pl-10 w-64 bg-secondary focus:bg-background border-secondary"
+                        placeholder="Search..."
+                        className="pl-10 w-32 sm:w-64 bg-secondary focus:bg-background border-secondary"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                         onFocus={() => setIsSuggestionsVisible(true)}
