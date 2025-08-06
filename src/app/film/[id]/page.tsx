@@ -1,4 +1,5 @@
-import { getFilmDetails, IMAGE_BASE_URL } from '@/lib/tmdb';
+import { getFilmDetails } from '@/lib/tmdb';
+import { IMAGE_BASE_URL } from '@/lib/tmdb-isomorphic';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { Star, PlusCircle, Film as FilmIcon } from 'lucide-react';

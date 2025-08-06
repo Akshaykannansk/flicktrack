@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Star, BookOpen, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { IMAGE_BASE_URL } from '@/lib/tmdb';
+import { IMAGE_BASE_URL } from '@/lib/tmdb-isomorphic';
 import type { Film, LoggedFilm } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 

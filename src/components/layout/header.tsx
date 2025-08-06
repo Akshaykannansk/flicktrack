@@ -10,7 +10,7 @@ import { SignedIn, SignedOut, UserButton, useUser } from '@clerk/nextjs';
 import * as React from 'react';
 import type { Film as FilmType } from '@/lib/types';
 import Image from 'next/image';
-import { IMAGE_BASE_URL } from '@/lib/tmdb';
+import { IMAGE_BASE_URL } from '@/lib/tmdb-isomorphic';
 
 const navLinks = [
   { href: '/', label: 'Home' },

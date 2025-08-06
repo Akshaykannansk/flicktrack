@@ -6,7 +6,7 @@ import { List, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
-import { IMAGE_BASE_URL } from '@/lib/tmdb';
+import { IMAGE_BASE_URL } from '@/lib/tmdb-isomorphic';
 import type { Film as FilmType } from '@/lib/types';
 
 

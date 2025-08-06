@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Loader2, Search, X, Film as FilmIcon } from 'lucide-react';
 import Image from 'next/image';
-import { IMAGE_BASE_URL } from '@/lib/tmdb';
+import { IMAGE_BASE_URL } from '@/lib/tmdb-isomorphic';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 

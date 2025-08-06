@@ -2,7 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import type { Film } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
-import { IMAGE_BASE_URL } from '@/lib/tmdb';
+import { IMAGE_BASE_URL } from '@/lib/tmdb-isomorphic';
 import { Star } from 'lucide-react';
 
 interface FilmCardProps {

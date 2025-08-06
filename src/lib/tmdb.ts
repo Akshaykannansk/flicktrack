@@ -1,10 +1,9 @@
 import type { Film, FilmDetails, PaginatedResponse, Video } from './types';
 import redis from './redis';
+import { IMAGE_BASE_URL } from './tmdb-isomorphic';
 
 const API_BASE_URL = 'https://api.themoviedb.org/3';
 const API_KEY = process.env.TMDB_API_KEY;
-
-export const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/';
 
 const CACHE_EXPIRATION_SECONDS = 60 * 60 * 24; // 24 hours
 
