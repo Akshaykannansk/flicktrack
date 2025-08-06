@@ -1,3 +1,4 @@
+
 services:
   app:
     build:
@@ -22,6 +23,7 @@ services:
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=flicktrack
       - PORT=9002
+      - NODE_TLS_REJECT_UNAUTHORIZED=0
     env_file:
       - .env
 
