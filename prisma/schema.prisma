@@ -11,53 +11,64 @@ datasource db {
 }
 
 model User {
-  id              String           @id @default(cuid())
-  email           String           @unique
-  name            String?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  journalEntries  JournalEntry[]
-  watchlistItems  WatchlistItem[]
-  filmLists       FilmList[]
-  favoriteFilms   Film[]           @relation("UserFavoriteFilms")
+  id             String         @id
+  email          String         @unique
+  name           String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  journalEntries JournalEntry[]
+  watchlistItems WatchlistItem[]
+  lists          FilmList[]
+  favoriteFilms  Film[]         @relation("UserFavoriteFilms")
+
+  following Follows[] @relation("following")
+  followers Follows[] @relation("followers")
+}
+
+model Follows {
+  followerId  String
+  followingId String
+  follower    User   @relation("following", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User   @relation("followers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followingId])
 }
 
 model Film {
-  id            Int              @id
+  id            Int             @id
   title         String
-  overview      String?          @db.Text
+  overview      String?         @db.Text
   posterPath    String?
-  releaseDate   DateTime?        @db.Date
+  releaseDate   DateTime?
   voteAverage   Float?
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
   journalEntries JournalEntry[]
   watchlistItems WatchlistItem[]
   lists         FilmOnList[]
-  favoritedBy   User[]           @relation("UserFavoriteFilms")
+  favoritedBy   User[]          @relation("UserFavoriteFilms")
 }
 
 model JournalEntry {
-  id          String   @id @default(cuid())
-  userId      String
-  filmId      Int
-  rating      Float
-  review      String?  @db.Text
-  loggedDate  DateTime @db.Date
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  film        Film     @relation(fields: [filmId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  rating     Float
+  review     String?  @db.Text
+  loggedDate DateTime
+  createdAt  DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  film   Film   @relation(fields: [filmId], references: [id], onDelete: Cascade)
+  filmId Int
 
   @@unique([userId, filmId, loggedDate])
 }
 
 model WatchlistItem {
-  userId    String
-  filmId    Int
-  addedAt   DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  film      Film     @relation(fields: [filmId], references: [id], onDelete: Cascade)
+  userId  String
+  filmId  Int
+  addedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  film Film @relation(fields: [filmId], references: [id], onDelete: Cascade)
 
   @@id([userId, filmId])
 }
@@ -66,20 +77,21 @@ model FilmList {
   id          String       @id @default(cuid())
   name        String
   description String?      @db.Text
-  userId      String
-  isPublic    Boolean      @default(false)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  films       FilmOnList[]
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  films  FilmOnList[]
 }
 
 model FilmOnList {
-  listId    String
-  filmId    Int
-  addedAt   DateTime @default(now())
-  list      FilmList @relation(fields: [listId], references: [id], onDelete: Cascade)
-  film      Film     @relation(fields: [filmId], references: [id], onDelete: Cascade)
+  listId  String
+  filmId  Int
+  addedAt DateTime @default(now())
+
+  list FilmList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  film Film     @relation(fields: [filmId], references: [id], onDelete: Cascade)
 
   @@id([listId, filmId])
 }

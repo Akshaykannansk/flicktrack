@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { searchFilms } from '@/lib/tmdb';
+import { searchFilms, searchUsers } from '@/lib/tmdb';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -10,9 +10,17 @@ export async function GET(request: Request) {
   }
 
   try {
-    const films = await searchFilms(query);
-    // Limit to 5 suggestions for a cleaner UI
-    const suggestions = films.slice(0, 5);
+    const [films, users] = await Promise.all([
+      searchFilms(query),
+      searchUsers(query),
+    ]);
+    
+    // Limit to 5 suggestions for each for a cleaner UI
+    const suggestions = {
+        films: films.slice(0, 5),
+        users: users.slice(0, 5)
+    }
+
     return NextResponse.json(suggestions);
   } catch (error) {
     console.error('Failed to fetch search suggestions:', error);

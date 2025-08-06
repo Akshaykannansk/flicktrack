@@ -1,6 +1,8 @@
-import type { Film, FilmDetails, PaginatedResponse, Video } from './types';
+import type { Film, FilmDetails, PaginatedResponse, Video, PublicUser } from './types';
 import redis from './redis';
 import { IMAGE_BASE_URL } from './tmdb-isomorphic';
+import prisma from './prisma';
+import { clerkClient } from '@clerk/nextjs/server';
 
 const API_BASE_URL = 'https://api.themoviedb.org/3';
 const API_KEY = process.env.TMDB_API_KEY;
@@ -65,20 +67,23 @@ export async function getNowPlayingMovies(): Promise<Film[]> {
 export async function getFilmDetails(id: string): Promise<FilmDetails | null> {
     const cacheKey = `film:${id}`;
 
-    if (!redis.isOpen) {
-        await redis.connect().catch(err => console.error('Failed to connect to Redis for getFilmDetails:', err));
-    }
-    
     try {
-        if (redis.isOpen) {
-            const cachedFilm = await redis.get(cacheKey);
-            if (cachedFilm) {
-                console.log(`CACHE HIT for film: ${id}`);
-                return JSON.parse(cachedFilm);
-            }
+      if (!redis.isOpen) {
+        await redis.connect().catch(err => {
+            console.error('Failed to connect to Redis for getFilmDetails:', err);
+            // If connection fails, we can proceed without caching
+        });
+      }
+
+      if (redis.isOpen) {
+        const cachedFilm = await redis.get(cacheKey);
+        if (cachedFilm) {
+            console.log(`CACHE HIT for film: ${id}`);
+            return JSON.parse(cachedFilm);
         }
+      }
     } catch (error) {
-        console.error("Redis GET error:", error);
+        console.error("Redis GET error in getFilmDetails:", error);
     }
 
     console.log(`CACHE MISS for film: ${id}. Fetching from TMDB.`);
@@ -112,7 +117,7 @@ export async function getFilmDetails(id: string): Promise<FilmDetails | null> {
             });
         }
     } catch (error) {
-        console.error("Redis SET error:", error);
+        console.error("Redis SET error in getFilmDetails:", error);
     }
     
     return filmDetails;
@@ -122,4 +127,23 @@ export async function searchFilms(query: string): Promise<Film[]> {
   if (!query) return [];
   const data = await fetchFromTMDB<PaginatedResponse<any>>('search/movie', { query });
   return data?.results.map(transformFilmData) || [];
+}
+
+export async function searchUsers(query: string): Promise<PublicUser[]> {
+    if (!query) return [];
+
+    try {
+        const clerkUsers = await clerkClient.users.getUserList({ query, limit: 10 });
+
+        return clerkUsers.map(user => ({
+            id: user.id,
+            name: user.fullName,
+            username: user.username,
+            imageUrl: user.imageUrl,
+        }))
+
+    } catch (error) {
+        console.error("Failed to search users from Clerk:", error);
+        return [];
+    }
 }

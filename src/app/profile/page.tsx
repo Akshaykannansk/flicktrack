@@ -2,36 +2,44 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { User, Settings, Film } from 'lucide-react';
+import { Settings, Film as FilmIcon, UserPlus, UserCheck } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { FilmCard } from '@/components/film-card';
 import type { Film as FilmType } from '@/lib/types';
-import { currentUser } from '@clerk/nextjs/server';
+import { currentUser, User } from '@clerk/nextjs/server';
 import prisma from '@/lib/prisma';
 import { notFound, redirect } from 'next/navigation';
 import { getFilmDetails } from '@/lib/tmdb';
+import { FollowButton } from './follow-button';
 
 async function getUserStats(userId: string) {
-    const userWithFavorites = await prisma.user.findUnique({
+    const dbUser = await prisma.user.findUnique({
         where: { id: userId },
         include: {
-            favoriteFilms: true
+            favoriteFilms: true,
+            _count: {
+                select: {
+                    followers: true,
+                    following: true,
+                    journalEntries: true
+                }
+            }
         }
     });
 
-    if (!userWithFavorites) return null;
+    if (!dbUser) return null;
 
-    const journalCount = await prisma.journalEntry.count({ where: { userId } });
-    const watchlistCount = await prisma.watchlistItem.count({ where: { userId } });
+    const journalCount = dbUser._count.journalEntries;
+    const followersCount = dbUser._count.followers;
+    const followingCount = dbUser._count.following;
 
     const favoriteFilmsDetails = await Promise.all(
-        userWithFavorites.favoriteFilms.map(film => getFilmDetails(film.id.toString()))
+        dbUser.favoriteFilms.map(film => getFilmDetails(film.id.toString()))
     );
-    
-    // Filter out any null results in case a film wasn't found
+
     const validFavoriteFilms = favoriteFilmsDetails.filter(Boolean) as FilmType[];
 
-    return { journalCount, watchlistCount, favoriteFilms: validFavoriteFilms };
+    return { journalCount, followersCount, followingCount, favoriteFilms: validFavoriteFilms };
 }
 
 
@@ -41,28 +49,36 @@ export default async function ProfilePage() {
     redirect("/sign-in");
   }
 
+  // Upsert user in DB on their own profile visit
+   await prisma.user.upsert({
+        where: { id: user.id },
+        update: {},
+        create: {
+            id: user.id,
+            email: user.emailAddresses[0].emailAddress,
+            name: user.fullName,
+        }
+    });
+
   const stats = await getUserStats(user.id);
   
   if (!stats) {
-      await prisma.user.create({
-          data: {
-              id: user.id,
-              email: user.emailAddresses[0]?.emailAddress ?? '',
-              name: user.fullName
-          }
-      }).catch(e => console.error("Failed to create user on profile page", e));
-      
-      const newStats = await getUserStats(user.id);
-      if (!newStats) notFound();
-      return <ProfileContent user={user} stats={newStats} />;
+    notFound();
   }
   
-  return <ProfileContent user={user} stats={stats} />;
+  return <ProfilePageContent user={user} stats={stats} isCurrentUser={true} />;
 }
 
-// Extracted to a new component to make the logic clearer
-function ProfileContent({ user, stats }: { user: NonNullable<Awaited<ReturnType<typeof currentUser>>>, stats: NonNullable<Awaited<ReturnType<typeof getUserStats>>> }) {
-    const { journalCount, watchlistCount, favoriteFilms } = stats;
+
+interface ProfilePageContentProps {
+    user: User,
+    stats: NonNullable<Awaited<ReturnType<typeof getUserStats>>>,
+    isCurrentUser: boolean,
+    isFollowing?: boolean,
+}
+
+export function ProfilePageContent({ user, stats, isCurrentUser, isFollowing }: ProfilePageContentProps) {
+    const { journalCount, followersCount, followingCount, favoriteFilms } = stats;
 
     return (
         <div className="space-y-8">
@@ -82,21 +98,28 @@ function ProfileContent({ user, stats }: { user: NonNullable<Awaited<ReturnType<
                 <p className="text-muted-foreground mt-1">@{user.username || 'username'}</p>
                 <div className="flex justify-center md:justify-start space-x-4 text-sm text-muted-foreground mt-3">
                     <span><strong className="text-primary-foreground">{journalCount}</strong> Films</span>
-                    <span><strong className="text-primary-foreground">{watchlistCount}</strong> on Watchlist</span>
+                    <span><strong className="text-primary-foreground">{followersCount}</strong> Followers</span>
+                    <span><strong className="text-primary-foreground">{followingCount}</strong> Following</span>
                 </div>
                 <div className="flex justify-center md:justify-start gap-2 mt-4">
-                    <Button variant="outline" asChild>
-                    <Link href="/user-profile">
-                        <Settings className="mr-2 h-4 w-4" />
-                        Edit Profile
-                    </Link>
-                    </Button>
-                    <Button variant="outline" asChild>
-                    <Link href="/profile/edit">
-                        <Film className="mr-2 h-4 w-4" />
-                        Edit Favorites
-                    </Link>
-                    </Button>
+                    {isCurrentUser ? (
+                        <>
+                            <Button variant="outline" asChild>
+                                <Link href="/user-profile">
+                                    <Settings className="mr-2 h-4 w-4" />
+                                    Edit Profile
+                                </Link>
+                            </Button>
+                            <Button variant="outline" asChild>
+                                <Link href="/profile/edit">
+                                    <FilmIcon className="mr-2 h-4 w-4" />
+                                    Edit Favorites
+                                </Link>
+                            </Button>
+                        </>
+                    ) : (
+                       <FollowButton userId={user.id} initialIsFollowing={isFollowing!} />
+                    )}
                 </div>
                 </div>
             </div>
@@ -114,7 +137,7 @@ function ProfileContent({ user, stats }: { user: NonNullable<Awaited<ReturnType<
                 ) : (
                 <div className="text-center py-10 border-2 border-dashed rounded-lg">
                     <h3 className="text-lg font-semibold">No favorite films selected.</h3>
-                    <p className="text-muted-foreground mt-1">Edit your profile to add your top 4.</p>
+                    {isCurrentUser && <p className="text-muted-foreground mt-1">Edit your profile to add your top 4.</p>}
                 </div>
                 )}
             </div>
@@ -123,7 +146,7 @@ function ProfileContent({ user, stats }: { user: NonNullable<Awaited<ReturnType<
                 <h2 className="text-2xl font-headline font-semibold mb-4">Recent Activity</h2>
                 <Card>
                     <CardContent className="p-6">
-                        <p className="text-muted-foreground">Your recent journal entries will appear here. (Coming soon!)</p>
+                        <p className="text-muted-foreground">This user's recent journal entries will appear here. (Coming soon!)</p>
                     </CardContent>
                 </Card>
             </div>

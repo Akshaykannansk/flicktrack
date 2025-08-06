@@ -2,13 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Film, Search, Loader2 } from 'lucide-react';
+import { Film, Search, Loader2, User as UserIcon, Clapperboard } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { SignedIn, SignedOut, UserButton, useUser } from '@clerk/nextjs';
 import * as React from 'react';
-import type { Film as FilmType } from '@/lib/types';
+import type { Film as FilmType, PublicUser } from '@/lib/types';
 import Image from 'next/image';
 import { IMAGE_BASE_URL } from '@/lib/tmdb-isomorphic';
 
@@ -20,12 +20,17 @@ const navLinks = [
   { href: '/recommendations', label: 'For You' },
 ];
 
+interface Suggestions {
+    films: FilmType[];
+    users: PublicUser[];
+}
+
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useUser();
   const [query, setQuery] = React.useState('');
-  const [suggestions, setSuggestions] = React.useState<FilmType[]>([]);
+  const [suggestions, setSuggestions] = React.useState<Suggestions>({ films: [], users: [] });
   const [isLoading, setIsLoading] = React.useState(false);
   const [isSuggestionsVisible, setIsSuggestionsVisible] = React.useState(false);
   const searchContainerRef = React.useRef<HTMLDivElement>(null);
@@ -49,7 +54,7 @@ export default function Header() {
 
   React.useEffect(() => {
     if (query.length < 2) {
-      setSuggestions([]);
+      setSuggestions({ films: [], users: [] });
       return;
     }
 
@@ -61,7 +66,7 @@ export default function Header() {
         setSuggestions(data);
       } catch (error) {
         console.error('Failed to fetch search suggestions:', error);
-        setSuggestions([]);
+        setSuggestions({ films: [], users: [] });
       } finally {
         setIsLoading(false);
       }
@@ -111,7 +116,7 @@ export default function Header() {
                     <Input
                         type="search"
                         name="q"
-                        placeholder="Search films..."
+                        placeholder="Search films or users..."
                         className="pl-10 w-64 bg-secondary focus:bg-background border-secondary"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
@@ -125,27 +130,52 @@ export default function Header() {
                              <div className="flex items-center justify-center p-4">
                                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                              </div>
-                        ) : suggestions.length > 0 ? (
-                           <ul>
-                                {suggestions.map(film => (
-                                    <li key={film.id}>
-                                        <Link href={`/film/${film.id}`} className="flex items-center p-2 hover:bg-accent transition-colors rounded-md">
-                                             <div className="relative w-10 h-14 rounded overflow-hidden flex-shrink-0 bg-secondary">
-                                                {film.poster_path ? (
-                                                    <Image src={`${IMAGE_BASE_URL}w92${film.poster_path}`} alt={film.title} fill className="object-cover" sizes="40px" />
-                                                ) : (
-                                                    <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                                                        <Film className="w-6 h-6" />
+                        ) : (suggestions.films.length > 0 || suggestions.users.length > 0) ? (
+                           <ul className="space-y-2 p-2">
+                                {suggestions.films.length > 0 && (
+                                  <li>
+                                    <p className="px-2 text-xs font-semibold text-muted-foreground uppercase flex items-center gap-2"><Clapperboard className="w-4 h-4" /> Films</p>
+                                    <ul className="mt-1">
+                                        {suggestions.films.map(film => (
+                                            <li key={film.id}>
+                                                <Link href={`/film/${film.id}`} className="flex items-center p-2 hover:bg-accent transition-colors rounded-md">
+                                                    <div className="relative w-10 h-14 rounded overflow-hidden flex-shrink-0 bg-secondary">
+                                                        {film.poster_path ? (
+                                                            <Image src={`${IMAGE_BASE_URL}w92${film.poster_path}`} alt={film.title} fill className="object-cover" sizes="40px" />
+                                                        ) : (
+                                                            <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                                                                <Film className="w-6 h-6" />
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                )}
-                                             </div>
-                                             <div className="ml-3">
-                                                 <p className="text-sm font-semibold truncate">{film.title}</p>
-                                                 <p className="text-xs text-muted-foreground">{film.release_date ? new Date(film.release_date).getFullYear() : 'N/A'}</p>
-                                             </div>
-                                        </Link>
-                                    </li>
-                                ))}
+                                                    <div className="ml-3">
+                                                        <p className="text-sm font-semibold truncate">{film.title}</p>
+                                                        <p className="text-xs text-muted-foreground">{film.release_date ? new Date(film.release_date).getFullYear() : 'N/A'}</p>
+                                                    </div>
+                                                </Link>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                  </li>
+                                )}
+                                {suggestions.users.length > 0 && (
+                                     <li>
+                                        <p className="px-2 text-xs font-semibold text-muted-foreground uppercase flex items-center gap-2"><UserIcon className="w-4 h-4" /> Users</p>
+                                        <ul className="mt-1">
+                                            {suggestions.users.map(u => (
+                                                <li key={u.id}>
+                                                    <Link href={`/profile/${u.id}`} className="flex items-center p-2 hover:bg-accent transition-colors rounded-md">
+                                                        <Image src={u.imageUrl} alt={u.name || 'User avatar'} width={40} height={40} className="rounded-full" />
+                                                        <div className="ml-3">
+                                                            <p className="text-sm font-semibold truncate">{u.name}</p>
+                                                            <p className="text-xs text-muted-foreground">@{u.username}</p>
+                                                        </div>
+                                                    </Link>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                     </li>
+                                )}
                            </ul>
                         ) : (
                             <p className="p-4 text-sm text-muted-foreground text-center">No results found.</p>

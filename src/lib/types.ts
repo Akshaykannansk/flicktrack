@@ -83,3 +83,15 @@ export type FilmRecommendation = {
   filmTitle: string;
   reason: string;
 };
+
+export interface PublicUser {
+    id: string;
+    name: string | null;
+    username: string | null;
+    imageUrl: string;
+}
+
+export interface SearchResults {
+    films: Film[];
+    users: PublicUser[];
+}
