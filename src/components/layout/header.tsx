@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
+import * as React from 'react';
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -18,6 +19,15 @@ const navLinks = [
 
 export default function Header() {
   const pathname = usePathname();
+
+  const handleSearchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const query = formData.get('q') as string;
+    if (query) {
+      window.location.href = `/search?q=${encodeURIComponent(query)}`;
+    }
+  };
 
   return (
     <header className="bg-background/80 backdrop-blur-sm sticky top-0 z-50 border-b border-border">
@@ -46,10 +56,11 @@ export default function Header() {
             </nav>
           </div>
           <div className="flex items-center space-x-4">
-            <form className="relative hidden md:block">
+            <form className="relative hidden md:block" onSubmit={handleSearchSubmit}>
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
+                name="q"
                 placeholder="Search films..."
                 className="pl-10 w-64 bg-secondary focus:bg-background border-secondary"
               />
