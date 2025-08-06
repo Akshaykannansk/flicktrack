@@ -9,7 +9,7 @@ import { dark } from '@clerk/themes';
 export const metadata: Metadata = {
   title: 'FlickTrack',
   description: 'Your personal film journal.',
-  manifest: '/public/manifest.json',
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({
