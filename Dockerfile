@@ -16,6 +16,8 @@ RUN npm install
 # Copy the rest of the application's code
 COPY . .
 
+ENV PORT=9002
+
 # Generate Prisma Client
 RUN npm run build
 

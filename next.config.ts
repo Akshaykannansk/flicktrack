@@ -37,14 +37,14 @@ const nextConfig: NextConfig = {
             value: 'GET, POST, PUT, DELETE, OPTIONS',
           },
           {
-            key: 'Access-control-Allow-Headers',
+            key: 'Access-Control-Allow-Headers',
             value: 'X-Requested-With, Content-Type, Authorization',
           },
         ],
       },
     ];
   },
-  allowedDevOrigins: ["http://localhost:9002"],
+  allowedDevOrigins: ["9000-firebase-studio-1752943405409.cluster-sumfw3zmzzhzkx4mpvz3ogth4y.cloudworkstations.dev"],
 };
 
 export default nextConfig;
