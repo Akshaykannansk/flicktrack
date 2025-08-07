@@ -40,6 +40,11 @@ export async function GET(
                 name: true,
                 username: true,
             }
+        },
+        _count: {
+            select: {
+                likedBy: true
+            }
         }
       },
     });

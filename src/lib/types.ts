@@ -78,8 +78,16 @@ export interface FilmList {
   id: string;
   name: string;
   description: string;
-  films: { film: Film }[];
+  films: { film: Film | null }[];
   userId: string;
+  user: {
+    id: string;
+    name: string | null;
+    username: string | null;
+  };
+  _count: {
+    likedBy: number;
+  }
 }
 
 export interface LoggedFilm {

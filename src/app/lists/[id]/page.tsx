@@ -22,16 +22,19 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { LikeListButton } from '@/components/like-list-button';
+import { CopyListButton } from '@/components/copy-list-button';
 
 
 interface UserFilmSets {
     watchlistIds: Set<number>;
     likedIds: Set<number>;
+    likedListIds: Set<string>;
 }
 
 export default function ListDetailPage({ params }: { params: { id: string } }) {
   const [list, setList] = useState<FilmListType | null>(null);
-  const [userFilmSets, setUserFilmSets] = useState<UserFilmSets>({ watchlistIds: new Set(), likedIds: new Set() });
+  const [userFilmSets, setUserFilmSets] = useState<UserFilmSets>({ watchlistIds: new Set(), likedIds: new Set(), likedListIds: new Set() });
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,51 +42,59 @@ export default function ListDetailPage({ params }: { params: { id: string } }) {
   const { toast } = useToast();
   const router = useRouter();
 
-  useEffect(() => {
-    async function fetchListData() {
-        if (!params.id) return;
-        setIsLoading(true);
+  const fetchListData = async () => {
+    if (!params.id) return;
+    setIsLoading(true);
 
-        try {
-            // Fetch list details
-            const listResponse = await fetch(`/api/lists/${params.id}`);
-            if (listResponse.status === 404) {
-                notFound();
-                return;
-            }
-            if (!listResponse.ok) {
-                throw new Error('Failed to fetch list details.');
-            }
-            const listData: FilmListType = await listResponse.json();
-            setList(listData);
-
-            // Fetch user's watchlist and likes if logged in
-            if (user) {
-                const [watchlistRes, likesRes] = await Promise.all([
-                    fetch('/api/watchlist'),
-                    fetch('/api/films/likes')
-                ]);
-
-                let watchlistIds = new Set<number>();
-                if (watchlistRes.ok) {
-                    const watchlistData: { film: FilmType }[] = await watchlistRes.json();
-                    watchlistIds = new Set(watchlistData.map(item => parseInt(item.film.id, 10)));
-                }
-
-                let likedIds = new Set<number>();
-                if (likesRes.ok) {
-                    const likesData: { film: FilmType }[] = await likesRes.json();
-                    likedIds = new Set(likesData.map(item => parseInt(item.film.id, 10)));
-                }
-
-                setUserFilmSets({ watchlistIds, likedIds });
-            }
-        } catch (err: any) {
-            setError(err.message);
-        } finally {
-            setIsLoading(false);
+    try {
+        // Fetch list details
+        const listResponse = await fetch(`/api/lists/${params.id}`);
+        if (listResponse.status === 404) {
+            notFound();
+            return;
         }
+        if (!listResponse.ok) {
+            throw new Error('Failed to fetch list details.');
+        }
+        const listData: FilmListType = await listResponse.json();
+        setList(listData);
+
+        // Fetch user's watchlist and likes if logged in
+        if (user) {
+            const [watchlistRes, likesRes, likedListsRes] = await Promise.all([
+                fetch('/api/watchlist'),
+                fetch('/api/films/likes'),
+                fetch('/api/lists/likes')
+            ]);
+
+            let watchlistIds = new Set<number>();
+            if (watchlistRes.ok) {
+                const watchlistData: { film: FilmType }[] = await watchlistRes.json();
+                watchlistIds = new Set(watchlistData.map(item => parseInt(item.film.id, 10)));
+            }
+
+            let likedIds = new Set<number>();
+            if (likesRes.ok) {
+                const likesData: { film: FilmType }[] = await likesRes.json();
+                likedIds = new Set(likesData.map(item => parseInt(item.film.id, 10)));
+            }
+            
+            let likedListIds = new Set<string>();
+            if (likedListsRes.ok) {
+                const likedListsData: { listId: string }[] = await likedListsRes.json();
+                likedListIds = new Set(likedListsData.map(item => item.listId));
+            }
+
+            setUserFilmSets({ watchlistIds, likedIds, likedListIds });
+        }
+    } catch (err: any) {
+        setError(err.message);
+    } finally {
+        setIsLoading(false);
     }
+  }
+  
+  useEffect(() => {
     fetchListData();
   }, [params.id, user]);
   
@@ -149,11 +160,16 @@ export default function ListDetailPage({ params }: { params: { id: string } }) {
     <div className="space-y-8">
       <div>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex items-center space-x-3">
-              <List className="w-8 h-8 text-primary" />
-              <h1 className="text-4xl font-headline font-bold tracking-tighter">{list.name}</h1>
+            <div className="flex items-start flex-col">
+              <div className="flex items-center space-x-3">
+                <List className="w-8 h-8 text-primary" />
+                <h1 className="text-4xl font-headline font-bold tracking-tighter">{list.name}</h1>
+              </div>
+               <p className="text-muted-foreground mt-2">
+                    Created by <Link href={`/profile/${list.user.id}`} className="text-primary hover:underline">{list.user.name}</Link>
+                </p>
             </div>
-            {isOwner && (
+            {isOwner ? (
                 <div className="flex items-center gap-2">
                      <AlertDialog>
                         <AlertDialogTrigger asChild>
@@ -179,15 +195,23 @@ export default function ListDetailPage({ params }: { params: { id: string } }) {
                         </AlertDialogContent>
                     </AlertDialog>
                 </div>
+            ) : user && (
+               <div className="flex items-center gap-2">
+                  <LikeListButton listId={list.id} initialIsLiked={userFilmSets.likedListIds.has(list.id)} onLikeToggled={fetchListData} />
+                  <CopyListButton listId={list.id} />
+               </div>
             )}
         </div>
         <p className="text-muted-foreground mt-2 max-w-2xl">{list.description}</p>
-        <p className="text-sm text-muted-foreground mt-2">{list.films.length} {list.films.length === 1 ? 'film' : 'films'}</p>
+        <p className="text-sm text-muted-foreground mt-2">
+            {list.films.length} {list.films.length === 1 ? 'film' : 'films'} &bull; {list._count.likedBy} {list._count.likedBy === 1 ? 'like' : 'likes'}
+        </p>
       </div>
 
       {list.films.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
           {list.films.map(({ film }) => {
+              if (!film) return null;
               const filmId = parseInt(film.id, 10);
               return (
                 <FilmCard 

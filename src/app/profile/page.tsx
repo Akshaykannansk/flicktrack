@@ -71,6 +71,7 @@ async function getUserStats(userId: string) {
                     following: true,
                     journalEntries: true,
                     likes: true,
+                    likedLists: true,
                 }
             }
         }
@@ -81,7 +82,7 @@ async function getUserStats(userId: string) {
     const journalCount = dbUser._count.journalEntries;
     const followersCount = dbUser._count.followers;
     const followingCount = dbUser._count.following;
-    const likesCount = dbUser._count.likes;
+    const likesCount = dbUser._count.likes + dbUser._count.likedLists;
 
     const favoriteFilmsDetails = await Promise.all(
         dbUser.favoriteFilms.map(film => getFilmDetails(film.id.toString()))
@@ -304,5 +305,3 @@ export function ProfilePageContent({ user, stats, isCurrentUser, isFollowing }: 
         </div>
     );
 }
-
-    
