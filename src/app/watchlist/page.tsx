@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -14,13 +15,12 @@ interface WatchlistItem {
 
 interface UserFilmSets {
     watchlistIds: Set<number>;
-    favoriteIds: Set<number>;
     likedIds: Set<number>;
 }
 
 export default function WatchlistPage() {
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
-  const [userFilmSets, setUserFilmSets] = useState<UserFilmSets>({ watchlistIds: new Set(), favoriteIds: new Set(), likedIds: new Set() });
+  const [userFilmSets, setUserFilmSets] = useState<UserFilmSets>({ watchlistIds: new Set(), likedIds: new Set() });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,9 +28,8 @@ export default function WatchlistPage() {
     async function fetchWatchlistData() {
         setIsLoading(true);
         try {
-            const [watchlistRes, favoritesRes, likesRes] = await Promise.all([
+            const [watchlistRes, likesRes] = await Promise.all([
                 fetch('/api/watchlist'),
-                fetch('/api/profile/favorites'),
                 fetch('/api/films/likes')
             ]);
 
@@ -42,19 +41,13 @@ export default function WatchlistPage() {
             
             const watchlistIds = new Set(watchlistData.map(item => parseInt(item.film.id, 10)));
             
-            let favoriteIds = new Set<number>();
-            if (favoritesRes.ok) {
-                const favoritesData: FilmType[] = await favoritesRes.json();
-                favoriteIds = new Set(favoritesData.map(item => parseInt(item.id, 10)));
-            }
-            
             let likedIds = new Set<number>();
             if (likesRes.ok) {
                 const likesData: { film: FilmType }[] = await likesRes.json();
                 likedIds = new Set(likesData.map(item => parseInt(item.film.id, 10)));
             }
 
-            setUserFilmSets({ watchlistIds, favoriteIds, likedIds });
+            setUserFilmSets({ watchlistIds, likedIds });
 
         } catch (err: any) {
             setError(err.message);
@@ -105,7 +98,6 @@ export default function WatchlistPage() {
                     key={film.id} 
                     film={film} 
                     isInWatchlist={userFilmSets.watchlistIds.has(filmId)}
-                    isFavorite={userFilmSets.favoriteIds.has(filmId)}
                     isLiked={userFilmSets.likedIds.has(filmId)}
                 />
               )

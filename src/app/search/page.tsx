@@ -6,7 +6,7 @@ import type { Film, PublicUser } from '@/lib/types';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Card } from '@/components/ui/card';
-import { auth } from '@clerk/nextjs';
+import { auth } from '@clerk/nextjs/server';
 import prisma from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic'; // Ensure the page is re-rendered for each search
@@ -20,17 +20,13 @@ interface SearchPageProps {
 
 async function getUserFilmSets(userId: string | null) {
     if (!userId) {
-        return { watchlistIds: new Set<number>(), favoriteIds: new Set<number>(), likedIds: new Set<number>() };
+        return { watchlistIds: new Set<number>(), likedIds: new Set<number>() };
     }
 
-    const [watchlist, userWithFavorites, likes] = await Promise.all([
+    const [watchlist, likes] = await Promise.all([
         prisma.watchlistItem.findMany({
             where: { userId },
             select: { filmId: true }
-        }),
-        prisma.user.findUnique({
-            where: { id: userId },
-            select: { favoriteFilms: { select: { id: true } } }
         }),
         prisma.likedFilm.findMany({
             where: { userId },
@@ -39,10 +35,9 @@ async function getUserFilmSets(userId: string | null) {
     ]);
 
     const watchlistIds = new Set(watchlist.map(item => item.filmId));
-    const favoriteIds = new Set(userWithFavorites?.favoriteFilms.map(film => film.id) ?? []);
     const likedIds = new Set(likes.map(item => item.filmId));
 
-    return { watchlistIds, favoriteIds, likedIds };
+    return { watchlistIds, likedIds };
 }
 
 
@@ -53,7 +48,6 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     let films: Film[] = [];
     let users: PublicUser[] = [];
     let watchlistIds = new Set<number>();
-    let favoriteIds = new Set<number>();
     let likedIds = new Set<number>();
 
     if (query) {
@@ -65,7 +59,6 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       films = filmResults;
       users = userResults;
       watchlistIds = filmSets.watchlistIds;
-      favoriteIds = filmSets.favoriteIds;
       likedIds = filmSets.likedIds;
     }
 
@@ -95,7 +88,6 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                                             key={film.id} 
                                             film={film} 
                                             isInWatchlist={watchlistIds.has(filmId)}
-                                            isFavorite={favoriteIds.has(filmId)}
                                             isLiked={likedIds.has(filmId)}
                                         />
                                     )

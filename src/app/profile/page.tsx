@@ -1,5 +1,4 @@
 
-
 import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -127,7 +126,6 @@ interface ProfilePageContentProps {
 
 export function ProfilePageContent({ user, stats, isCurrentUser, isFollowing }: ProfilePageContentProps) {
     const { journalCount, followersCount, followingCount, likesCount, favoriteFilms, recentJournalEntries, watchlistIds, likedIds } = stats;
-    const favoriteFilmIds = new Set(favoriteFilms.map(f => parseInt(f.id, 10)));
 
     return (
         <div className="space-y-8">
@@ -187,7 +185,6 @@ export function ProfilePageContent({ user, stats, isCurrentUser, isFollowing }: 
                                 key={film.id} 
                                 film={film}
                                 isInWatchlist={watchlistIds.has(filmId)}
-                                isFavorite={favoriteFilmIds.has(filmId)}
                                 isLiked={likedIds.has(filmId)}
                             />
                         )
