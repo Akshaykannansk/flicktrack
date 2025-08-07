@@ -1,16 +1,23 @@
+
 import { FavoriteFilmsForm } from "@/components/favorite-films-form";
-import prisma from "@/lib/prisma";
+import { createClient } from "@/lib/supabase/server";
 import { auth } from "@clerk/nextjs/server";
 import { Film } from "lucide-react";
 import { redirect } from "next/navigation";
 
 
 async function getInitialFavorites(userId: string) {
-    const user = await prisma.user.findUnique({
-        where: { id: userId },
-        include: { favoriteFilms: true }
-    });
-    return user?.favoriteFilms ?? [];
+    const supabase = createClient();
+    const { data, error } = await supabase
+        .from('favorite_films')
+        .select('films(*)')
+        .eq('user_id', userId);
+
+    if (error) {
+        console.error("Error fetching initial favorites:", error);
+        return [];
+    }
+    return data.map(item => item.films);
 }
 
 export default async function EditProfilePage() {
@@ -23,9 +30,9 @@ export default async function EditProfilePage() {
     const typedFavorites = initialFavorites.map(f => ({
         ...f,
         id: f.id.toString(),
-        poster_path: f.posterPath,
-        release_date: f.releaseDate ? f.releaseDate.toISOString() : null,
-        vote_average: f.voteAverage
+        poster_path: f.poster_path,
+        release_date: f.release_date,
+        vote_average: f.vote_average
     }))
 
     return (

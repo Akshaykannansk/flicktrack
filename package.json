@@ -11,7 +11,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx supabase/seed.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^5.2.8",

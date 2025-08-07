@@ -9,7 +9,7 @@ import { FilmCard } from '@/components/film-card';
 import type { Film as FilmType } from '@/lib/types';
 import { currentUser } from '@clerk/nextjs/server';
 import type { User } from '@clerk/nextjs/api';
-import prisma from '@/lib/prisma';
+import { createClient } from '@/lib/supabase/server';
 import { notFound, redirect } from 'next/navigation';
 import { getFilmDetails as getFilmDetailsFromTMDB } from '@/lib/tmdb';
 import { FollowButton } from './follow-button';
@@ -62,78 +62,61 @@ async function getFilmDetails(id: string): Promise<FilmDetails | null> {
 
 
 async function getUserStats(userId: string) {
-    const dbUser = await prisma.user.findUnique({
-        where: { id: userId },
-        include: {
-            favoriteFilms: true,
-            _count: {
-                select: {
-                    followers: true,
-                    following: true,
-                    journalEntries: true,
-                    likes: true,
-                    likedLists: true,
-                }
-            }
-        }
-    });
-
-    if (!dbUser) return null;
-
-    const journalCount = dbUser._count.journalEntries;
-    const followersCount = dbUser._count.followers;
-    const followingCount = dbUser._count.following;
-    const likesCount = dbUser._count.likes + dbUser._count.likedLists;
-
-    const favoriteFilmsDetails = await Promise.all(
-        dbUser.favoriteFilms.map(film => getFilmDetails(film.id.toString()))
-    );
-
-    const validFavoriteFilms = favoriteFilmsDetails.filter(Boolean) as FilmType[];
+    const supabase = createClient();
     
-    const [watchlist, likes] = await Promise.all([
-      prisma.watchlistItem.findMany({
-          where: { userId },
-          select: { filmId: true }
-      }),
-      prisma.likedFilm.findMany({
-          where: { userId },
-          select: { filmId: true }
-      })
+    const { data: dbUser, error } = await supabase
+      .from('users')
+      .select(`
+        *,
+        followers:follows!following_id(count),
+        following:follows!follower_id(count),
+        journal_entries(count),
+        liked_films(count),
+        liked_lists(count),
+        favorite_films:favorite_films(films(*))
+      `)
+      .eq('id', userId)
+      .single();
+
+    if (error || !dbUser) {
+        console.error("Error getting user stats from Supabase:", error);
+        return null;
+    }
+
+    const journalCount = dbUser.journal_entries[0]?.count || 0;
+    const followersCount = dbUser.followers[0]?.count || 0;
+    const followingCount = dbUser.following[0]?.count || 0;
+    const likesCount = (dbUser.liked_films[0]?.count || 0) + (dbUser.liked_lists[0]?.count || 0);
+    const favoriteFilms = dbUser.favorite_films.map(fav => fav.films) as FilmType[];
+    
+    const [watchlistRes, likesRes, recentJournalRes] = await Promise.all([
+      supabase.from('watchlist_items').select('film_id').eq('user_id', userId),
+      supabase.from('liked_films').select('film_id').eq('user_id', userId),
+      supabase.from('journal_entries').select('*, films(*)').eq('user_id', userId).order('logged_date', { ascending: false }).limit(10)
     ]);
-
-    const watchlistIds = new Set(watchlist.map(item => item.filmId));
-    const likedIds = new Set(likes.map(item => item.filmId));
-
-    const recentJournalEntries = await prisma.journalEntry.findMany({
-        where: { userId },
-        take: 10,
-        orderBy: { loggedDate: 'desc' },
-        include: { film: true }
-    });
+    
+    const watchlistIds = new Set(watchlistRes.data?.map(item => item.film_id));
+    const likedIds = new Set(likesRes.data?.map(item => item.film_id));
 
     return { 
         journalCount, 
         followersCount, 
         followingCount,
         likesCount, 
-        favoriteFilms: validFavoriteFilms,
+        favoriteFilms,
         watchlistIds,
         likedIds,
-        recentJournalEntries: recentJournalEntries.map(entry => ({
+        recentJournalEntries: recentJournalRes.data?.map(entry => ({
             id: entry.id,
             film: {
-                id: entry.film.id.toString(),
-                title: entry.film.title,
-                poster_path: entry.film.posterPath,
-                release_date: entry.film.releaseDate ? new Date(entry.film.releaseDate).toISOString() : '',
-                vote_average: entry.film.voteAverage,
-                overview: entry.film.overview,
+                ...entry.films,
+                id: entry.films.id.toString(),
+                poster_path: entry.films.poster_path,
             },
             rating: entry.rating,
             review: entry.review || undefined,
-            loggedDate: entry.loggedDate.toISOString()
-        }))
+            loggedDate: entry.logged_date
+        })) || []
     };
 }
 
@@ -143,21 +126,17 @@ export default async function ProfilePage() {
   if (!user) {
     redirect("/sign-in");
   }
+  const supabase = createClient();
 
-  // Upsert user in DB on their own profile visit
-   const dbUser = await prisma.user.upsert({
-        where: { id: user.id },
-        update: {
-            bio: (user.publicMetadata.bio as string) ?? null,
-        },
-        create: {
-            id: user.id,
-            email: user.emailAddresses[0].emailAddress,
-            name: user.fullName,
-            username: user.username,
-            bio: (user.publicMetadata.bio as string) ?? null,
-        }
-    });
+   // Upsert user in DB on their own profile visit
+   const { data: dbUser, error } = await supabase.from('users').upsert({
+        id: user.id,
+        email: user.emailAddresses[0].emailAddress,
+        name: user.fullName,
+        username: user.username,
+        image_url: user.imageUrl,
+        bio: (user.publicMetadata.bio as string) ?? null,
+    }).select('bio').single();
 
   const stats = await getUserStats(user.id);
   
@@ -167,7 +146,7 @@ export default async function ProfilePage() {
 
   const userWithBio = {
       ...user,
-      bio: dbUser.bio,
+      bio: dbUser?.bio || null,
   }
   
   return <ProfilePageContent user={userWithBio} stats={stats} isCurrentUser={true} />;

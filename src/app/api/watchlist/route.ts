@@ -1,7 +1,15 @@
+
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { createClient } from '@/lib/supabase/server';
 import { z } from 'zod';
 import { auth } from '@clerk/nextjs/server';
+
+async function upsertFilm(supabase: ReturnType<typeof createClient>, filmId: number) {
+    const { error } = await supabase
+      .from('films')
+      .upsert({ id: filmId, title: 'Unknown Film' }, { onConflict: 'id' });
+    if (error) throw error;
+}
 
 // GET all watchlist items for the user
 export async function GET(request: Request) {
@@ -11,24 +19,23 @@ export async function GET(request: Request) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
     
-    const watchlistItems = await prisma.watchlistItem.findMany({
-      where: { userId: userId },
-      include: {
-        film: true,
-      },
-      orderBy: {
-        addedAt: 'desc',
-      },
-    });
+    const supabase = createClient();
+    const { data: watchlistItems, error } = await supabase
+      .from('watchlist_items')
+      .select('films(*)')
+      .eq('user_id', userId)
+      .order('added_at', { ascending: false });
+
+    if (error) throw error;
 
     const responseData = watchlistItems.map(item => ({
       film: {
-        id: item.film.id.toString(),
-        title: item.film.title,
-        poster_path: item.film.posterPath,
-        release_date: item.film.releaseDate,
-        vote_average: item.film.voteAverage,
-        overview: item.film.overview,
+        id: item.films.id.toString(),
+        title: item.films.title,
+        poster_path: item.films.poster_path,
+        release_date: item.films.release_date,
+        vote_average: item.films.vote_average,
+        overview: item.films.overview,
       }
     }));
     
@@ -59,30 +66,25 @@ export async function POST(request: Request) {
     }
     
     const { filmId } = validation.data;
+    const supabase = createClient();
     
-    await prisma.film.upsert({
-      where: { id: filmId },
-      update: {},
-      create: {
-        id: filmId,
-        title: 'Unknown Film', // You might want to fetch this from TMDB
-      },
-    });
+    await upsertFilm(supabase, filmId);
 
+    const { data: newItem, error } = await supabase.from('watchlist_items').insert({
+      user_id: userId,
+      film_id: filmId,
+    }).select().single();
 
-    const newItem = await prisma.watchlistItem.create({
-      data: {
-        userId: userId,
-        filmId,
-      },
-    });
+    if (error) {
+      if (error.code === '23505') { // unique constraint
+        return NextResponse.json({ error: 'Film is already in the watchlist' }, { status: 409 });
+      }
+      throw error;
+    }
 
     return NextResponse.json(newItem, { status: 201 });
   } catch (error: any) {
     console.error('Failed to add to watchlist:', error);
-    if (error.code === 'P2002') { // Unique constraint failed
-        return NextResponse.json({ error: 'Film is already in the watchlist' }, { status: 409 });
-    }
     return NextResponse.json({ error: 'Failed to add to watchlist' }, { status: 500 });
   }
 }
@@ -103,22 +105,18 @@ export async function DELETE(request: Request) {
     }
     
     const { filmId } = validation.data;
+    const supabase = createClient();
 
-    await prisma.watchlistItem.delete({
-      where: {
-        userId_filmId: {
-          userId: userId,
-          filmId,
-        },
-      },
+    const { error } = await supabase.from('watchlist_items').delete().match({
+        user_id: userId,
+        film_id: filmId
     });
+
+    if (error) throw error;
 
     return new NextResponse(null, { status: 204 }); // No Content
   } catch (error: any) {
     console.error('Failed to remove from watchlist:', error);
-     if (error.code === 'P2025') { // Record to delete not found
-      return new NextResponse(null, { status: 204 }); // Already deleted, success.
-    }
     return NextResponse.json({ error: 'Failed to remove from watchlist' }, { status: 500 });
   }
 }

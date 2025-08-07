@@ -1,5 +1,6 @@
+
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { createClient } from '@/lib/supabase/server';
 import { auth } from '@clerk/nextjs/server';
 import { z } from 'zod';
 import { getFilmDetails } from '@/lib/tmdb';
@@ -14,20 +15,25 @@ export async function GET() {
   if (!userId) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
+  const supabase = createClient();
 
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: {
-        favoriteFilms: true,
-      },
-    });
+    const { data: user, error } = await supabase
+      .from('users')
+      .select(`
+        favorite_films: favorite_films(
+          film_id,
+          films(*)
+        )
+      `)
+      .eq('id', userId)
+      .single();
 
-    if (!user) {
+    if (error || !user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    return NextResponse.json(user.favoriteFilms);
+    return NextResponse.json(user.favorite_films.map(fav => fav.films));
   } catch (error) {
     console.error('Failed to fetch favorite films:', error);
     return NextResponse.json({ error: 'Failed to fetch favorite films' }, { status: 500 });
@@ -40,6 +46,7 @@ export async function POST(request: Request) {
   if (!userId) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
+  const supabase = createClient();
 
   try {
     const body = await request.json();
@@ -55,41 +62,41 @@ export async function POST(request: Request) {
     for (const filmId of filmIds) {
         const filmDetails = await getFilmDetails(filmId.toString());
         if (filmDetails) {
-            await prisma.film.upsert({
-                where: { id: filmId },
-                update: {
-                    title: filmDetails.title,
-                    overview: filmDetails.overview,
-                    posterPath: filmDetails.poster_path,
-                    releaseDate: filmDetails.release_date ? new Date(filmDetails.release_date) : null,
-                    voteAverage: filmDetails.vote_average,
-                },
-                create: {
-                    id: filmId,
-                    title: filmDetails.title,
-                    overview: filmDetails.overview,
-                    posterPath: filmDetails.poster_path,
-                    releaseDate: filmDetails.release_date ? new Date(filmDetails.release_date) : null,
-                    voteAverage: filmDetails.vote_average,
-                },
+            const { error } = await supabase.from('films').upsert({
+                id: filmId,
+                title: filmDetails.title,
+                overview: filmDetails.overview,
+                poster_path: filmDetails.poster_path,
+                release_date: filmDetails.release_date ? new Date(filmDetails.release_date) : null,
+                vote_average: filmDetails.vote_average,
             });
+            if (error) console.error("Error upserting film:", error);
         }
     }
     
-    // Update user's favorite films
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: {
-        favoriteFilms: {
-          set: filmIds.map(id => ({ id })),
-        },
-      },
-      include: {
-        favoriteFilms: true
-      }
-    });
+    // Update user's favorite films (delete all, then re-add)
+    const { error: deleteError } = await supabase
+      .from('favorite_films')
+      .delete()
+      .eq('user_id', userId);
 
-    return NextResponse.json(updatedUser.favoriteFilms, { status: 200 });
+    if (deleteError) throw deleteError;
+
+    if (filmIds.length > 0) {
+        const { error: insertError } = await supabase
+            .from('favorite_films')
+            .insert(filmIds.map(id => ({ user_id: userId, film_id: id })));
+        if (insertError) throw insertError;
+    }
+
+    const { data: favorite_films, error: finalFetchError } = await supabase
+      .from('favorite_films')
+      .select('films(*)')
+      .eq('user_id', userId);
+
+    if (finalFetchError) throw finalFetchError;
+
+    return NextResponse.json(favorite_films.map(fav => fav.films), { status: 200 });
   } catch (error) {
     console.error('Failed to update favorite films:', error);
     return NextResponse.json({ error: 'Failed to update favorite films' }, { status: 500 });

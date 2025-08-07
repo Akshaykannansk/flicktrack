@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { createClient } from '@/lib/supabase/server';
 import { auth } from '@clerk/nextjs/server';
 
 // POST to like a review
@@ -14,31 +14,36 @@ export async function POST(
   }
 
   const journalEntryId = params.id;
+  const supabase = createClient();
 
   try {
-    // Check if the user owns the review
-    const journalEntry = await prisma.journalEntry.findUnique({
-        where: { id: journalEntryId },
-        select: { userId: true }
-    });
+    const { data: journalEntry, error: findError } = await supabase
+      .from('journal_entries')
+      .select('user_id')
+      .eq('id', journalEntryId)
+      .single();
 
-    if (journalEntry?.userId === userId) {
+    if (findError || !journalEntry) throw findError;
+
+    if (journalEntry.user_id === userId) {
         return NextResponse.json({ error: 'You cannot like your own review.' }, { status: 400 });
     }
 
-    await prisma.reviewLike.create({
-      data: {
-        userId,
-        journalEntryId,
-      },
+    const { error: insertError } = await supabase.from('review_likes').insert({
+      user_id: userId,
+      journal_entry_id: journalEntryId,
     });
+
+    if (insertError) {
+        if (insertError.code === '23505') { // Unique constraint
+            return NextResponse.json({ error: 'You have already liked this review.' }, { status: 409 });
+        }
+        throw insertError;
+    }
 
     return NextResponse.json({ message: 'Successfully liked review.' }, { status: 201 });
   } catch (error: any) {
     console.error('Failed to like review:', error);
-    if (error.code === 'P2002') { // Unique constraint failed
-        return NextResponse.json({ error: 'You have already liked this review.' }, { status: 409 });
-    }
     return NextResponse.json({ error: 'Failed to like review.' }, { status: 500 });
   }
 }
@@ -54,23 +59,19 @@ export async function DELETE(
   }
 
   const journalEntryId = params.id;
+  const supabase = createClient();
 
   try {
-    await prisma.reviewLike.delete({
-      where: {
-        userId_journalEntryId: {
-          userId,
-          journalEntryId,
-        },
-      },
+    const { error } = await supabase.from('review_likes').delete().match({
+      user_id: userId,
+      journal_entry_id: journalEntryId,
     });
+
+    if (error) throw error;
 
     return new NextResponse(null, { status: 204 }); // No Content
   } catch (error: any) {
      console.error('Failed to unlike review:', error);
-     if (error.code === 'P2025') { // Record to delete not found
-        return new NextResponse(null, { status: 204 }); // Already unliked, success.
-    }
-    return NextResponse.json({ error: 'Failed to unlike review.' }, { status: 500 });
+     return NextResponse.json({ error: 'Failed to unlike review.' }, { status: 500 });
   }
 }

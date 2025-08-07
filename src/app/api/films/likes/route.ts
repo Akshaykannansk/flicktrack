@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { createClient } from '@/lib/supabase/server';
 import { auth } from '@clerk/nextjs/server';
 
 // GET all liked films for the user
@@ -11,24 +11,23 @@ export async function GET(request: Request) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
     
-    const likedFilms = await prisma.likedFilm.findMany({
-      where: { userId: userId },
-      include: {
-        film: true,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+    const supabase = createClient();
+    const { data: likedFilms, error } = await supabase
+      .from('liked_films')
+      .select('films(*)')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
 
+    if (error) throw error;
+    
     const responseData = likedFilms.map(item => ({
       film: {
-        id: item.film.id.toString(),
-        title: item.film.title,
-        poster_path: item.film.posterPath,
-        release_date: item.film.releaseDate,
-        vote_average: item.film.voteAverage,
-        overview: item.film.overview,
+        id: item.films.id.toString(),
+        title: item.films.title,
+        poster_path: item.films.poster_path,
+        release_date: item.films.release_date,
+        vote_average: item.films.vote_average,
+        overview: item.films.overview,
       }
     }));
     

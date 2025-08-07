@@ -8,7 +8,7 @@ import type { Film, PublicUser } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from './ui/button';
 import { auth } from '@clerk/nextjs/server';
-import prisma from '@/lib/prisma';
+import { createClient } from '@/lib/supabase/server';
 import { LikeReviewButton } from './like-review-button';
 import { Comments } from './comments';
 
@@ -18,12 +18,10 @@ interface FeedEntry {
   user: PublicUser;
   rating: number;
   review: string | null;
-  loggedDate: string;
-  _count: {
-    likedBy: number;
-    comments: number;
-  };
-  likedBy: { userId: string }[];
+  logged_date: string;
+  liked_by_user: { user_id: string }[];
+  review_likes_count: number;
+  comments_count: number;
 }
 
 export const FeedSkeleton = () => (
@@ -57,68 +55,33 @@ async function getFeed(): Promise<FeedEntry[]> {
     if (!userId) {
         return [];
     }
+    const supabase = createClient();
 
-    const follows = await prisma.follows.findMany({
-      where: { followerId: userId },
-      select: { followingId: true },
-    });
+    const { data: follows, error: followsError } = await supabase
+        .from('follows')
+        .select('following_id')
+        .eq('follower_id', userId);
 
-    const followingIds = follows.map(f => f.followingId);
+    if (followsError) {
+        console.error("Error fetching follows:", followsError);
+        return [];
+    }
+
+    const followingIds = follows.map(f => f.following_id);
 
     if (followingIds.length === 0) {
       return [];
     }
+    
+    const { data, error } = await supabase
+      .rpc('get_feed_for_user', { p_user_id: userId, p_following_ids: followingIds });
 
-    const feedEntries = await prisma.journalEntry.findMany({
-      where: {
-        userId: {
-          in: followingIds,
-        },
-      },
-      include: {
-        film: true,
-        user: {
-            select: {
-                id: true,
-                name: true,
-                username: true,
-                imageUrl: true,
-            }
-        },
-        _count: {
-          select: { likedBy: true, comments: true },
-        },
-        likedBy: {
-          where: { userId: userId },
-          select: { userId: true },
-        },
-      },
-      orderBy: {
-        loggedDate: 'desc',
-      },
-      take: 20, 
-    });
-
-     const responseData: FeedEntry[] = feedEntries.map(entry => ({
-        ...entry,
-        loggedDate: entry.loggedDate.toISOString(),
-        film: {
-          id: entry.film.id.toString(),
-          title: entry.film.title,
-          overview: entry.film.overview,
-          poster_path: entry.film.posterPath,
-          release_date: entry.film.releaseDate ? entry.film.releaseDate.toISOString() : null,
-          vote_average: entry.film.voteAverage,
-        },
-        user: {
-            id: entry.user.id,
-            name: entry.user.name,
-            username: entry.user.username,
-            imageUrl: entry.user.imageUrl,
-        }
-    }));
-
-    return responseData;
+    if (error) {
+        console.error("Error fetching feed:", error);
+        return [];
+    }
+    
+    return data as FeedEntry[];
 }
 
 
@@ -153,12 +116,12 @@ export async function FollowingFeed() {
                             <Image src={entry.user.imageUrl} alt={entry.user.name || 'avatar'} width={40} height={40} className="rounded-full" />
                          </Link>
                          <div>
-                            <p className="text-sm font-semibold text-primary-foreground">
+                            <p className="text-sm font-semibold text-foreground">
                                 <Link href={`/profile/${entry.user.id}`} className="hover:text-primary transition-colors">{entry.user.name}</Link>
                                 <span className="text-muted-foreground font-normal ml-1.5">logged a film</span>
                             </p>
                             <p className="text-xs text-muted-foreground">
-                                {new Date(entry.loggedDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+                                {new Date(entry.logged_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
                             </p>
                          </div>
                     </div>
@@ -199,13 +162,13 @@ export async function FollowingFeed() {
                             {entry.user.id !== userId && (
                                 <LikeReviewButton 
                                     journalEntryId={entry.id}
-                                    initialIsLiked={entry.likedBy.length > 0}
-                                    initialLikeCount={entry._count.likedBy}
+                                    initialIsLiked={!!entry.liked_by_user}
+                                    initialLikeCount={entry.review_likes_count}
                                 />
                             )}
                              <Comments 
                                 journalEntryId={entry.id}
-                                initialCommentCount={entry._count.comments}
+                                initialCommentCount={entry.comments_count}
                             />
                         </div>
                    </CardFooter>

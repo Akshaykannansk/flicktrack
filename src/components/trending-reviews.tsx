@@ -5,13 +5,11 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Star, MessageSquare } from 'lucide-react';
 import { IMAGE_BASE_URL } from '@/lib/tmdb-isomorphic';
 import type { Film, PublicUser } from '@/lib/types';
-import { FeedSkeleton } from './following-feed';
-import { Button } from './ui/button';
+import { CardDescription } from './ui/card';
 import { auth } from '@clerk/nextjs/server';
 import { LikeReviewButton } from './like-review-button';
-import prisma from '@/lib/prisma';
+import { createClient } from '@/lib/supabase/server';
 import { Comments } from './comments';
-
 
 interface TrendingReviewEntry {
   id: string;
@@ -19,68 +17,24 @@ interface TrendingReviewEntry {
   user: PublicUser;
   rating: number;
   review: string | null;
-  createdAt: string;
-  _count: {
-    likedBy: number;
-    comments: number;
-  };
-  likedBy: { userId: string }[];
+  created_at: string;
+  liked_by_user: { user_id: string }[];
+  review_likes_count: number;
+  comments_count: number;
 }
+
 
 async function getTrendingReviews(): Promise<TrendingReviewEntry[]> {
   const { userId } = auth();
+  const supabase = createClient();
   
   try {
-    const trendingReviews = await prisma.journalEntry.findMany({
-      where: {
-        review: {
-          not: null, 
-          not: '',
-        },
-      },
-      include: {
-        film: true,
-        user: {
-          select: {
-            id: true,
-            name: true,
-            username: true,
-            imageUrl: true,
-          },
-        },
-        _count: {
-          select: { likedBy: true, comments: true },
-        },
-        likedBy: {
-          where: { userId: userId || '' },
-          select: { userId: true },
-        },
-      },
-      orderBy: {
-        createdAt: 'desc', 
-      },
-      take: 10,
-    });
+    const { data, error } = await supabase
+        .rpc('get_trending_reviews', { p_user_id: userId });
 
-    const responseData: TrendingReviewEntry[] = trendingReviews.map((entry: any) => ({
-        ...entry,
-        createdAt: entry.createdAt.toISOString(),
-        film: {
-          id: entry.film.id.toString(),
-          title: entry.film.title,
-          overview: entry.film.overview,
-          poster_path: entry.film.posterPath,
-          release_date: entry.film.releaseDate ? entry.film.releaseDate.toISOString() : null,
-          vote_average: entry.film.voteAverage,
-        },
-        user: {
-            id: entry.user.id,
-            name: entry.user.name,
-            username: entry.user.username,
-            imageUrl: entry.user.imageUrl,
-        }
-    }));
-    return responseData;
+    if (error) throw error;
+    
+    return data as TrendingReviewEntry[];
   } catch (error) {
     console.error('Failed to fetch trending reviews:', error);
     return [];
@@ -94,8 +48,8 @@ export async function TrendingReviews() {
   if (reviews.length === 0) {
     return (
        <Card className="bg-secondary/30">
-          <CardContent className="p-8 text-center text-muted-foreground">
-            <p>No recent reviews to show right now. Check back later!</p>
+          <CardContent className="p-8 text-center">
+            <CardDescription>No recent reviews to show right now. Check back later!</CardDescription>
           </CardContent>
        </Card>
     )
@@ -113,12 +67,12 @@ export async function TrendingReviews() {
                             <Image src={entry.user.imageUrl} alt={entry.user.name || 'avatar'} width={40} height={40} className="rounded-full" />
                          </Link>
                          <div>
-                            <p className="text-sm font-semibold text-primary-foreground">
+                            <p className="text-sm font-semibold text-foreground">
                                 <Link href={`/profile/${entry.user.id}`} className="hover:text-primary transition-colors">{entry.user.name}</Link>
                                 <span className="text-muted-foreground font-normal ml-1.5">reviewed a film</span>
                             </p>
                             <p className="text-xs text-muted-foreground">
-                                {new Date(entry.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+                                {new Date(entry.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
                             </p>
                          </div>
                     </div>
@@ -159,13 +113,13 @@ export async function TrendingReviews() {
                             {entry.user.id !== userId && (
                                 <LikeReviewButton 
                                     journalEntryId={entry.id}
-                                    initialIsLiked={entry.likedBy.length > 0}
-                                    initialLikeCount={entry._count.likedBy}
+                                    initialIsLiked={!!entry.liked_by_user}
+                                    initialLikeCount={entry.review_likes_count}
                                 />
                             )}
                              <Comments 
                                 journalEntryId={entry.id}
-                                initialCommentCount={entry._count.comments}
+                                initialCommentCount={entry.comments_count}
                             />
                         </div>
                    </CardFooter>

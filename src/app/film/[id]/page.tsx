@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { LogFilmDialog } from '@/components/log-film-dialog';
 import { WatchlistButton } from '@/components/watchlist-button';
-import prisma from '@/lib/prisma';
+import { createClient } from '@/lib/supabase/server';
 import redis from '@/lib/redis';
 import { auth } from '@clerk/nextjs/server';
 import type { FilmDetails } from '@/lib/types';
@@ -63,16 +63,16 @@ async function getWatchlistStatus(filmId: number) {
   if (!userId) {
     return false;
   }
+  const supabase = createClient();
   
-  const watchlistItem = await prisma.watchlistItem.findUnique({
-    where: {
-      userId_filmId: {
-        userId: userId,
-        filmId: filmId,
-      },
-    },
-  });
-  return !!watchlistItem;
+  const { data, error } = await supabase
+    .from('watchlist_items')
+    .select('film_id')
+    .eq('user_id', userId)
+    .eq('film_id', filmId)
+    .single();
+
+  return !!data;
 }
 
 export default async function FilmDetailPage({ params }: { params: { id: string } }) {
@@ -91,7 +91,7 @@ export default async function FilmDetailPage({ params }: { params: { id: string 
 
   const posterUrl = film.poster_path ? `${IMAGE_BASE_URL}w500${film.poster_path}` : 'https://placehold.co/400x600.png';
   const year = film.release_date ? new Date(film.release_date).getFullYear() : 'N/A';
-  const rating = film.vote_average / 2;
+  const rating = film.vote_average ? film.vote_average / 2 : 0;
 
   return (
     <div>
@@ -114,7 +114,7 @@ export default async function FilmDetailPage({ params }: { params: { id: string 
             <h1 className="text-4xl lg:text-5xl font-headline font-bold tracking-tighter">{film.title}</h1>
             <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 text-muted-foreground mt-2 text-sm sm:text-base">
               <span>{year}</span>
-              {film.director && <span>Directed by <span className="text-primary-foreground font-semibold">{film.director.name}</span></span>}
+              {film.director && <span>Directed by <span className="text-foreground font-semibold">{film.director.name}</span></span>}
                {film.runtime && <span>{film.runtime} min</span>}
             </div>
           </div>
@@ -128,7 +128,7 @@ export default async function FilmDetailPage({ params }: { params: { id: string 
                 {rating % 1 >= 0.25 && rating % 1 < 0.75 && <Star key="half" aria-hidden="true" className="w-5 h-5 fill-current" style={{ clipPath: 'inset(0 50% 0 0)' }} />}
                 {[...Array(5-Math.ceil(rating))].map((_, i) => <Star key={`empty-${i}`} aria-hidden="true" className="w-5 h-5" />)}
             </div>
-            <span className="font-bold text-lg text-primary-foreground">{film.vote_average.toFixed(1)} / 10</span>
+            <span className="font-bold text-lg text-foreground">{film.vote_average ? film.vote_average.toFixed(1) : 'N/A'} / 10</span>
           </div>
           <div className="flex flex-col sm:flex-row flex-wrap gap-4 pt-4">
             <LogFilmDialog film={film}>
@@ -176,5 +176,3 @@ export default async function FilmDetailPage({ params }: { params: { id: string 
     </div>
   );
 }
-
-    

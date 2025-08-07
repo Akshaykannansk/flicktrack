@@ -1,3 +1,4 @@
+
 import { Wand2, Star } from 'lucide-react';
 import { RecommendationsForm } from '@/components/recommendations-form';
 import {
@@ -7,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import prisma from '@/lib/prisma';
+import { createClient } from '@/lib/supabase/server';
 import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 
@@ -16,22 +17,23 @@ export default async function RecommendationsPage() {
   if (!userId) {
     redirect('/sign-in');
   }
+  const supabase = createClient();
 
-  const journalEntries = await prisma.journalEntry.findMany({
-    where: { userId },
-    include: {
-      film: true,
-    },
-    orderBy: {
-      loggedDate: 'desc',
-    },
-    take: 20, // Limit to the 20 most recent entries for the prompt
-  });
+  const { data: journalEntries, error } = await supabase
+    .from('journal_entries')
+    .select('*, films(title)')
+    .eq('user_id', userId)
+    .order('logged_date', { ascending: false })
+    .limit(20);
 
-  const viewingHistory = journalEntries.map(entry => ({
-    filmTitle: entry.film.title,
+  if (error) {
+    console.error("Error fetching journal entries for recommendations:", error);
+  }
+
+  const viewingHistory = journalEntries?.map(entry => ({
+    filmTitle: entry.films.title,
     rating: entry.rating,
-  }));
+  })) || [];
 
   return (
     <div className="space-y-8">
@@ -57,14 +59,14 @@ export default async function RecommendationsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="max-h-96 space-y-4 overflow-y-auto">
-              {journalEntries.length > 0 ? (
+              {journalEntries && journalEntries.length > 0 ? (
                 journalEntries.map(entry => (
                   <div
                     key={entry.id}
                     className="flex items-center justify-between"
                   >
-                    <span className="text-sm text-primary-foreground">
-                      {entry.film.title}
+                    <span className="text-sm text-foreground">
+                      {entry.films.title}
                     </span>
                     <div className="ml-4 flex flex-shrink-0 items-center text-xs text-amber-400">
                       <span className="mr-1 font-bold">{entry.rating}</span>

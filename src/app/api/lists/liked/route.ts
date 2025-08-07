@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { createClient } from '@/lib/supabase/server';
 import { auth } from '@clerk/nextjs/server';
 
 // GET all liked lists for the user with details
@@ -10,59 +10,43 @@ export async function GET(request: Request) {
     if (!userId) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
+    const supabase = createClient();
     
-    const likedListRelations = await prisma.likedList.findMany({
-      where: { userId: userId },
-      select: {
-        listId: true,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+    const { data: likedListRelations, error: likedListError } = await supabase
+      .from('liked_lists')
+      .select('list_id, created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
 
-    const listIds = likedListRelations.map(item => item.listId);
+    if (likedListError) throw likedListError;
 
-    const lists = await prisma.filmList.findMany({
-      where: { 
-        id: {
-            in: listIds
-        } 
-      },
-      include: {
-        _count: {
-          select: { films: true },
-        },
-        films: {
-          take: 4,
-          include: {
-            film: {
-              select: {
-                id: true,
-                posterPath: true,
-              }
-            }
-          },
-          orderBy: {
-            addedAt: 'desc'
-          }
-        }
-      },
-    });
+    const listIds = likedListRelations.map(item => item.list_id);
+
+    if (listIds.length === 0) {
+      return NextResponse.json([]);
+    }
+
+    const { data: lists, error: listsError } = await supabase
+      .from('film_lists_with_details')
+      .select('*')
+      .in('id', listIds);
+    
+    if (listsError) throw listsError;
 
     // We need to preserve the original like order
     const orderedLists = listIds.map(id => lists.find(list => list.id === id)).filter(Boolean);
     
     const responseData = orderedLists.map(list => ({
-        ...list,
-        films: list!.films.map(f => ({
-            ...f,
-            film: {
-                ...f.film,
-                id: f.film.id.toString(),
-                poster_path: f.film.posterPath
-            }
-        }))
+      id: list.id,
+      name: list.name,
+      description: list.description,
+      _count: { films: list.film_count || 0 },
+      films: list.films ? list.films.slice(0, 4).map((film: any) => ({
+        film: {
+          id: film.id.toString(),
+          poster_path: film.poster_path
+        }
+      })) : []
     }));
 
     return NextResponse.json(responseData);

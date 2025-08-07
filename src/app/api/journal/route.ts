@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { createClient } from '@/lib/supabase/server';
 import { z } from 'zod';
 import { auth, clerkClient } from '@clerk/nextjs/server';
 
@@ -11,7 +11,7 @@ const journalEntrySchema = z.object({
   loggedDate: z.string().datetime(),
 });
 
-async function upsertUser(userId: string) {
+async function upsertUser(supabase: ReturnType<typeof createClient>, userId: string) {
     const clerkUser = await clerkClient.users.getUser(userId);
     if (!clerkUser) {
         throw new Error('User not found in Clerk');
@@ -23,18 +23,22 @@ async function upsertUser(userId: string) {
         throw new Error('Primary email not found for user');
     }
 
-    return await prisma.user.upsert({
-        where: { id: userId },
-        update: {
-            email: primaryEmail,
-            name: clerkUser.fullName,
-        },
-        create: {
-            id: userId,
-            email: primaryEmail,
-            name: clerkUser.fullName,
-        }
-    });
+    const { error } = await supabase.from('users').upsert({
+        id: userId,
+        email: primaryEmail,
+        name: clerkUser.fullName,
+        username: clerkUser.username,
+        image_url: clerkUser.imageUrl,
+    }, { onConflict: 'id' });
+
+    if (error) throw error;
+}
+
+async function upsertFilm(supabase: ReturnType<typeof createClient>, filmId: number) {
+    const { error } = await supabase
+      .from('films')
+      .upsert({ id: filmId, title: 'Unknown Film' }, { onConflict: 'id' });
+    if (error) throw error;
 }
 
 
@@ -50,37 +54,35 @@ export async function GET(request: Request) {
     return new NextResponse('User ID must be provided or user must be authenticated', { status: 401 });
   }
 
-  // If a specific user's journal is requested, anyone can view it.
-  // If no user is specified, it defaults to the logged-in user's journal, so we must have an authUserId.
   if (!urlUserId && !authUserId) {
      return new NextResponse('Unauthorized', { status: 401 });
   }
   
+  const supabase = createClient();
+  
   try {
-    const journalEntries = await prisma.journalEntry.findMany({
-      where: { userId: targetUserId },
-      include: {
-        film: true, 
-      },
-      orderBy: {
-        loggedDate: 'desc',
-      },
-    });
+    const { data: journalEntries, error } = await supabase
+      .from('journal_entries')
+      .select('*, films(*)')
+      .eq('user_id', targetUserId)
+      .order('logged_date', { ascending: false });
+
+    if (error) throw error;
 
     const responseData = journalEntries.map(entry => ({
         id: entry.id,
         film: {
-            id: entry.film.id.toString(),
-            title: entry.film.title,
-            poster_path: entry.film.posterPath,
-            release_date: entry.film.releaseDate,
-            vote_average: entry.film.voteAverage,
-            overview: entry.film.overview,
+            id: entry.films.id.toString(),
+            title: entry.films.title,
+            poster_path: entry.films.poster_path,
+            release_date: entry.films.release_date,
+            vote_average: entry.films.vote_average,
+            overview: entry.films.overview,
         },
         rating: entry.rating,
         review: entry.review,
-        loggedDate: entry.loggedDate.toISOString()
-    }))
+        loggedDate: entry.logged_date,
+    }));
 
     return NextResponse.json(responseData);
   } catch (error) {
@@ -95,9 +97,11 @@ export async function POST(request: Request) {
     if (!userId) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
+  
+  const supabase = createClient();
 
   try {
-    await upsertUser(userId);
+    await upsertUser(supabase, userId);
     
     const body = await request.json();
     const validation = journalEntrySchema.safeParse(body);
@@ -107,25 +111,18 @@ export async function POST(request: Request) {
     }
     
     const { filmId, rating, review, loggedDate } = validation.data;
+    
+    await upsertFilm(supabase, filmId);
 
-    await prisma.film.upsert({
-      where: { id: filmId },
-      update: {},
-      create: {
-        id: filmId,
-        title: 'Unknown Film', // You might want to fetch this from TMDB
-      },
-    });
+    const { data: newEntry, error } = await supabase.from('journal_entries').insert({
+      user_id: userId,
+      film_id: filmId,
+      rating,
+      review,
+      logged_date: loggedDate,
+    }).select().single();
 
-    const newEntry = await prisma.journalEntry.create({
-      data: {
-        userId: userId,
-        filmId,
-        rating,
-        review,
-        loggedDate: new Date(loggedDate),
-      },
-    });
+    if (error) throw error;
 
     return NextResponse.json(newEntry, { status: 201 });
   } catch (error) {
