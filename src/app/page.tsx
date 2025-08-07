@@ -50,7 +50,7 @@ export default async function HomePage() {
     <div className="space-y-12">
       <SignedOut>
         <div className="text-center py-8">
-          <h1 className="text-4xl font-headline font-bold tracking-tighter sm:text-5xl text-primary-foreground">Welcome to FlickTrack</h1>
+          <h1 className="text-4xl font-headline font-bold tracking-tighter sm:text-5xl text-foreground">Welcome to FlickTrack</h1>
           <p className="text-muted-foreground mt-3 max-w-xl mx-auto">Your personal film journal. Discover, log, and share your favorite films.</p>
         </div>
       </SignedOut>
@@ -59,7 +59,7 @@ export default async function HomePage() {
          <section className="space-y-6">
             <div className="flex items-center gap-3">
                 <Users className="w-7 h-7 text-primary/80" />
-                <h2 className="text-3xl font-headline font-bold text-primary-foreground tracking-tight">Following Activity</h2>
+                <h2 className="text-3xl font-headline font-bold text-foreground tracking-tight">Following Activity</h2>
             </div>
             <FollowingFeed />
           </section>

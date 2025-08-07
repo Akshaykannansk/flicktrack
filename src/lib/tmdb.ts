@@ -6,7 +6,7 @@ const API_BASE_URL = 'https://api.themoviedb.org/3';
 const API_KEY = process.env.TMDB_API_KEY;
 
 
-async function fetchFromTMDB<T>(endpoint: string, params: Record<string, string> = {}): Promise<T | any> {
+async function fetchFromTMDB<T>(endpoint: string, params: Record<string, string> = {}): Promise<T | null> {
   if (!API_KEY) {
     // Throw an error to make it clear the API key is missing.
     throw new Error('TMDB_API_KEY is not defined. Please add it to your .env file.');
@@ -23,13 +23,11 @@ async function fetchFromTMDB<T>(endpoint: string, params: Record<string, string>
 
     if (!response.ok) {
       console.error(`Failed to fetch from TMDB endpoint: ${endpoint}`, await response.text());
-      if (endpoint.includes('search')) return { results: [] };
       return null;
     }
     return response.json();
   } catch (error) {
      console.error(`Network error when fetching from TMDB endpoint: ${endpoint}`, error);
-     if (endpoint.includes('search')) return { results: [] };
      return null;
   }
 }
@@ -46,19 +44,19 @@ function transformFilmData(tmdbFilm: any): Film {
 }
 
 
-export async function getPopularMovies(): Promise<Film[]> {
+export async function getPopularMovies(): Promise<Film[] | null> {
   const data = await fetchFromTMDB<PaginatedResponse<any>>('movie/popular');
-  return data?.results.map(transformFilmData) || [];
+  return data?.results.map(transformFilmData) || null;
 }
 
-export async function getTopRatedMovies(): Promise<Film[]> {
+export async function getTopRatedMovies(): Promise<Film[] | null> {
   const data = await fetchFromTMDB<PaginatedResponse<any>>('movie/top_rated');
-  return data?.results.map(transformFilmData) || [];
+  return data?.results.map(transformFilmData) || null;
 }
 
-export async function getNowPlayingMovies(): Promise<Film[]> {
+export async function getNowPlayingMovies(): Promise<Film[] | null> {
   const data = await fetchFromTMDB<PaginatedResponse<any>>('movie/now_playing');
-  return data?.results.map(transformFilmData) || [];
+  return data?.results.map(transformFilmData) || null;
 }
 
 export async function getFilmDetails(id: string): Promise<FilmDetails | null> {

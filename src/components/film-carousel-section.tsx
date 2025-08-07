@@ -7,7 +7,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 
 interface FilmCarouselSectionProps {
     title: string;
-    films: Film[];
+    films: Film[] | null;
     watchlistIds: Set<number>;
     likedIds: Set<number>;
 }
@@ -16,7 +16,7 @@ export function FilmCarouselSection({ title, films, watchlistIds, likedIds }: Fi
     if (!films || films.length === 0) {
         return (
             <section className="space-y-4">
-                 <h2 className="text-2xl font-headline font-bold text-primary-foreground tracking-tight">{title}</h2>
+                 <h2 className="text-2xl font-headline font-bold text-foreground tracking-tight">{title}</h2>
                  <p className="text-muted-foreground">Could not load films. Please try again later.</p>
             </section>
         )
@@ -24,7 +24,7 @@ export function FilmCarouselSection({ title, films, watchlistIds, likedIds }: Fi
 
     return (
         <section className="space-y-4">
-            <h2 className="text-2xl font-headline font-bold text-primary-foreground tracking-tight">{title}</h2>
+            <h2 className="text-2xl font-headline font-bold text-foreground tracking-tight">{title}</h2>
             <Carousel 
                 opts={{ align: "start", dragFree: true }}
                 className="relative"
