@@ -9,21 +9,22 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import prisma from '@/lib/prisma';
-import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
 
 export default async function RecommendationsPage() {
-  const { userId } = auth();
-  if (!userId) {
-    redirect('/sign-in');
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    redirect('/login');
   }
 
   const journalEntries = await prisma.journalEntry.findMany({
     where: {
-      userId: userId,
+      userId: user.id,
     },
     include: {
-      films: {
+      film: {
         select: { title: true },
       },
     },
@@ -34,7 +35,7 @@ export default async function RecommendationsPage() {
   });
 
   const viewingHistory = journalEntries?.map(entry => ({
-    filmTitle: entry.films.title,
+    filmTitle: entry.film.title,
     rating: entry.rating,
   })) || [];
 
@@ -69,7 +70,7 @@ export default async function RecommendationsPage() {
                     className="flex items-center justify-between"
                   >
                     <span className="text-sm text-foreground">
-                      {entry.films.title}
+                      {entry.film.title}
                     </span>
                     <div className="ml-4 flex flex-shrink-0 items-center text-xs text-amber-400">
                       <span className="mr-1 font-bold">{entry.rating}</span>
