@@ -1,9 +1,10 @@
 
+
 'use client';
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Film, Search, Loader2, User as UserIcon, Clapperboard, Menu } from 'lucide-react';
+import { Film, Search, Loader2, User as UserIcon, Clapperboard, Menu, List } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';

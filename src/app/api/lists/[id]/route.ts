@@ -34,6 +34,13 @@ export async function GET(
             addedAt: 'desc',
           },
         },
+        user: {
+            select: {
+                id: true,
+                name: true,
+                username: true,
+            }
+        }
       },
     });
 

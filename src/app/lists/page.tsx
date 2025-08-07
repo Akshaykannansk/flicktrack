@@ -3,35 +3,22 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { List, Loader2 } from 'lucide-react';
+import { List, Loader2, PlusCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { IMAGE_BASE_URL } from '@/lib/tmdb-isomorphic';
-import type { Film as FilmType } from '@/lib/types';
+import { Button } from '@/components/ui/button';
+import { CreateListDialog } from '@/components/create-list-dialog';
+import type { FilmListSummary } from '@/lib/types';
 
-
-interface FilmOnList {
-  film: FilmType;
-}
-
-interface FilmListSummary {
-    id: string;
-    name: string;
-    description: string;
-    films: FilmOnList[];
-    _count: {
-        films: number;
-    }
-}
 
 export default function ListsPage() {
   const [lists, setLists] = useState<FilmListSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function fetchLists() {
+  const fetchLists = async () => {
       try {
         const response = await fetch('/api/lists');
         if (!response.ok) {
@@ -45,15 +32,26 @@ export default function ListsPage() {
         setIsLoading(false);
       }
     }
+
+  useEffect(() => {
     fetchLists();
   }, []);
+
+  const onListCreated = () => {
+    // Refetch lists after a new one is created
+    setIsLoading(true);
+    fetchLists();
+  };
 
   if (isLoading) {
     return (
       <div className="space-y-8">
-        <div className="flex items-center space-x-3">
-          <List className="w-8 h-8 text-primary" />
-          <h1 className="text-4xl font-headline font-bold tracking-tighter">My Lists</h1>
+        <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <List className="w-8 h-8 text-primary" />
+              <h1 className="text-4xl font-headline font-bold tracking-tighter">My Lists</h1>
+            </div>
+            <Skeleton className="h-10 w-32" />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(3)].map((_, i) => (
@@ -76,9 +74,17 @@ export default function ListsPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center space-x-3">
-        <List className="w-8 h-8 text-primary" />
-        <h1 className="text-4xl font-headline font-bold tracking-tighter">My Lists</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center space-x-3">
+          <List className="w-8 h-8 text-primary" />
+          <h1 className="text-4xl font-headline font-bold tracking-tighter">My Lists</h1>
+        </div>
+        <CreateListDialog onListCreated={onListCreated}>
+            <Button>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Create List
+            </Button>
+        </CreateListDialog>
       </div>
 
       {lists.length > 0 ? (

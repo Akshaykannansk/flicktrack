@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Image from 'next/image';
@@ -13,6 +14,7 @@ import { WatchlistAction } from './watchlist-action';
 import { LikeAction } from './like-action';
 import { useUser } from '@clerk/nextjs';
 import { cn } from '@/lib/utils';
+import { AddToListButton } from './add-to-list-button';
 
 interface FilmCardProps {
   film: Film;
@@ -41,7 +43,7 @@ export function FilmCard({ film, isInWatchlist, isLiked }: FilmCardProps) {
 
   return (
     <div className="group relative">
-        <Card className="overflow-visible bg-secondary border-2 border-transparent group-hover:border-primary/50 transition-all duration-300">
+        <Card className="overflow-hidden bg-secondary border-2 border-transparent group-hover:border-primary/50 transition-all duration-300">
           <CardContent className="p-0 relative">
              <Link href={`/film/${film.id}`} className="block">
                 <div className="aspect-[2/3] relative">
@@ -69,6 +71,9 @@ export function FilmCard({ film, isInWatchlist, isLiked }: FilmCardProps) {
                     </SignInGuard>
                      <SignInGuard>
                       <LikeAction filmId={parseInt(film.id, 10)} initialIsLiked={!!isLiked} />
+                    </SignInGuard>
+                    <SignInGuard>
+                      <AddToListButton filmId={parseInt(film.id, 10)} />
                     </SignInGuard>
                 </div>
               </div>

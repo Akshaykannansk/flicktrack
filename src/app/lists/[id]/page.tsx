@@ -1,20 +1,28 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
-import { notFound } from 'next/navigation';
+import { notFound, useRouter } from 'next/navigation';
 import { FilmCard } from '@/components/film-card';
-import { List } from 'lucide-react';
-import type { Film as FilmType } from '@/lib/types';
+import { Button } from '@/components/ui/button';
+import { List, Loader2, Trash2, Edit } from 'lucide-react';
+import type { Film as FilmType, FilmList as FilmListType } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useUser } from '@clerk/nextjs';
+import Link from 'next/link';
+import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
-interface ListWithFilms {
-    id: string;
-    name: string;
-    description: string;
-    films: { film: FilmType }[];
-    userId: string;
-}
 
 interface UserFilmSets {
     watchlistIds: Set<number>;
@@ -22,11 +30,14 @@ interface UserFilmSets {
 }
 
 export default function ListDetailPage({ params }: { params: { id: string } }) {
-  const [list, setList] = useState<ListWithFilms | null>(null);
+  const [list, setList] = useState<FilmListType | null>(null);
   const [userFilmSets, setUserFilmSets] = useState<UserFilmSets>({ watchlistIds: new Set(), likedIds: new Set() });
   const [isLoading, setIsLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user } = useUser();
+  const { toast } = useToast();
+  const router = useRouter();
 
   useEffect(() => {
     async function fetchListData() {
@@ -43,7 +54,7 @@ export default function ListDetailPage({ params }: { params: { id: string } }) {
             if (!listResponse.ok) {
                 throw new Error('Failed to fetch list details.');
             }
-            const listData: ListWithFilms = await listResponse.json();
+            const listData: FilmListType = await listResponse.json();
             setList(listData);
 
             // Fetch user's watchlist and likes if logged in
@@ -75,6 +86,30 @@ export default function ListDetailPage({ params }: { params: { id: string } }) {
     }
     fetchListData();
   }, [params.id, user]);
+  
+  const handleDeleteList = async () => {
+    setIsDeleting(true);
+    try {
+        const response = await fetch(`/api/lists/${params.id}`, { method: 'DELETE' });
+        if (!response.ok) {
+            throw new Error('Failed to delete the list.');
+        }
+        toast({
+            title: 'List Deleted',
+            description: `The list "${list?.name}" has been successfully deleted.`,
+        });
+        router.push('/lists');
+        router.refresh();
+    } catch (error: any) {
+        toast({
+            variant: 'destructive',
+            title: 'Uh oh! Something went wrong.',
+            description: error.message,
+        });
+    } finally {
+        setIsDeleting(false);
+    }
+  }
 
   if (isLoading) {
     return (
@@ -113,9 +148,38 @@ export default function ListDetailPage({ params }: { params: { id: string } }) {
   return (
     <div className="space-y-8">
       <div>
-        <div className="flex items-center space-x-3">
-          <List className="w-8 h-8 text-primary" />
-          <h1 className="text-4xl font-headline font-bold tracking-tighter">{list.name}</h1>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center space-x-3">
+              <List className="w-8 h-8 text-primary" />
+              <h1 className="text-4xl font-headline font-bold tracking-tighter">{list.name}</h1>
+            </div>
+            {isOwner && (
+                <div className="flex items-center gap-2">
+                     <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                           <Button variant="outline" size="icon" disabled={isDeleting}>
+                                {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                <span className="sr-only">Delete List</span>
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete your list "{list.name}".
+                            </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDeleteList} className="bg-destructive hover:bg-destructive/90">
+                                {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                Delete
+                            </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </div>
+            )}
         </div>
         <p className="text-muted-foreground mt-2 max-w-2xl">{list.description}</p>
         <p className="text-sm text-muted-foreground mt-2">{list.films.length} {list.films.length === 1 ? 'film' : 'films'}</p>
@@ -138,7 +202,16 @@ export default function ListDetailPage({ params }: { params: { id: string } }) {
       ) : (
         <div className="text-center py-20 border-2 border-dashed rounded-lg">
           <h2 className="text-xl font-semibold">This list is empty.</h2>
-           {isOwner && <p className="text-muted-foreground mt-2">Add films to this list to see them here.</p>}
+           {isOwner ? (
+                <div className="space-y-4 mt-2">
+                    <p className="text-muted-foreground">Add films to this list to see them here.</p>
+                     <Button asChild>
+                        <Link href="/">Browse Films</Link>
+                    </Button>
+                </div>
+           ) : (
+                <p className="text-muted-foreground mt-2">Check back later to see what films get added.</p>
+           )}
         </div>
       )}
     </div>

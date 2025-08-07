@@ -1,4 +1,5 @@
 
+
 export interface PaginatedResponse<T> {
   page: number;
   results: T[];
@@ -59,12 +60,26 @@ export interface FilmDetails {
   trailer: Video | null;
 }
 
+interface FilmOnList {
+  film: Film;
+}
+
+export interface FilmListSummary {
+    id: string;
+    name: string;
+    description: string;
+    films: FilmOnList[];
+    _count: {
+        films: number;
+    }
+}
 
 export interface FilmList {
   id: string;
   name: string;
   description: string;
-  films: Film[];
+  films: { film: Film }[];
+  userId: string;
 }
 
 export interface LoggedFilm {
