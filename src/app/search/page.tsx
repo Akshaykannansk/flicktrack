@@ -1,3 +1,4 @@
+
 import { searchFilms, searchUsers } from '@/lib/tmdb';
 import { FilmCard } from '@/components/film-card';
 import { Search, User, Clapperboard } from 'lucide-react';
@@ -5,6 +6,8 @@ import type { Film, PublicUser } from '@/lib/types';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Card } from '@/components/ui/card';
+import { auth } from '@clerk/nextjs';
+import prisma from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic'; // Ensure the page is re-rendered for each search
 
@@ -14,17 +17,49 @@ interface SearchPageProps {
     };
 }
 
+
+async function getUserFilmSets(userId: string | null) {
+    if (!userId) {
+        return { watchlistIds: new Set<number>(), favoriteIds: new Set<number>() };
+    }
+
+    const [watchlist, userWithFavorites] = await Promise.all([
+        prisma.watchlistItem.findMany({
+            where: { userId },
+            select: { filmId: true }
+        }),
+        prisma.user.findUnique({
+            where: { id: userId },
+            select: { favoriteFilms: { select: { id: true } } }
+        })
+    ]);
+
+    const watchlistIds = new Set(watchlist.map(item => item.filmId));
+    const favoriteIds = new Set(userWithFavorites?.favoriteFilms.map(film => film.id) ?? []);
+
+    return { watchlistIds, favoriteIds };
+}
+
+
 export default async function SearchPage({ searchParams }: SearchPageProps) {
     const query = searchParams.q || '';
+    const { userId } = auth();
     
     let films: Film[] = [];
     let users: PublicUser[] = [];
+    let watchlistIds = new Set<number>();
+    let favoriteIds = new Set<number>();
 
     if (query) {
-      [films, users] = await Promise.all([
+      const [filmResults, userResults, filmSets] = await Promise.all([
         searchFilms(query),
         searchUsers(query),
+        getUserFilmSets(userId)
       ]);
+      films = filmResults;
+      users = userResults;
+      watchlistIds = filmSets.watchlistIds;
+      favoriteIds = filmSets.favoriteIds;
     }
 
     return (
@@ -46,9 +81,17 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                             <h2 className="text-2xl font-headline font-semibold">Films</h2>
                            </div>
                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
-                                {films.map((film) => (
-                                    <FilmCard key={film.id} film={film} />
-                                ))}
+                                {films.map((film) => {
+                                    const filmId = parseInt(film.id, 10);
+                                    return (
+                                        <FilmCard 
+                                            key={film.id} 
+                                            film={film} 
+                                            isInWatchlist={watchlistIds.has(filmId)}
+                                            isFavorite={favoriteIds.has(filmId)}
+                                        />
+                                    )
+                                })}
                             </div>
                         </section>
                       )}
@@ -96,3 +139,4 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         </div>
     );
 }
+

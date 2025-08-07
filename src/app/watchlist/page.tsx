@@ -12,27 +12,49 @@ interface WatchlistItem {
   film: FilmType;
 }
 
+interface UserFilmSets {
+    watchlistIds: Set<number>;
+    favoriteIds: Set<number>;
+}
+
 export default function WatchlistPage() {
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
+  const [userFilmSets, setUserFilmSets] = useState<UserFilmSets>({ watchlistIds: new Set(), favoriteIds: new Set() });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchWatchlist() {
-      try {
-        const response = await fetch('/api/watchlist');
-        if (!response.ok) {
-          throw new Error('Failed to fetch watchlist.');
+    async function fetchWatchlistData() {
+        setIsLoading(true);
+        try {
+            const [watchlistRes, favoritesRes] = await Promise.all([
+                fetch('/api/watchlist'),
+                fetch('/api/profile/favorites')
+            ]);
+
+            if (!watchlistRes.ok) {
+                throw new Error('Failed to fetch watchlist.');
+            }
+            const watchlistData: WatchlistItem[] = await watchlistRes.json();
+            setWatchlist(watchlistData);
+            
+            const watchlistIds = new Set(watchlistData.map(item => parseInt(item.film.id, 10)));
+            
+            let favoriteIds = new Set<number>();
+            if (favoritesRes.ok) {
+                const favoritesData: FilmType[] = await favoritesRes.json();
+                favoriteIds = new Set(favoritesData.map(item => parseInt(item.id, 10)));
+            }
+            
+            setUserFilmSets({ watchlistIds, favoriteIds });
+
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setIsLoading(false);
         }
-        const data = await response.json();
-        setWatchlist(data);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
-      }
     }
-    fetchWatchlist();
+    fetchWatchlistData();
   }, []);
 
   if (isLoading) {
@@ -68,9 +90,17 @@ export default function WatchlistPage() {
 
       {watchlist.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
-          {watchlist.map(({ film }) => (
-            <FilmCard key={film.id} film={film} />
-          ))}
+          {watchlist.map(({ film }) => {
+              const filmId = parseInt(film.id, 10);
+              return (
+                 <FilmCard 
+                    key={film.id} 
+                    film={film} 
+                    isInWatchlist={userFilmSets.watchlistIds.has(filmId)}
+                    isFavorite={userFilmSets.favoriteIds.has(filmId)}
+                />
+              )
+          })}
         </div>
       ) : (
         <div className="text-center py-20 border-2 border-dashed rounded-lg flex flex-col items-center">

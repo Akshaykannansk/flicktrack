@@ -18,15 +18,13 @@ export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
+  // Publicly viewable, but we check auth to see if user is owner
   const { userId } = auth();
-  if (!userId) {
-    return new NextResponse('Unauthorized', { status: 401 });
-  }
 
   try {
     const listId = params.id;
-    const list = await prisma.filmList.findFirst({
-      where: { id: listId, userId },
+    const list = await prisma.filmList.findUnique({
+      where: { id: listId },
       include: {
         films: {
           include: {

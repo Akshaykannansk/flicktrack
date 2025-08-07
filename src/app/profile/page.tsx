@@ -1,4 +1,5 @@
 
+
 import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -40,6 +41,13 @@ async function getUserStats(userId: string) {
     );
 
     const validFavoriteFilms = favoriteFilmsDetails.filter(Boolean) as FilmType[];
+    
+    const watchlist = await prisma.watchlistItem.findMany({
+        where: { userId },
+        select: { filmId: true }
+    });
+    const watchlistIds = new Set(watchlist.map(item => item.filmId));
+
 
     const recentJournalEntries = await prisma.journalEntry.findMany({
         where: { userId },
@@ -53,6 +61,7 @@ async function getUserStats(userId: string) {
         followersCount, 
         followingCount, 
         favoriteFilms: validFavoriteFilms,
+        watchlistIds,
         recentJournalEntries: recentJournalEntries.map(entry => ({
             id: entry.id,
             film: {
@@ -106,7 +115,8 @@ interface ProfilePageContentProps {
 }
 
 export function ProfilePageContent({ user, stats, isCurrentUser, isFollowing }: ProfilePageContentProps) {
-    const { journalCount, followersCount, followingCount, favoriteFilms, recentJournalEntries } = stats;
+    const { journalCount, followersCount, followingCount, favoriteFilms, recentJournalEntries, watchlistIds } = stats;
+    const favoriteFilmIds = new Set(favoriteFilms.map(f => parseInt(f.id, 10)));
 
     return (
         <div className="space-y-8">
@@ -158,9 +168,17 @@ export function ProfilePageContent({ user, stats, isCurrentUser, isFollowing }: 
                 <h2 className="text-2xl font-headline font-semibold mb-4">Favorite Films</h2>
                 {favoriteFilms.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 md:gap-6">
-                    {favoriteFilms.map((film) => (
-                    <FilmCard key={film.id} film={film} />
-                    ))}
+                    {favoriteFilms.map((film) => {
+                        const filmId = parseInt(film.id, 10);
+                        return (
+                            <FilmCard 
+                                key={film.id} 
+                                film={film}
+                                isInWatchlist={watchlistIds.has(filmId)}
+                                isFavorite={favoriteFilmIds.has(filmId)}
+                            />
+                        )
+                    })}
                 </div>
                 ) : (
                 <div className="text-center py-10 border-2 border-dashed rounded-lg">
@@ -229,3 +247,4 @@ export function ProfilePageContent({ user, stats, isCurrentUser, isFollowing }: 
         </div>
     );
 }
+
