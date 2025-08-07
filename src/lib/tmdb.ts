@@ -8,8 +8,9 @@ const API_KEY = process.env.TMDB_API_KEY;
 
 async function fetchFromTMDB<T>(endpoint: string, params: Record<string, string> = {}): Promise<T | null> {
   if (!API_KEY) {
-    // Throw an error to make it clear the API key is missing.
-    throw new Error('TMDB_API_KEY is not defined. Please add it to your .env file.');
+    // Return null or throw an error if the API key is missing.
+    console.error('TMDB_API_KEY is not defined.');
+    return null;
   }
 
   const url = new URL(`${API_BASE_URL}/${endpoint}`);
@@ -44,18 +45,18 @@ function transformFilmData(tmdbFilm: any): Film {
 }
 
 
-export async function getPopularMovies(): Promise<Film[] | null> {
-  const data = await fetchFromTMDB<PaginatedResponse<any>>('movie/popular');
+export async function getPopularMovies(page = 1): Promise<Film[] | null> {
+  const data = await fetchFromTMDB<PaginatedResponse<any>>('movie/popular', { page: page.toString() });
   return data?.results.map(transformFilmData) || null;
 }
 
-export async function getTopRatedMovies(): Promise<Film[] | null> {
-  const data = await fetchFromTMDB<PaginatedResponse<any>>('movie/top_rated');
+export async function getTopRatedMovies(page = 1): Promise<Film[] | null> {
+  const data = await fetchFromTMDB<PaginatedResponse<any>>('movie/top_rated', { page: page.toString() });
   return data?.results.map(transformFilmData) || null;
 }
 
-export async function getNowPlayingMovies(): Promise<Film[] | null> {
-  const data = await fetchFromTMDB<PaginatedResponse<any>>('movie/now_playing');
+export async function getNowPlayingMovies(page = 1): Promise<Film[] | null> {
+  const data = await fetchFromTMDB<PaginatedResponse<any>>('movie/now_playing', { page: page.toString() });
   return data?.results.map(transformFilmData) || null;
 }
 
