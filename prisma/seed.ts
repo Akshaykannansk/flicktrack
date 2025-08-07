@@ -3,21 +3,38 @@ import { films as staticFilms } from '../src/lib/static-data';
 
 const prisma = new PrismaClient();
 
-const USER_ID = 'user_2jvcJkLgQf9Qz3gYtH8rXz9Ew1B';
+const ALEX_USER_ID = 'user_2jvcJkLgQf9Qz3gYtH8rXz9Ew1B';
+const JANE_USER_ID = 'user_2jvdKfl4sGd8eH9qYtJkLz7Xw2C';
 
 async function main() {
   console.log('Start seeding...');
 
-  const user = await prisma.user.upsert({
-    where: { id: USER_ID },
+  // Upsert Alex Doe
+  const alex = await prisma.user.upsert({
+    where: { id: ALEX_USER_ID },
     update: {},
     create: {
-      id: USER_ID,
+      id: ALEX_USER_ID,
       email: 'alex.doe@example.com',
       name: 'Alex Doe',
+      username: 'alexdoe',
     },
   });
-  console.log(`Upserted user: ${user.name}`);
+  console.log(`Upserted user: ${alex.name}`);
+
+  // Upsert Jane Doe
+  const jane = await prisma.user.upsert({
+      where: { id: JANE_USER_ID },
+      update: {},
+      create: {
+          id: JANE_USER_ID,
+          email: 'jane.doe@example.com',
+          name: 'Jane Doe',
+          username: 'janedoe'
+      }
+  });
+  console.log(`Upserted user: ${jane.name}`);
+
 
   // Create films in the database
   const filmCreatePromises = staticFilms.map(film => {
@@ -40,20 +57,29 @@ async function main() {
   await Promise.all(filmCreatePromises);
   console.log(`Upserted ${staticFilms.length} films.`);
 
-  const journalEntries = [
+  // Journal Entries for Alex
+  const alexJournalEntries = [
     { filmId: 680, rating: 5, review: "An absolute masterpiece. The non-linear storytelling is brilliant and every scene is iconic.", loggedDate: new Date("2023-10-26") },
     { filmId: 155, rating: 4.5, review: "Heath Ledger's performance as the Joker is legendary. A gripping and intelligent superhero film.", loggedDate: new Date("2023-10-22") },
     { filmId: 238, rating: 5, review: "The greatest mob movie ever made. Al Pacino's transformation is incredible to watch.", loggedDate: new Date("2023-09-15") },
   ];
 
-  for (const entry of journalEntries) {
+  for (const entry of alexJournalEntries) {
     await prisma.journalEntry.upsert({
-      where: { userId_filmId_loggedDate: { userId: user.id, filmId: entry.filmId, loggedDate: entry.loggedDate } },
+      where: { userId_filmId_loggedDate: { userId: alex.id, filmId: entry.filmId, loggedDate: entry.loggedDate } },
       update: {},
-      create: { ...entry, userId: user.id },
+      create: { ...entry, userId: alex.id },
     });
   }
-  console.log(`Upserted ${journalEntries.length} journal entries.`);
+  console.log(`Upserted ${alexJournalEntries.length} journal entries for Alex.`);
+  
+  // Journal Entry for Jane
+   await prisma.journalEntry.upsert({
+      where: { userId_filmId_loggedDate: { userId: jane.id, filmId: 496243, loggedDate: new Date("2023-11-01") } },
+      update: {},
+      create: { userId: jane.id, filmId: 496243, rating: 5, review: "A truly mind-bending and socially relevant thriller. Masterfully crafted.", loggedDate: new Date("2023-11-01") },
+    });
+  console.log(`Upserted 1 journal entry for Jane.`);
 
 
   const watchlistItems = [
@@ -65,9 +91,9 @@ async function main() {
 
   for (const item of watchlistItems) {
       await prisma.watchlistItem.upsert({
-          where: { userId_filmId: { userId: user.id, filmId: item.filmId } },
+          where: { userId_filmId: { userId: alex.id, filmId: item.filmId } },
           update: {},
-          create: { ...item, userId: user.id }
+          create: { ...item, userId: alex.id }
       })
   }
   console.log(`Upserted ${watchlistItems.length} watchlist items.`);
@@ -79,7 +105,7 @@ async function main() {
       id: 'clerk_list_1',
       name: 'Mind-Bending Movies',
       description: 'Films that will make you question reality.',
-      userId: user.id,
+      userId: alex.id,
     },
   });
 
@@ -90,7 +116,7 @@ async function main() {
       id: 'clerk_list_2',
       name: 'Modern Sci-Fi Essentials',
       description: 'Must-see science fiction from the 21st century.',
-      userId: user.id,
+      userId: alex.id,
     },
   });
 
@@ -115,6 +141,17 @@ async function main() {
       });
   }
   console.log('Upserted films to lists.');
+  
+  // Make Alex follow Jane
+  await prisma.follows.upsert({
+    where: { followerId_followingId: { followerId: alex.id, followingId: jane.id }},
+    update: {},
+    create: {
+        followerId: alex.id,
+        followingId: jane.id,
+    }
+  });
+  console.log('Alex now follows Jane.');
 
 
   console.log('Seeding finished.');
