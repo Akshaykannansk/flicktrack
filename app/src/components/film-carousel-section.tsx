@@ -8,8 +8,8 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 interface FilmCarouselSectionProps {
     title: string;
     films: Film[];
-    watchlistIds?: Set<number>;
-    likedIds?: Set<number>;
+    watchlistIds: Set<number>;
+    likedIds: Set<number>;
 }
 
 export function FilmCarouselSection({ title, films, watchlistIds, likedIds }: FilmCarouselSectionProps) {
@@ -27,8 +27,8 @@ export function FilmCarouselSection({ title, films, watchlistIds, likedIds }: Fi
                         <CarouselItem key={index} className="pl-2 md:pl-4 basis-1/3 sm:basis-1/4 md:basis-1/5 lg:basis-1/6 xl:basis-1/8">
                            <FilmCard 
                                 film={film} 
-                                isInWatchlist={watchlistIds?.has(filmId)}
-                                isLiked={likedIds?.has(filmId)}
+                                isInWatchlist={watchlistIds.has(filmId)}
+                                isLiked={likedIds.has(filmId)}
                             />
                         </CarouselItem>
                     )

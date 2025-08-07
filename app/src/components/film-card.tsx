@@ -8,10 +8,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { IMAGE_BASE_URL } from '@/lib/tmdb-isomorphic';
 import { LogFilmDialog } from './log-film-dialog';
 import { Button } from './ui/button';
-import { BookPlus } from 'lucide-react';
+import { BookPlus, Heart } from 'lucide-react';
 import { WatchlistAction } from './watchlist-action';
-import { useUser } from '@clerk/nextjs';
 import { LikeAction } from './like-action';
+import { useUser } from '@clerk/nextjs';
 
 interface FilmCardProps {
   film: Film;

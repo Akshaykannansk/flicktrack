@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import { notFound } from 'next/navigation';
 import { FilmCard } from '@/components/film-card';
-import { List, Loader2 } from 'lucide-react';
+import { List } from 'lucide-react';
 import type { Film as FilmType } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useUser } from '@clerk/nextjs';
