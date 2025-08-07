@@ -1,3 +1,4 @@
+
 export interface PaginatedResponse<T> {
   page: number;
   results: T[];
@@ -67,6 +68,7 @@ export interface FilmList {
 }
 
 export interface LoggedFilm {
+  id: string;
   film: Film;
   rating: number;
   review?: string;

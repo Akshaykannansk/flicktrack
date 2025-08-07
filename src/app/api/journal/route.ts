@@ -38,18 +38,27 @@ async function upsertUser(userId: string) {
 }
 
 
-// GET all journal entries for the user
-export async function GET() {
-  const { userId } = auth();
-  if (!userId) {
-    return new NextResponse('Unauthorized', { status: 401 });
+// GET all journal entries for a user
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const urlUserId = searchParams.get('userId');
+  const { userId: authUserId } = auth();
+
+  const targetUserId = urlUserId || authUserId;
+
+  if (!targetUserId) {
+    return new NextResponse('User ID must be provided or user must be authenticated', { status: 401 });
+  }
+
+  // If a specific user's journal is requested, anyone can view it.
+  // If no user is specified, it defaults to the logged-in user's journal, so we must have an authUserId.
+  if (!urlUserId && !authUserId) {
+     return new NextResponse('Unauthorized', { status: 401 });
   }
   
   try {
-    await upsertUser(userId);
-
     const journalEntries = await prisma.journalEntry.findMany({
-      where: { userId: userId },
+      where: { userId: targetUserId },
       include: {
         film: true, 
       },
@@ -59,6 +68,7 @@ export async function GET() {
     });
 
     const responseData = journalEntries.map(entry => ({
+        id: entry.id,
         film: {
             id: entry.film.id.toString(),
             title: entry.film.title,

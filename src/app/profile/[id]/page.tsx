@@ -1,3 +1,4 @@
+
 import { ProfilePageContent } from '../page';
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import prisma from '@/lib/prisma';
@@ -44,6 +45,13 @@ async function getUserData(userId: string) {
 
     const validFavoriteFilms = favoriteFilmsDetails.filter(Boolean) as FilmType[];
 
+    const recentJournalEntries = await prisma.journalEntry.findMany({
+        where: { userId },
+        take: 10,
+        orderBy: { loggedDate: 'desc' },
+        include: { film: true }
+    });
+
     const { userId: currentUserId } = auth();
     let isFollowing = false;
     if (currentUserId && currentUserId !== userId) {
@@ -64,7 +72,21 @@ async function getUserData(userId: string) {
             journalCount,
             followersCount,
             followingCount,
-            favoriteFilms: validFavoriteFilms
+            favoriteFilms: validFavoriteFilms,
+            recentJournalEntries: recentJournalEntries.map(entry => ({
+                id: entry.id,
+                film: {
+                    id: entry.film.id.toString(),
+                    title: entry.film.title,
+                    poster_path: entry.film.posterPath,
+                    release_date: entry.film.releaseDate,
+                    vote_average: entry.film.voteAverage,
+                    overview: entry.film.overview,
+                },
+                rating: entry.rating,
+                review: entry.review || undefined,
+                loggedDate: entry.loggedDate.toISOString()
+            }))
         },
         isFollowing,
         isCurrentUser: currentUserId === userId
