@@ -8,9 +8,8 @@ const API_KEY = process.env.TMDB_API_KEY;
 
 async function fetchFromTMDB<T>(endpoint: string, params: Record<string, string> = {}): Promise<T | any> {
   if (!API_KEY) {
-    console.warn('TMDB_API_KEY is not defined. Returning empty data.');
-    if (endpoint.includes('search')) return { results: [] };
-    return { results: [] };
+    // Throw an error to make it clear the API key is missing.
+    throw new Error('TMDB_API_KEY is not defined. Please add it to your .env file.');
   }
 
   const url = new URL(`${API_BASE_URL}/${endpoint}`);
