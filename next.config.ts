@@ -51,6 +51,17 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        net: false,
+        tls: false,
+        dns: false,
+      };
+    }
+    return config;
+  },
   allowedDevOrigins: ["9000-firebase-studio-1752943405409.cluster-sumfw3zmzzhzkx4mpvz3ogth4y.cloudworkstations.dev"]
 };
 
