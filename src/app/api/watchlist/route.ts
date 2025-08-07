@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { auth } from '@clerk/nextjs/server';
 
 // GET all watchlist items for the user
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const { userId } = auth();
     if (!userId) {

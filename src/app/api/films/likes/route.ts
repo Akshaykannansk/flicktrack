@@ -4,7 +4,7 @@ import prisma from '@/lib/prisma';
 import { auth } from '@clerk/nextjs/server';
 
 // GET all liked films for the user
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const { userId } = auth();
     if (!userId) {
