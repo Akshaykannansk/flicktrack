@@ -133,3 +133,7 @@ export default async function OtherUserProfilePage({ params }: { params: { id: s
     return <ProfilePageContent 
                 user={userData.user} 
                 stats={userData.stats} 
+                isCurrentUser={userData.isCurrentUser}
+                isFollowing={userData.isFollowing}
+            />;
+}
