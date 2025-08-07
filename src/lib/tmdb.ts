@@ -144,4 +144,10 @@ export async function searchUsers(query: string): Promise<PublicUser[]> {
             id: user.id,
             name: user.fullName,
             username: user.username,
-            imageUrl: user
+            imageUrl: user.imageUrl,
+        }));
+    } catch (error) {
+        console.error('Failed to search users:', error);
+        return [];
+    }
+}

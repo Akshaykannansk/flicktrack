@@ -35,4 +35,8 @@ export function FilmCarouselSection({ title, films, watchlistIds, likedIds }: Fi
                 })}
                 </CarouselContent>
                 <CarouselPrevious className="hidden md:flex absolute top-1/2 -translate-y-1/2 -left-4 z-10" />
-                <CarouselNext className="hidden md:flex absolute top-1/2 -translate-y-1
+                <CarouselNext className="hidden md:flex absolute top-1/2 -translate-y-1/2 -right-4 z-10" />
+            </Carousel>
+        </section>
+    );
+}

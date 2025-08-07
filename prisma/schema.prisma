@@ -1,27 +1,14 @@
 
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client-js"
 }
 
-model Film {
-  id              Int            @id
-  title           String
-  overview        String?        @db.Text
-  posterPath      String?
-  releaseDate     DateTime?      @db.Date
-  voteAverage     Float?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  journalEntries  JournalEntry[]
-  watchListItems  WatchlistItem[]
-  lists           FilmOnList[]
-  favoriteFor     User[]         @relation("FavoriteFilms")
-  likedBy         LikedFilm[]
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -29,26 +16,31 @@ model User {
   email           String         @unique
   name            String?
   username        String?        @unique
-  imageUrl        String?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   journalEntries  JournalEntry[]
-  watchListItems  WatchlistItem[]
-  lists           FilmList[]
-  favoriteFilms   Film[]         @relation("FavoriteFilms")
+  watchlistItems  WatchlistItem[]
+  filmLists       FilmList[]
+  likes           LikedFilm[]
   followers       Follows[]      @relation("Following")
   following       Follows[]      @relation("Follower")
-  likes           LikedFilm[]
+  favoriteFilms   Film[]         @relation("FavoriteFilms")
 }
 
-model LikedFilm {
-    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-    userId    String
-    film      Film     @relation(fields: [filmId], references: [id], onDelete: Cascade)
-    filmId    Int
-    createdAt DateTime @default(now())
-
-    @@id([userId, filmId])
+model Film {
+  id            Int             @id
+  title         String
+  overview      String?         @db.Text
+  posterPath    String?
+  releaseDate   DateTime?       @db.Date
+  voteAverage   Float?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  journalEntries JournalEntry[]
+  watchlistItems WatchlistItem[]
+  lists         FilmOnList[]
+  likedBy       LikedFilm[]
+  favoritedBy   User[]          @relation("FavoriteFilms")
 }
 
 model JournalEntry {
@@ -60,12 +52,12 @@ model JournalEntry {
   rating      Float
   review      String?  @db.Text
   loggedDate  DateTime @db.Date
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([userId, filmId, loggedDate])
 }
-
 
 model WatchlistItem {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -77,10 +69,20 @@ model WatchlistItem {
   @@id([userId, filmId])
 }
 
+model LikedFilm {
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    userId    String
+    film      Film     @relation(fields: [filmId], references: [id], onDelete: Cascade)
+    filmId    Int
+    createdAt DateTime @default(now())
+    
+    @@id([userId, filmId])
+}
+
 model FilmList {
   id          String       @id @default(cuid())
   name        String
-  description String?      @db.Text
+  description String?
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId      String
   films       FilmOnList[]
@@ -98,7 +100,6 @@ model FilmOnList {
   @@id([listId, filmId])
 }
 
-
 model Follows {
   follower    User     @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
   followerId  String
@@ -106,4 +107,5 @@ model Follows {
   followingId String
   createdAt   DateTime @default(now())
 
-  @@id([follower
+  @@id([followerId, followingId])
+}

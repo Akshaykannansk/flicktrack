@@ -77,4 +77,6 @@ export function FilmCard({ film, isInWatchlist, isLiked }: FilmCardProps) {
          <h3 className="font-semibold text-sm text-primary-foreground truncate group-hover:text-primary transition-colors">{film.title}</h3>
          <p className="text-xs text-muted-foreground">{year}</p>
       </div>
-    
+    </div>
+  );
+}
