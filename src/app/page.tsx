@@ -1,87 +1,50 @@
-
-'use client';
-
-import { useEffect, useState } from 'react';
 import { getPopularMovies, getTopRatedMovies, getNowPlayingMovies } from '@/lib/tmdb';
 import { FilmCarouselSection } from '@/components/film-carousel-section';
 import { FollowingFeed } from '@/components/following-feed';
 import { Separator } from '@/components/ui/separator';
-import { SignedIn, SignedOut, useUser } from '@clerk/nextjs';
+import { SignedIn, SignedOut } from "@clerk/nextjs";
+import { auth } from '@clerk/nextjs/server';
 import { Users } from 'lucide-react';
 import type { Film } from '@/lib/types';
-import { Skeleton } from '@/components/ui/skeleton';
+import prisma from '@/lib/prisma';
 
-export default function HomePage() {
-  const [popularFilms, setPopularFilms] = useState<Film[]>([]);
-  const [topRatedFilms, setTopRatedFilms] = useState<Film[]>([]);
-  const [recentFilms, setRecentFilms] = useState<Film[]>([]);
-  const [userFilmSets, setUserFilmSets] = useState<{ watchlistIds: Set<number>; likedIds: Set<number> }>({ watchlistIds: new Set(), likedIds: new Set() });
-  const [isLoading, setIsLoading] = useState(true);
-  const { user } = useUser();
-
-  useEffect(() => {
-    async function fetchMovies() {
-      try {
-        const [popular, topRated, recent] = await Promise.all([
-          getPopularMovies(),
-          getTopRatedMovies(),
-          getNowPlayingMovies(),
-        ]);
-        setPopularFilms(popular);
-        setTopRatedFilms(topRated);
-        setRecentFilms(recent);
-      } catch (error) {
-        console.error("Failed to fetch movies:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    
-    async function fetchUserSets() {
-        if (user) {
-             try {
-                const [watchlistRes, likesRes] = await Promise.all([
-                    fetch('/api/watchlist'),
-                    fetch('/api/films/likes')
-                ]);
-
-                let watchlistIds = new Set<number>();
-                if (watchlistRes.ok) {
-                    const watchlistData: { film: Film }[] = await watchlistRes.json();
-                    watchlistIds = new Set(watchlistData.map(item => parseInt(item.film.id, 10)));
-                }
-
-                let likedIds = new Set<number>();
-                if (likesRes.ok) {
-                    const likesData: { film: Film }[] = await likesRes.json();
-                    likedIds = new Set(likesData.map(item => parseInt(item.film.id, 10)));
-                }
-                setUserFilmSets({ watchlistIds, likedIds });
-             } catch (error) {
-                 console.error("Failed to fetch user film sets:", error);
-             }
-        }
+async function getUserFilmSets(userId: string | null) {
+    if (!userId) {
+        return { watchlistIds: new Set<number>(), likedIds: new Set<number>() };
     }
 
-    fetchMovies();
-    fetchUserSets();
+    const [watchlist, likes] = await Promise.all([
+        prisma.watchlistItem.findMany({
+            where: { userId },
+            select: { filmId: true }
+        }),
+        prisma.likedFilm.findMany({
+            where: { userId },
+            select: { filmId: true }
+        }),
+    ]);
 
-  }, [user]);
+    const watchlistIds = new Set(watchlist.map(item => item.filmId));
+    const likedIds = new Set(likes.map(item => item.filmId));
 
-  const FilmCarouselSkeleton = () => (
-    <div className="space-y-4">
-      <Skeleton className="h-8 w-1/4" />
-       <div className="flex space-x-4">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="w-1/6 space-y-2">
-              <Skeleton className="aspect-[2/3] rounded-lg" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-3 w-1/4" />
-            </div>
-          ))}
-       </div>
-    </div>
-  )
+    return { watchlistIds, likedIds };
+}
+
+
+export default async function HomePage() {
+  const { userId } = auth();
+
+  const [
+    popularFilms,
+    topRatedFilms,
+    recentFilms,
+    userFilmSets
+  ] = await Promise.all([
+    getPopularMovies(),
+    getTopRatedMovies(),
+    getNowPlayingMovies(),
+    getUserFilmSets(userId)
+  ]);
 
   return (
     <div className="space-y-12">
@@ -104,19 +67,9 @@ export default function HomePage() {
       </SignedIn>
       
       <div className="space-y-12">
-        {isLoading ? (
-          <>
-            <FilmCarouselSkeleton />
-            <FilmCarouselSkeleton />
-            <FilmCarouselSkeleton />
-          </>
-        ) : (
-          <>
-            <FilmCarouselSection title="Popular Films" films={popularFilms} watchlistIds={userFilmSets.watchlistIds} likedIds={userFilmSets.likedIds} />
-            <FilmCarouselSection title="Top Rated Films" films={topRatedFilms} watchlistIds={userFilmSets.watchlistIds} likedIds={userFilmSets.likedIds} />
-            <FilmCarouselSection title="Now Playing" films={recentFilms} watchlistIds={userFilmSets.watchlistIds} likedIds={userFilmSets.likedIds} />
-          </>
-        )}
+        <FilmCarouselSection title="Popular Films" films={popularFilms} watchlistIds={userFilmSets.watchlistIds} likedIds={userFilmSets.likedIds} />
+        <FilmCarouselSection title="Top Rated Films" films={topRatedFilms} watchlistIds={userFilmSets.watchlistIds} likedIds={userFilmSets.likedIds} />
+        <FilmCarouselSection title="Now Playing" films={recentFilms} watchlistIds={userFilmSets.watchlistIds} likedIds={userFilmSets.likedIds} />
       </div>
     </div>
   )}
