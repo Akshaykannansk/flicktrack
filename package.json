@@ -7,12 +7,14 @@
     "dev": "next dev --turbopack -p 9002",
     "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
     "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
-    "build": "next build",
-    "start": "next start",
+    "build": "prisma generate && next build",
+    "start": "npm run db:migrate && next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "db:seed": "tsx supabase/seed.ts",
-    "postinstall": "prisma generate"
+    "db:migrate": "prisma db push",
+    "db:seed": "prisma db seed",
+    "migrate-and-dev": "npm run db:migrate && npm run dev",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@clerk/nextjs": "^5.2.8",
@@ -71,5 +73,8 @@
     "tailwindcss": "^3.4.1",
     "tsx": "^4.16.2",
     "typescript": "^5"
+  },
+  "prisma": {
+    "seed": "tsx supabase/seed.ts"
   }
 }
