@@ -1,4 +1,3 @@
-
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
@@ -12,34 +11,24 @@ datasource db {
 }
 
 model User {
-  id              String         @id @unique
-  email           String         @unique
-  name            String?
-  username        String?        @unique
-  imageUrl        String?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  journalEntries  JournalEntry[]
-  lists           FilmList[]
-  watchlistItems  WatchlistItem[]
-  favoriteFilms   Film[]         @relation("FavoriteFilms")
-  likes           LikedFilm[]
-  likedLists      LikedList[]
-  reviewLikes     ReviewLike[]
-  comments        Comment[]
-  
-  followers       Follows[]      @relation("Following")
-  following       Follows[]      @relation("Follower")
-}
-
-model Follows {
-    follower    User     @relation("Follower", fields: [followerId], references: [id])
-    followerId  String
-    following   User     @relation("Following", fields: [followingId], references: [id])
-    followingId String
-    createdAt   DateTime @default(now())
-
-    @@id([followerId, followingId])
+  id               String          @id @default(cuid())
+  email            String          @unique
+  name             String?
+  username         String?         @unique
+  imageUrl         String?
+  bio              String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  journalEntries   JournalEntry[]
+  lists            FilmList[]
+  watchlistItems   WatchlistItem[]
+  favoriteFilms    Film[]          @relation("FavoriteFilms")
+  likes            LikedFilm[]
+  likedLists       LikedList[]
+  reviewLikes      ReviewLike[]
+  comments         Comment[]
+  followers        Follows[]       @relation("Following")
+  following        Follows[]       @relation("Followers")
 }
 
 model Film {
@@ -49,8 +38,6 @@ model Film {
   posterPath    String?
   releaseDate   DateTime?
   voteAverage   Float?
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
   journalEntries JournalEntry[]
   watchlistItems WatchlistItem[]
   favoritedBy   User[]          @relation("FavoriteFilms")
@@ -60,15 +47,15 @@ model Film {
 
 model JournalEntry {
   id          String        @id @default(cuid())
-  user        User          @relation(fields: [userId], references: [id])
   userId      String
-  film        Film          @relation(fields: [filmId], references: [id])
   filmId      Int
   rating      Float
   review      String?       @db.Text
   loggedDate  DateTime
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  film        Film          @relation(fields: [filmId], references: [id], onDelete: Cascade)
   likedBy     ReviewLike[]
   comments    Comment[]
 
@@ -76,74 +63,87 @@ model JournalEntry {
 }
 
 model WatchlistItem {
-  user        User     @relation(fields: [userId], references: [id])
-  userId      String
-  film        Film     @relation(fields: [filmId], references: [id])
-  filmId      Int
-  addedAt     DateTime @default(now())
+  userId    String
+  filmId    Int
+  addedAt   DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  film      Film     @relation(fields: [filmId], references: [id], onDelete: Cascade)
 
   @@id([userId, filmId])
 }
 
 model FilmList {
-    id          String       @id @default(cuid())
-    name        String
-    description String?      @db.Text
-    user        User         @relation(fields: [userId], references: [id])
-    userId      String
-    films       FilmOnList[]
-    createdAt   DateTime     @default(now())
-    updatedAt   DateTime     @updatedAt
-    likedBy     LikedList[]
+  id          String       @id @default(cuid())
+  name        String
+  description String?      @db.Text
+  userId      String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  films       FilmOnList[]
+  likedBy     LikedList[]
 }
 
 model FilmOnList {
-    list      FilmList @relation(fields: [listId], references: [id], onDelete: Cascade)
-    listId    String
-    film      Film     @relation(fields: [filmId], references: [id])
-    filmId    Int
-    addedAt   DateTime @default(now())
+  listId   String
+  filmId   Int
+  addedAt  DateTime @default(now())
+  list     FilmList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  film     Film     @relation(fields: [filmId], references: [id], onDelete: Cascade)
 
-    @@id([listId, filmId])
+  @@id([listId, filmId])
 }
 
 model LikedFilm {
-  user        User     @relation(fields: [userId], references: [id])
-  userId      String
-  film        Film     @relation(fields: [filmId], references: [id])
-  filmId      Int
-  createdAt   DateTime @default(now())
+  userId    String
+  filmId    Int
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  film      Film     @relation(fields: [filmId], references: [id], onDelete: Cascade)
 
   @@id([userId, filmId])
 }
 
 model LikedList {
-    user      User     @relation(fields: [userId], references: [id])
-    userId    String
-    list      FilmList @relation(fields: [listId], references: [id], onDelete: Cascade)
-    listId    String
-    createdAt DateTime @default(now())
+  userId    String
+  listId    String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  list      FilmList @relation(fields: [listId], references: [id], onDelete: Cascade)
 
-    @@id([userId, listId])
+  @@id([userId, listId])
 }
 
 model ReviewLike {
-    user           User          @relation(fields: [userId], references: [id])
-    userId         String
-    journalEntry   JournalEntry  @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
-    journalEntryId String
-    createdAt      DateTime      @default(now())
+  userId         String
+  journalEntryId String
+  createdAt      DateTime @default(now())
 
-    @@id([userId, journalEntryId])
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  journalEntry JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+
+  @@id([userId, journalEntryId])
 }
 
 model Comment {
-  id              String          @id @default(cuid())
-  content         String
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  user            User            @relation(fields: [userId], references: [id])
-  userId          String
-  journalEntry    JournalEntry    @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
-  journalEntryId  String
+  id             String   @id @default(cuid())
+  content        String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  userId         String
+  journalEntryId String
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  journalEntry JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+}
+
+model Follows {
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("Followers", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followingId])
 }
