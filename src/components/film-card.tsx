@@ -10,9 +10,8 @@ import { LogFilmDialog } from './log-film-dialog';
 import { Button } from './ui/button';
 import { BookPlus } from 'lucide-react';
 import { WatchlistAction } from './watchlist-action';
-import { useUser } from '@clerk/nextjs';
-import { useRouter } from 'next/navigation';
 import { LikeAction } from './like-action';
+import { useUser } from '@clerk/nextjs';
 
 interface FilmCardProps {
   film: Film;
@@ -22,7 +21,6 @@ interface FilmCardProps {
 
 function SignInGuard({ children }: { children: React.ReactNode }) {
   const { isSignedIn } = useUser();
-  const router = useRouter();
 
   if (!isSignedIn) {
     return (
