@@ -1,23 +1,25 @@
 
-'use client';
-
 import type { Film } from '@/lib/types';
 import { FilmCard } from '@/components/film-card';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 
 interface FilmCarouselSectionProps {
     title: string;
-    films: Film[] | null;
+    filmFetcher: () => Promise<Film[] | null>;
     watchlistIds: Set<number>;
     likedIds: Set<number>;
 }
 
-export function FilmCarouselSection({ title, films, watchlistIds, likedIds }: FilmCarouselSectionProps) {
+export async function FilmCarouselSection({ title, filmFetcher, watchlistIds, likedIds }: FilmCarouselSectionProps) {
+    const films = await filmFetcher();
+
     if (!films || films.length === 0) {
         return (
             <section className="space-y-4">
                  <h2 className="text-2xl font-headline font-bold text-foreground tracking-tight">{title}</h2>
-                 <p className="text-muted-foreground">Could not load films. Please try again later.</p>
+                 <div className="bg-secondary p-8 rounded-lg text-center">
+                   <p className="text-muted-foreground">Could not load films. Please try again later.</p>
+                 </div>
             </section>
         )
     }

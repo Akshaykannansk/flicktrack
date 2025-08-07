@@ -7,6 +7,8 @@ import { auth } from '@clerk/nextjs/server';
 import { Users } from 'lucide-react';
 import type { Film } from '@/lib/types';
 import prisma from '@/lib/prisma';
+import React from 'react';
+import { FilmCarouselSkeleton } from '@/components/film-carousel-skeleton';
 
 async function getUserFilmSets(userId: string | null) {
     if (!userId) {
@@ -33,18 +35,7 @@ async function getUserFilmSets(userId: string | null) {
 
 export default async function HomePage() {
   const { userId } = auth();
-
-  const [
-    popularFilms,
-    topRatedFilms,
-    recentFilms,
-    userFilmSets
-  ] = await Promise.all([
-    getPopularMovies(),
-    getTopRatedMovies(),
-    getNowPlayingMovies(),
-    getUserFilmSets(userId)
-  ]);
+  const userFilmSets = await getUserFilmSets(userId);
 
   return (
     <div className="space-y-12">
@@ -67,9 +58,15 @@ export default async function HomePage() {
       </SignedIn>
       
       <div className="space-y-12">
-        <FilmCarouselSection title="Popular Films" films={popularFilms} watchlistIds={userFilmSets.watchlistIds} likedIds={userFilmSets.likedIds} />
-        <FilmCarouselSection title="Top Rated Films" films={topRatedFilms} watchlistIds={userFilmSets.watchlistIds} likedIds={userFilmSets.likedIds} />
-        <FilmCarouselSection title="Now Playing" films={recentFilms} watchlistIds={userFilmSets.watchlistIds} likedIds={userFilmSets.likedIds} />
+        <React.Suspense fallback={<FilmCarouselSkeleton title="Popular Films" />}>
+          <FilmCarouselSection title="Popular Films" filmFetcher={getPopularMovies} watchlistIds={userFilmSets.watchlistIds} likedIds={userFilmSets.likedIds} />
+        </React.Suspense>
+        <React.Suspense fallback={<FilmCarouselSkeleton title="Top Rated Films" />}>
+          <FilmCarouselSection title="Top Rated Films" filmFetcher={getTopRatedMovies} watchlistIds={userFilmSets.watchlistIds} likedIds={userFilmSets.likedIds} />
+        </React.Suspense>
+        <React.Suspense fallback={<FilmCarouselSkeleton title="Now Playing" />}>
+          <FilmCarouselSection title="Now Playing" filmFetcher={getNowPlayingMovies} watchlistIds={userFilmSets.watchlistIds} likedIds={userFilmSets.likedIds} />
+        </React.Suspense>
       </div>
     </div>
   )}
