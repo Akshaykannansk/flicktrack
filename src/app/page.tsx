@@ -5,11 +5,12 @@ import { FollowingFeed } from '@/components/following-feed';
 import { Separator } from '@/components/ui/separator';
 import { SignedIn, SignedOut } from "@clerk/nextjs";
 import { auth } from '@clerk/nextjs/server';
-import { Users } from 'lucide-react';
+import { Users, TrendingUp } from 'lucide-react';
 import prisma from '@/lib/prisma';
 import React from 'react';
 import { FilmCarouselSkeleton } from '@/components/film-carousel-skeleton';
 import { FeedSkeleton } from '@/components/following-feed';
+import { TrendingReviews } from '@/components/trending-reviews';
 
 async function getUserFilmSets(userId: string | null) {
     if (!userId) {
@@ -59,6 +60,16 @@ export default async function HomePage() {
           <h1 className="text-4xl font-headline font-bold tracking-tighter sm:text-5xl text-foreground">Welcome to FlickTrack</h1>
           <p className="text-muted-foreground mt-3 max-w-xl mx-auto">Your personal film journal. Discover, log, and share your favorite films.</p>
         </div>
+         <section className="space-y-6">
+            <div className="flex items-center gap-3">
+                <TrendingUp className="w-7 h-7 text-primary/80" />
+                <h2 className="text-3xl font-headline font-bold text-foreground tracking-tight">Trending Reviews</h2>
+            </div>
+             <React.Suspense fallback={<FeedSkeleton />}>
+              <TrendingReviews />
+            </React.Suspense>
+          </section>
+          <Separator />
       </SignedOut>
 
       <SignedIn>
@@ -69,6 +80,16 @@ export default async function HomePage() {
             </div>
             <React.Suspense fallback={<FeedSkeleton />}>
               <FollowingFeed />
+            </React.Suspense>
+          </section>
+          <Separator />
+          <section className="space-y-6">
+            <div className="flex items-center gap-3">
+                <TrendingUp className="w-7 h-7 text-primary/80" />
+                <h2 className="text-3xl font-headline font-bold text-foreground tracking-tight">Trending Reviews</h2>
+            </div>
+             <React.Suspense fallback={<FeedSkeleton />}>
+              <TrendingReviews />
             </React.Suspense>
           </section>
           <Separator />
