@@ -12,10 +12,10 @@ export const dynamic = 'force-dynamic';
 
 async function getUserFilmSets(userId: string | null) {
     if (!userId) {
-        return { watchlistIds: new Set<number>(), favoriteIds: new Set<number>() };
+        return { watchlistIds: new Set<number>(), favoriteIds: new Set<number>(), likedIds: new Set<number>() };
     }
 
-    const [watchlist, userWithFavorites] = await Promise.all([
+    const [watchlist, userWithFavorites, likes] = await Promise.all([
         prisma.watchlistItem.findMany({
             where: { userId },
             select: { filmId: true }
@@ -23,13 +23,18 @@ async function getUserFilmSets(userId: string | null) {
         prisma.user.findUnique({
             where: { id: userId },
             select: { favoriteFilms: { select: { id: true } } }
+        }),
+        prisma.likedFilm.findMany({
+            where: { userId },
+            select: { filmId: true }
         })
     ]);
 
     const watchlistIds = new Set(watchlist.map(item => item.filmId));
     const favoriteIds = new Set(userWithFavorites?.favoriteFilms.map(film => film.id) ?? []);
+    const likedIds = new Set(likes.map(item => item.filmId));
 
-    return { watchlistIds, favoriteIds };
+    return { watchlistIds, favoriteIds, likedIds };
 }
 
 
@@ -39,7 +44,7 @@ export default async function HomePage() {
     popularFilms,
     topRatedFilms,
     recentFilms,
-    { watchlistIds, favoriteIds }
+    { watchlistIds, favoriteIds, likedIds }
   ] = await Promise.all([
     getPopularMovies(),
     getTopRatedMovies(),
@@ -68,9 +73,9 @@ export default async function HomePage() {
       </SignedIn>
       
       <div className="space-y-12">
-        <FilmCarouselSection title="Popular Films" films={popularFilms} watchlistIds={watchlistIds} favoriteIds={favoriteIds} />
-        <FilmCarouselSection title="Top Rated Films" films={topRatedFilms} watchlistIds={watchlistIds} favoriteIds={favoriteIds} />
-        <FilmCarouselSection title="Now Playing" films={recentFilms} watchlistIds={watchlistIds} favoriteIds={favoriteIds} />
+        <FilmCarouselSection title="Popular Films" films={popularFilms} watchlistIds={watchlistIds} favoriteIds={favoriteIds} likedIds={likedIds} />
+        <FilmCarouselSection title="Top Rated Films" films={topRatedFilms} watchlistIds={watchlistIds} favoriteIds={favoriteIds} likedIds={likedIds} />
+        <FilmCarouselSection title="Now Playing" films={recentFilms} watchlistIds={watchlistIds} favoriteIds={favoriteIds} likedIds={likedIds} />
       </div>
     </div>
   );

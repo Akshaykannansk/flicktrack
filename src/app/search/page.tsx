@@ -20,10 +20,10 @@ interface SearchPageProps {
 
 async function getUserFilmSets(userId: string | null) {
     if (!userId) {
-        return { watchlistIds: new Set<number>(), favoriteIds: new Set<number>() };
+        return { watchlistIds: new Set<number>(), favoriteIds: new Set<number>(), likedIds: new Set<number>() };
     }
 
-    const [watchlist, userWithFavorites] = await Promise.all([
+    const [watchlist, userWithFavorites, likes] = await Promise.all([
         prisma.watchlistItem.findMany({
             where: { userId },
             select: { filmId: true }
@@ -31,13 +31,18 @@ async function getUserFilmSets(userId: string | null) {
         prisma.user.findUnique({
             where: { id: userId },
             select: { favoriteFilms: { select: { id: true } } }
+        }),
+        prisma.likedFilm.findMany({
+            where: { userId },
+            select: { filmId: true }
         })
     ]);
 
     const watchlistIds = new Set(watchlist.map(item => item.filmId));
     const favoriteIds = new Set(userWithFavorites?.favoriteFilms.map(film => film.id) ?? []);
+    const likedIds = new Set(likes.map(item => item.filmId));
 
-    return { watchlistIds, favoriteIds };
+    return { watchlistIds, favoriteIds, likedIds };
 }
 
 
@@ -49,6 +54,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     let users: PublicUser[] = [];
     let watchlistIds = new Set<number>();
     let favoriteIds = new Set<number>();
+    let likedIds = new Set<number>();
 
     if (query) {
       const [filmResults, userResults, filmSets] = await Promise.all([
@@ -60,6 +66,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       users = userResults;
       watchlistIds = filmSets.watchlistIds;
       favoriteIds = filmSets.favoriteIds;
+      likedIds = filmSets.likedIds;
     }
 
     return (
@@ -89,6 +96,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                                             film={film} 
                                             isInWatchlist={watchlistIds.has(filmId)}
                                             isFavorite={favoriteIds.has(filmId)}
+                                            isLiked={likedIds.has(filmId)}
                                         />
                                     )
                                 })}
@@ -139,4 +147,3 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         </div>
     );
 }
-

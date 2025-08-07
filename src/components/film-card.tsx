@@ -8,16 +8,18 @@ import { Card, CardContent } from '@/components/ui/card';
 import { IMAGE_BASE_URL } from '@/lib/tmdb-isomorphic';
 import { LogFilmDialog } from './log-film-dialog';
 import { Button } from './ui/button';
-import { Heart, Bookmark, BookPlus } from 'lucide-react';
+import { Heart, Bookmark, BookPlus, Star } from 'lucide-react';
 import { WatchlistAction } from './watchlist-action';
 import { useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import { FavoriteAction } from './favorite-action';
+import { LikeAction } from './like-action';
 
 interface FilmCardProps {
   film: Film;
   isFavorite?: boolean;
   isInWatchlist?: boolean;
+  isLiked?: boolean;
 }
 
 function SignInGuard({ children }: { children: React.ReactNode }) {
@@ -36,7 +38,7 @@ function SignInGuard({ children }: { children: React.ReactNode }) {
 }
 
 
-export function FilmCard({ film, isFavorite, isInWatchlist }: FilmCardProps) {
+export function FilmCard({ film, isFavorite, isInWatchlist, isLiked }: FilmCardProps) {
   const posterUrl = film.poster_path ? `${IMAGE_BASE_URL}w500${film.poster_path}` : 'https://placehold.co/400x600.png';
   const year = film.release_date ? new Date(film.release_date).getFullYear() : 'N/A';
   const { isSignedIn } = useUser();
@@ -72,6 +74,9 @@ export function FilmCard({ film, isFavorite, isInWatchlist }: FilmCardProps) {
               <WatchlistAction filmId={parseInt(film.id, 10)} initialIsInWatchlist={!!isInWatchlist} />
             </SignInGuard>
              <SignInGuard>
+              <LikeAction filmId={parseInt(film.id, 10)} initialIsLiked={!!isLiked} />
+            </SignInGuard>
+             <SignInGuard>
               <FavoriteAction filmId={parseInt(film.id, 10)} initialIsFavorite={!!isFavorite} />
             </SignInGuard>
         </div>
@@ -83,4 +88,3 @@ export function FilmCard({ film, isFavorite, isInWatchlist }: FilmCardProps) {
     </div>
   );
 }
-

@@ -10,9 +10,10 @@ interface FilmCarouselSectionProps {
     films: Film[];
     watchlistIds?: Set<number>;
     favoriteIds?: Set<number>;
+    likedIds?: Set<number>;
 }
 
-export function FilmCarouselSection({ title, films, watchlistIds, favoriteIds }: FilmCarouselSectionProps) {
+export function FilmCarouselSection({ title, films, watchlistIds, favoriteIds, likedIds }: FilmCarouselSectionProps) {
     return (
         <section className="space-y-4">
             <h2 className="text-2xl font-headline font-bold text-primary-foreground tracking-tight">{title}</h2>
@@ -29,6 +30,7 @@ export function FilmCarouselSection({ title, films, watchlistIds, favoriteIds }:
                                 film={film} 
                                 isInWatchlist={watchlistIds?.has(filmId)}
                                 isFavorite={favoriteIds?.has(filmId)}
+                                isLiked={likedIds?.has(filmId)}
                             />
                         </CarouselItem>
                     )

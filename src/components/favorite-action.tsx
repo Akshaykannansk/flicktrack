@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Heart, Loader2 } from 'lucide-react';
+import { Star, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 
@@ -89,10 +89,9 @@ export function FavoriteAction({ filmId, initialIsFavorite }: FavoriteActionProp
       {isLoading ? (
         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
       ) : (
-        <Heart className={`mr-2 h-4 w-4 ${isFavorite ? 'fill-accent' : ''}`} />
+        <Star className={`mr-2 h-4 w-4 ${isFavorite ? 'fill-accent' : ''}`} />
       )}
-      {isLoading ? 'Updating...' : isFavorite ? 'Favorite' : 'Like'}
+      {isLoading ? 'Updating...' : isFavorite ? 'Favorite' : 'Favorite'}
     </Button>
   );
 }
-

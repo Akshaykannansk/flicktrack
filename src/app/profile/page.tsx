@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Settings, Film as FilmIcon, Star } from 'lucide-react';
+import { Settings, Film as FilmIcon, Star, Heart } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { FilmCard } from '@/components/film-card';
 import type { Film as FilmType, LoggedFilm } from '@/lib/types';
@@ -24,7 +24,8 @@ async function getUserStats(userId: string) {
                 select: {
                     followers: true,
                     following: true,
-                    journalEntries: true
+                    journalEntries: true,
+                    likes: true,
                 }
             }
         }
@@ -35,6 +36,7 @@ async function getUserStats(userId: string) {
     const journalCount = dbUser._count.journalEntries;
     const followersCount = dbUser._count.followers;
     const followingCount = dbUser._count.following;
+    const likesCount = dbUser._count.likes;
 
     const favoriteFilmsDetails = await Promise.all(
         dbUser.favoriteFilms.map(film => getFilmDetails(film.id.toString()))
@@ -42,12 +44,19 @@ async function getUserStats(userId: string) {
 
     const validFavoriteFilms = favoriteFilmsDetails.filter(Boolean) as FilmType[];
     
-    const watchlist = await prisma.watchlistItem.findMany({
-        where: { userId },
-        select: { filmId: true }
-    });
-    const watchlistIds = new Set(watchlist.map(item => item.filmId));
+    const [watchlist, likes] = await Promise.all([
+      prisma.watchlistItem.findMany({
+          where: { userId },
+          select: { filmId: true }
+      }),
+      prisma.likedFilm.findMany({
+          where: { userId },
+          select: { filmId: true }
+      })
+    ]);
 
+    const watchlistIds = new Set(watchlist.map(item => item.filmId));
+    const likedIds = new Set(likes.map(item => item.filmId));
 
     const recentJournalEntries = await prisma.journalEntry.findMany({
         where: { userId },
@@ -59,9 +68,11 @@ async function getUserStats(userId: string) {
     return { 
         journalCount, 
         followersCount, 
-        followingCount, 
+        followingCount,
+        likesCount, 
         favoriteFilms: validFavoriteFilms,
         watchlistIds,
+        likedIds,
         recentJournalEntries: recentJournalEntries.map(entry => ({
             id: entry.id,
             film: {
@@ -115,7 +126,7 @@ interface ProfilePageContentProps {
 }
 
 export function ProfilePageContent({ user, stats, isCurrentUser, isFollowing }: ProfilePageContentProps) {
-    const { journalCount, followersCount, followingCount, favoriteFilms, recentJournalEntries, watchlistIds } = stats;
+    const { journalCount, followersCount, followingCount, likesCount, favoriteFilms, recentJournalEntries, watchlistIds, likedIds } = stats;
     const favoriteFilmIds = new Set(favoriteFilms.map(f => parseInt(f.id, 10)));
 
     return (
@@ -138,6 +149,7 @@ export function ProfilePageContent({ user, stats, isCurrentUser, isFollowing }: 
                     <span><strong className="text-primary-foreground font-semibold">{journalCount}</strong> Films</span>
                     <span><strong className="text-primary-foreground font-semibold">{followersCount}</strong> Followers</span>
                     <span><strong className="text-primary-foreground font-semibold">{followingCount}</strong> Following</span>
+                    <span><strong className="text-primary-foreground font-semibold">{likesCount}</strong> Likes</span>
                 </div>
                 <div className="flex justify-center md:justify-start gap-2 mt-4">
                     {isCurrentUser ? (
@@ -176,6 +188,7 @@ export function ProfilePageContent({ user, stats, isCurrentUser, isFollowing }: 
                                 film={film}
                                 isInWatchlist={watchlistIds.has(filmId)}
                                 isFavorite={favoriteFilmIds.has(filmId)}
+                                isLiked={likedIds.has(filmId)}
                             />
                         )
                     })}
@@ -247,4 +260,3 @@ export function ProfilePageContent({ user, stats, isCurrentUser, isFollowing }: 
         </div>
     );
 }
-

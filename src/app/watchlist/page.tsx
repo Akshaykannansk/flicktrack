@@ -15,11 +15,12 @@ interface WatchlistItem {
 interface UserFilmSets {
     watchlistIds: Set<number>;
     favoriteIds: Set<number>;
+    likedIds: Set<number>;
 }
 
 export default function WatchlistPage() {
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
-  const [userFilmSets, setUserFilmSets] = useState<UserFilmSets>({ watchlistIds: new Set(), favoriteIds: new Set() });
+  const [userFilmSets, setUserFilmSets] = useState<UserFilmSets>({ watchlistIds: new Set(), favoriteIds: new Set(), likedIds: new Set() });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,9 +28,10 @@ export default function WatchlistPage() {
     async function fetchWatchlistData() {
         setIsLoading(true);
         try {
-            const [watchlistRes, favoritesRes] = await Promise.all([
+            const [watchlistRes, favoritesRes, likesRes] = await Promise.all([
                 fetch('/api/watchlist'),
-                fetch('/api/profile/favorites')
+                fetch('/api/profile/favorites'),
+                fetch('/api/films/likes')
             ]);
 
             if (!watchlistRes.ok) {
@@ -46,7 +48,13 @@ export default function WatchlistPage() {
                 favoriteIds = new Set(favoritesData.map(item => parseInt(item.id, 10)));
             }
             
-            setUserFilmSets({ watchlistIds, favoriteIds });
+            let likedIds = new Set<number>();
+            if (likesRes.ok) {
+                const likesData: { film: FilmType }[] = await likesRes.json();
+                likedIds = new Set(likesData.map(item => parseInt(item.film.id, 10)));
+            }
+
+            setUserFilmSets({ watchlistIds, favoriteIds, likedIds });
 
         } catch (err: any) {
             setError(err.message);
@@ -98,6 +106,7 @@ export default function WatchlistPage() {
                     film={film} 
                     isInWatchlist={userFilmSets.watchlistIds.has(filmId)}
                     isFavorite={userFilmSets.favoriteIds.has(filmId)}
+                    isLiked={userFilmSets.likedIds.has(filmId)}
                 />
               )
           })}

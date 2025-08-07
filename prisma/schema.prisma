@@ -10,56 +10,53 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id             String         @id
-  email          String         @unique
-  name           String?
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  journalEntries JournalEntry[]
-  watchlistItems WatchlistItem[]
-  lists          FilmList[]
-  favoriteFilms  Film[]         @relation("UserFavoriteFilms")
-
-  following Follows[] @relation("following")
-  followers Follows[] @relation("followers")
-}
-
-model Follows {
-  followerId  String
-  followingId String
-  follower    User   @relation("following", fields: [followerId], references: [id], onDelete: Cascade)
-  following   User   @relation("followers", fields: [followingId], references: [id], onDelete: Cascade)
-
-  @@id([followerId, followingId])
-}
-
 model Film {
-  id            Int             @id
+  id            Int      @id @unique
   title         String
-  overview      String?         @db.Text
+  overview      String?  @db.Text
   posterPath    String?
   releaseDate   DateTime?
   voteAverage   Float?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
   journalEntries JournalEntry[]
   watchlistItems WatchlistItem[]
-  lists         FilmOnList[]
-  favoritedBy   User[]          @relation("UserFavoriteFilms")
+  lists          FilmOnList[]
+  favoritedBy    User[]         @relation("FavoriteFilms")
+  likedBy        LikedFilm[]
+}
+
+model User {
+  id            String    @id @unique
+  email         String    @unique
+  name          String?
+  username      String?
+  imageUrl      String?
+  
+  journalEntries JournalEntry[]
+  watchlistItems WatchlistItem[]
+  filmLists      FilmList[]
+  followers      Follows[]      @relation("Following")
+  following      Follows[]      @relation("Followers")
+  favoriteFilms  Film[]         @relation("FavoriteFilms")
+  likes          LikedFilm[]
 }
 
 model JournalEntry {
-  id         String   @id @default(cuid())
-  rating     Float
-  review     String?  @db.Text
-  loggedDate DateTime
-  createdAt  DateTime @default(now())
+  id          String   @id @default(cuid())
+  userId      String
+  filmId      Int
+  rating      Float
+  review      String?  @db.Text
+  loggedDate  DateTime
 
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId String
-  film   Film   @relation(fields: [filmId], references: [id], onDelete: Cascade)
-  filmId Int
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  film Film @relation(fields: [filmId], references: [id], onDelete: Cascade)
 
   @@unique([userId, filmId, loggedDate])
+  @@index([userId])
+  @@index([filmId])
 }
 
 model WatchlistItem {
@@ -71,18 +68,21 @@ model WatchlistItem {
   film Film @relation(fields: [filmId], references: [id], onDelete: Cascade)
 
   @@id([userId, filmId])
+  @@index([filmId])
 }
 
 model FilmList {
-  id          String       @id @default(cuid())
+  id          String   @id @default(cuid())
   name        String
-  description String?      @db.Text
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  description String?
+  userId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId String
-  films  FilmOnList[]
+  user  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  films FilmOnList[]
+
+  @@index([userId])
 }
 
 model FilmOnList {
@@ -94,4 +94,29 @@ model FilmOnList {
   film Film     @relation(fields: [filmId], references: [id], onDelete: Cascade)
 
   @@id([listId, filmId])
+  @@index([filmId])
+}
+
+model Follows {
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("Followers", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followingId])
+  @@index([followingId])
+}
+
+model LikedFilm {
+  userId    String
+  filmId    Int
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  film Film @relation(fields: [filmId], references: [id], onDelete: Cascade)
+
+  @@id([userId, filmId])
+  @@index([filmId])
 }
