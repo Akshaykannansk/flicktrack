@@ -1,3 +1,4 @@
+
 import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -190,10 +191,10 @@ export function ProfilePageContent({ user, stats, isCurrentUser, isFollowing }: 
                 <h1 className="text-4xl font-headline font-bold tracking-tighter">{user.fullName || 'User'}</h1>
                 <p className="text-muted-foreground mt-1">@{user.username || 'username'}</p>
                 <div className="flex justify-center md:justify-start space-x-6 text-base text-muted-foreground mt-3">
-                    <span><strong className="text-primary-foreground font-semibold">{journalCount}</strong> Films</span>
-                    <span><strong className="text-primary-foreground font-semibold">{followersCount}</strong> Followers</span>
-                    <span><strong className="text-primary-foreground font-semibold">{followingCount}</strong> Following</span>
-                    <span><strong className="text-primary-foreground font-semibold">{likesCount}</strong> Likes</span>
+                    <span><strong className="text-foreground font-semibold">{journalCount}</strong> Films</span>
+                    <span><strong className="text-foreground font-semibold">{followersCount}</strong> Followers</span>
+                    <span><strong className="text-foreground font-semibold">{followingCount}</strong> Following</span>
+                    <span><strong className="text-foreground font-semibold">{likesCount}</strong> Likes</span>
                 </div>
                 <div className="flex justify-center md:justify-start gap-2 mt-4">
                     {isCurrentUser ? (

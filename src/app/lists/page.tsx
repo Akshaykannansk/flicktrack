@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -112,7 +113,7 @@ export default function ListsPage() {
                     )}
                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
                   </div>
-                  <h2 className="text-xl font-headline font-semibold text-primary-foreground group-hover:text-primary transition-colors">{list.name}</h2>
+                  <h2 className="text-xl font-headline font-semibold text-foreground group-hover:text-primary transition-colors">{list.name}</h2>
                   <p className="text-sm text-muted-foreground mt-1">{list._count.films} {list._count.films === 1 ? 'film' : 'films'}</p>
                 </CardContent>
               </Card>

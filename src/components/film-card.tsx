@@ -12,6 +12,7 @@ import { BookPlus } from 'lucide-react';
 import { WatchlistAction } from './watchlist-action';
 import { LikeAction } from './like-action';
 import { useUser } from '@clerk/nextjs';
+import { cn } from '@/lib/utils';
 
 interface FilmCardProps {
   film: Film;
@@ -40,7 +41,7 @@ export function FilmCard({ film, isInWatchlist, isLiked }: FilmCardProps) {
 
   return (
     <div className="group relative">
-        <Card className="overflow-hidden transition-all duration-300 group-hover:scale-105 group-hover:shadow-lg group-hover:shadow-primary/20 border-2 border-transparent group-hover:border-primary/50 rounded-lg bg-secondary">
+        <Card className="overflow-visible bg-secondary border-2 border-transparent group-hover:border-primary/50 transition-all duration-300">
           <CardContent className="p-0 relative">
              <Link href={`/film/${film.id}`} className="block">
                 <div className="aspect-[2/3] relative">
@@ -48,7 +49,7 @@ export function FilmCard({ film, isInWatchlist, isLiked }: FilmCardProps) {
                     src={posterUrl}
                     alt={`Poster for ${film.title}`}
                     fill
-                    className="object-cover rounded-md"
+                    className="object-cover rounded-md transition-transform duration-300 group-hover:scale-105"
                     sizes="(max-width: 640px) 33vw, (max-width: 1024px) 20vw, 16vw"
                     data-ai-hint={`${film.title} movie poster`}
                   />
@@ -75,7 +76,7 @@ export function FilmCard({ film, isInWatchlist, isLiked }: FilmCardProps) {
         </Card>
       <div className="mt-2">
          <Link href={`/film/${film.id}`}>
-           <h3 className="font-semibold text-sm text-primary-foreground truncate hover:text-primary transition-colors">{film.title}</h3>
+           <h3 className="font-semibold text-sm text-foreground truncate hover:text-primary transition-colors">{film.title}</h3>
          </Link>
          <p className="text-xs text-muted-foreground">{year}</p>
       </div>
