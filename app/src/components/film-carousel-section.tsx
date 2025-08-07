@@ -9,7 +9,6 @@ interface FilmCarouselSectionProps {
     title: string;
     films: Film[];
     watchlistIds?: Set<number>;
-    favoriteIds?: Set<number>;
     likedIds?: Set<number>;
 }
 
@@ -19,9 +18,9 @@ export function FilmCarouselSection({ title, films, watchlistIds, likedIds }: Fi
             <h2 className="text-2xl font-headline font-bold text-primary-foreground tracking-tight">{title}</h2>
             <Carousel 
                 opts={{ align: "start", dragFree: true }}
-                className="relative" // Ensure parent is a positioning context
+                className="relative"
             >
-                <CarouselContent className="-ml-2 md:-ml-4 py-4">
+                <CarouselContent className="-ml-2 md:-ml-4">
                 {films.map((film, index) => {
                     const filmId = parseInt(film.id, 10);
                     return (
@@ -35,7 +34,6 @@ export function FilmCarouselSection({ title, films, watchlistIds, likedIds }: Fi
                     )
                 })}
                 </CarouselContent>
-                {/* Position arrows to not interfere with hover effect */}
                 <CarouselPrevious className="hidden md:flex absolute top-1/2 -translate-y-1/2 -left-4 z-10" />
                 <CarouselNext className="hidden md:flex absolute top-1/2 -translate-y-1/2 -right-4 z-10" />
             </Carousel>

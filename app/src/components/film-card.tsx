@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { IMAGE_BASE_URL } from '@/lib/tmdb-isomorphic';
 import { LogFilmDialog } from './log-film-dialog';
 import { Button } from './ui/button';
-import { Heart, Bookmark, BookPlus, Star } from 'lucide-react';
+import { BookPlus } from 'lucide-react';
 import { WatchlistAction } from './watchlist-action';
 import { useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
@@ -39,10 +39,9 @@ function SignInGuard({ children }: { children: React.ReactNode }) {
 export function FilmCard({ film, isInWatchlist, isLiked }: FilmCardProps) {
   const posterUrl = film.poster_path ? `${IMAGE_BASE_URL}w500${film.poster_path}` : 'https://placehold.co/400x600.png';
   const year = film.release_date ? new Date(film.release_date).getFullYear() : 'N/A';
-  const { isSignedIn } = useUser();
 
   return (
-    <div className="group relative">
+    <div className="group relative group-hover:z-20">
       <Link href={`/film/${film.id}`} className="block">
         <Card className="overflow-hidden transition-all duration-300 group-hover:scale-105 group-hover:shadow-lg group-hover:shadow-primary/20 border-2 border-transparent group-hover:border-primary/50 rounded-lg bg-secondary">
           <CardContent className="p-0">
