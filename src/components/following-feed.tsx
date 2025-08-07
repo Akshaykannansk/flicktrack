@@ -1,6 +1,4 @@
-'use client';
 
-import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +7,8 @@ import { IMAGE_BASE_URL } from '@/lib/tmdb-isomorphic';
 import type { Film, PublicUser } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from './ui/button';
+import { auth } from '@clerk/nextjs/server';
+import prisma from '@/lib/prisma';
 
 interface FeedEntry {
   id: string;
@@ -19,7 +19,7 @@ interface FeedEntry {
   loggedDate: string;
 }
 
-const FeedSkeleton = () => (
+export const FeedSkeleton = () => (
     <div className="space-y-4">
         {[...Array(3)].map((_, i) => (
             <Card key={i} className="bg-secondary border-0">
@@ -45,39 +45,72 @@ const FeedSkeleton = () => (
     </div>
 )
 
-
-export function FollowingFeed() {
-  const [feed, setFeed] = useState<FeedEntry[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function fetchFeed() {
-      setIsLoading(true);
-      try {
-        const response = await fetch('/api/feed');
-        if (!response.ok) {
-          throw new Error('Failed to fetch feed.');
-        }
-        const data = await response.json();
-        setFeed(data);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
-      }
+async function getFeed(): Promise<FeedEntry[]> {
+    const { userId } = auth();
+    if (!userId) {
+        return [];
     }
-    fetchFeed();
-  }, []);
 
-  if (isLoading) {
-    return <FeedSkeleton />;
-  }
+    const follows = await prisma.follows.findMany({
+      where: { followerId: userId },
+      select: { followingId: true },
+    });
 
-  if (error) {
-    return <div className="text-center py-10 text-destructive">{error}</div>;
-  }
+    const followingIds = follows.map(f => f.followingId);
 
+    if (followingIds.length === 0) {
+      return [];
+    }
+
+    const feedEntries = await prisma.journalEntry.findMany({
+      where: {
+        userId: {
+          in: followingIds,
+        },
+      },
+      include: {
+        film: true,
+        user: {
+            select: {
+                id: true,
+                name: true,
+                username: true,
+                imageUrl: true,
+            }
+        }
+      },
+      orderBy: {
+        loggedDate: 'desc',
+      },
+      take: 20, 
+    });
+
+     const responseData: FeedEntry[] = feedEntries.map(entry => ({
+        ...entry,
+        loggedDate: entry.loggedDate.toISOString(),
+        film: {
+          id: entry.film.id.toString(),
+          title: entry.film.title,
+          overview: entry.film.overview,
+          poster_path: entry.film.posterPath,
+          release_date: entry.film.releaseDate ? entry.film.releaseDate.toISOString() : null,
+          vote_average: entry.film.voteAverage,
+        },
+        user: {
+            id: entry.user.id,
+            name: entry.user.name,
+            username: entry.user.username,
+            imageUrl: entry.user.imageUrl,
+        }
+    }));
+
+    return responseData;
+}
+
+
+export async function FollowingFeed() {
+  const feed = await getFeed();
+  
   if (feed.length === 0) {
     return (
        <div className="text-center py-20 border-2 border-dashed rounded-lg flex flex-col items-center bg-secondary/30">

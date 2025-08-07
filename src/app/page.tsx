@@ -9,6 +9,7 @@ import { Users } from 'lucide-react';
 import prisma from '@/lib/prisma';
 import React from 'react';
 import { FilmCarouselSkeleton } from '@/components/film-carousel-skeleton';
+import { FeedSkeleton } from '@/components/following-feed';
 
 async function getUserFilmSets(userId: string | null) {
     if (!userId) {
@@ -66,7 +67,9 @@ export default async function HomePage() {
                 <Users className="w-7 h-7 text-primary/80" />
                 <h2 className="text-3xl font-headline font-bold text-foreground tracking-tight">Following Activity</h2>
             </div>
-            <FollowingFeed />
+            <React.Suspense fallback={<FeedSkeleton />}>
+              <FollowingFeed />
+            </React.Suspense>
           </section>
           <Separator />
       </SignedIn>
