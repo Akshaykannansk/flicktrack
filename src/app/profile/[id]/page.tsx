@@ -4,7 +4,52 @@ import { auth, clerkClient } from '@clerk/nextjs/server';
 import prisma from '@/lib/prisma';
 import { notFound, redirect } from 'next/navigation';
 import type { Film as FilmType } from '@/lib/types';
-import { getFilmDetails } from '@/lib/tmdb';
+import { getFilmDetails as getFilmDetailsFromTMDB } from '@/lib/tmdb';
+import type { FilmDetails } from '@/lib/types';
+import redis from '@/lib/redis';
+
+const CACHE_EXPIRATION_SECONDS = 60 * 60 * 24; // 24 hours
+
+async function getFilmDetails(id: string): Promise<FilmDetails | null> {
+    const cacheKey = `film:${id}`;
+
+    try {
+      if (!redis.isOpen) {
+        await redis.connect().catch(err => {
+            console.error('Failed to connect to Redis for getFilmDetails:', err);
+        });
+      }
+
+      if (redis.isOpen) {
+        const cachedFilm = await redis.get(cacheKey);
+        if (cachedFilm) {
+            console.log(`CACHE HIT for film: ${id}`);
+            return JSON.parse(cachedFilm);
+        }
+      }
+    } catch (error) {
+        console.error("Redis GET error in getFilmDetails:", error);
+    }
+
+    console.log(`CACHE MISS for film: ${id}. Fetching from TMDB.`);
+    const filmDetails = await getFilmDetailsFromTMDB(id);
+    
+    if (!filmDetails) {
+        return null;
+    }
+
+    try {
+        if (redis.isOpen) {
+            await redis.set(cacheKey, JSON.stringify(filmDetails), {
+                EX: CACHE_EXPIRATION_SECONDS
+            });
+        }
+    } catch (error) {
+        console.error("Redis SET error in getFilmDetails:", error);
+    }
+    
+    return filmDetails;
+}
 
 
 async function getUserData(userId: string) {

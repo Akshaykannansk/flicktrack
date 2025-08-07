@@ -1,18 +1,13 @@
 
-import type { Film, FilmDetails, PaginatedResponse, Video, PublicUser } from './types';
-import redis from './redis';
+import type { Film, FilmDetails, PaginatedResponse, Video } from './types';
 import { IMAGE_BASE_URL } from './tmdb-isomorphic';
-import prisma from './prisma';
 
 const API_BASE_URL = 'https://api.themoviedb.org/3';
 const API_KEY = process.env.TMDB_API_KEY;
 
-const CACHE_EXPIRATION_SECONDS = 60 * 60 * 24; // 24 hours
 
 async function fetchFromTMDB<T>(endpoint: string, params: Record<string, string> = {}): Promise<T | any> {
   if (!API_KEY) {
-    // In a real-world scenario, you'd want to handle this more gracefully.
-    // Maybe return a specific error or have a fallback mechanism.
     console.warn('TMDB_API_KEY is not defined. Returning empty data.');
     if (endpoint.includes('search')) return { results: [] };
     return { results: [] };
@@ -25,8 +20,7 @@ async function fetchFromTMDB<T>(endpoint: string, params: Record<string, string>
   });
 
   try {
-    // Note: No next.revalidate here as this function can be called from client components now
-    const response = await fetch(url.toString());
+    const response = await fetch(url.toString(), { next: { revalidate: 3600 } }); // Revalidate every hour
 
     if (!response.ok) {
       console.error(`Failed to fetch from TMDB endpoint: ${endpoint}`, await response.text());
@@ -69,28 +63,6 @@ export async function getNowPlayingMovies(): Promise<Film[]> {
 }
 
 export async function getFilmDetails(id: string): Promise<FilmDetails | null> {
-    const cacheKey = `film:${id}`;
-
-    try {
-      if (!redis.isOpen) {
-        await redis.connect().catch(err => {
-            console.error('Failed to connect to Redis for getFilmDetails:', err);
-            // If connection fails, we can proceed without caching
-        });
-      }
-
-      if (redis.isOpen) {
-        const cachedFilm = await redis.get(cacheKey);
-        if (cachedFilm) {
-            console.log(`CACHE HIT for film: ${id}`);
-            return JSON.parse(cachedFilm);
-        }
-      }
-    } catch (error) {
-        console.error("Redis GET error in getFilmDetails:", error);
-    }
-
-    console.log(`CACHE MISS for film: ${id}. Fetching from TMDB.`);
     const data = await fetchFromTMDB<any>(`movie/${id}`, { append_to_response: 'credits,videos' });
     
     if (!data) {
@@ -113,16 +85,6 @@ export async function getFilmDetails(id: string): Promise<FilmDetails | null> {
         director: data.credits?.crew?.find((person: any) => person.job === 'Director'),
         trailer: mainTrailer || null,
     };
-
-    try {
-        if (redis.isOpen) {
-            await redis.set(cacheKey, JSON.stringify(filmDetails), {
-                EX: CACHE_EXPIRATION_SECONDS
-            });
-        }
-    } catch (error) {
-        console.error("Redis SET error in getFilmDetails:", error);
-    }
     
     return filmDetails;
 }
