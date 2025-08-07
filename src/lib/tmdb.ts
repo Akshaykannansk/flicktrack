@@ -19,7 +19,7 @@ async function fetchFromTMDB<T>(endpoint: string, params: Record<string, string>
   });
 
   try {
-    const response = await fetch(url.toString(), { next: { revalidate: 3600 } }); // Revalidate every hour
+    const response = await fetch(url.toString(), { cache: 'force-cache' }); 
 
     if (!response.ok) {
       console.error(`Failed to fetch from TMDB endpoint: ${endpoint}`, await response.text());
