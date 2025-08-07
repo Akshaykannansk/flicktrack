@@ -12,6 +12,9 @@ services:
         condition: service_healthy
       cache:
         condition: service_started
+    volumes:
+      - ./:/app
+      - /app/node_modules
     environment:
       - DATABASE_URL=postgresql://user:password@db:5432/flicktrack?schema=public
       - REDIS_URL=redis://cache:6379
