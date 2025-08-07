@@ -1,13 +1,8 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
 
-export async function POST(request: Request) {
-    const supabase = createClient();
-    const { error } = await supabase.auth.signOut();
-
-    if (error) {
-        return NextResponse.json({ error: 'Logout failed' }, { status: 500 });
-    }
-    
+export async function POST() {
+    // Clear the session cookie
+    cookies().set('session', '', { expires: new Date(0) });
     return NextResponse.json({ message: 'Logout successful' });
 }

@@ -2,14 +2,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { CommentWithUser } from '@/lib/types';
+import type { CommentWithUser, PublicUser } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from './ui/button';
 import { Trash2, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
-import type { User } from '@supabase/supabase-js';
+import { getSession } from '@/lib/auth';
 
 interface CommentListProps {
   comments: CommentWithUser[];
@@ -17,18 +16,17 @@ interface CommentListProps {
 }
 
 export function CommentList({ comments, onCommentDeleted }: CommentListProps) {
-    const [user, setUser] = useState<User | null>(null);
+    const [user, setUser] = useState<PublicUser | null>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const { toast } = useToast();
-    const supabase = createClient();
 
     useEffect(() => {
-        const getUser = async () => {
-            const { data } = await supabase.auth.getUser();
-            setUser(data.user);
+        async function getUser() {
+            const session = await getSession({ cookies: document.cookie as any });
+            setUser(session?.user ?? null);
         }
         getUser();
-    }, [supabase]);
+    }, []);
 
     const handleDelete = async (commentId: string) => {
         setDeletingId(commentId);

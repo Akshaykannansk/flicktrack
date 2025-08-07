@@ -11,7 +11,8 @@ import prisma from '@/lib/prisma';
 import { notFound, redirect } from 'next/navigation';
 import { FollowButton } from './follow-button';
 import { IMAGE_BASE_URL } from '@/lib/tmdb-isomorphic';
-import { createClient } from '@/lib/supabase/server';
+import { getSession } from '@/lib/auth';
+import { cookies } from 'next/headers';
 
 async function getUserStats(userId: string) {
     const stats = await prisma.user.findUnique({
@@ -72,30 +73,23 @@ async function getUserStats(userId: string) {
 
 
 export default async function ProfilePage() {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const session = await getSession({ cookies: cookies() });
+  const user = session?.user;
 
   if (!user) {
     redirect("/login");
   }
 
    // Upsert user in DB on their own profile visit
-   const dbUser = await prisma.user.upsert({
+   const dbUser = await prisma.user.findUnique({
         where: { id: user.id },
-        update: {
-            name: user.user_metadata.name,
-            username: user.user_metadata.user_name,
-            imageUrl: user.user_metadata.avatar_url,
-        },
-        create: {
-            id: user.id,
-            email: user.email!,
-            name: user.user_metadata.name,
-            username: user.user_metadata.user_name,
-            imageUrl: user.user_metadata.avatar_url,
-        },
         select: { bio: true, name: true, username: true, imageUrl: true, id: true }
     });
+
+    if (!dbUser) {
+        // This case might happen if a user was deleted but their session is still valid.
+        redirect('/login');
+    }
 
   const stats = await getUserStats(user.id);
   

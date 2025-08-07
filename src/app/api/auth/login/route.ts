@@ -1,21 +1,35 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
-import { createClient } from '@/lib/supabase/server';
+import { encrypt } from '@/lib/auth';
+import { cookies } from 'next/headers';
 
 export async function POST(request: Request) {
-  const supabase = createClient();
   try {
     const { email, password } = await request.json();
 
-    const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+    const user = await prisma.user.findUnique({
+      where: { email },
     });
-    
-    if (error) {
-        return NextResponse.json({ error: error.message }, { status: 401 });
+
+    if (!user || !user.password) {
+      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordValid) {
+      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+    }
+    
+    const { password: _, ...userPayload } = user;
+
+    // Create the session
+    const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    const session = await encrypt({ user: userPayload, expires });
+
+    // Save the session in a cookie
+    cookies().set('session', session, { expires, httpOnly: true });
 
     return NextResponse.json({ message: 'Login successful' }, { status: 200 });
 

@@ -7,7 +7,7 @@ import { MessageSquare, Loader2 } from 'lucide-react';
 import { CommentForm } from './comment-form';
 import { CommentList } from './comment-list';
 import type { CommentWithUser } from '@/lib/types';
-import { createClient } from '@/lib/supabase/client';
+import { getSession } from '@/lib/auth';
 
 interface CommentsProps {
   journalEntryId: string;
@@ -20,15 +20,14 @@ export function Comments({ journalEntryId, initialCommentCount }: CommentsProps)
   const [commentCount, setCommentCount] = useState(initialCommentCount);
   const [isLoading, setIsLoading] = useState(false);
   const [isSignedIn, setIsSignedIn] = useState(false);
-  const supabase = createClient();
 
   useEffect(() => {
-    const checkUser = async () => {
-        const { data } = await supabase.auth.getUser();
-        setIsSignedIn(!!data.user);
+    async function checkUser() {
+        const session = await getSession({ cookies: document.cookie as any });
+        setIsSignedIn(!!session?.user);
     };
     checkUser();
-  }, [supabase]);
+  }, []);
 
 
   const handleToggle = async () => {

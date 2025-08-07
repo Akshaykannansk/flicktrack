@@ -6,7 +6,7 @@ import { notFound, useRouter } from 'next/navigation';
 import { FilmCard } from '@/components/film-card';
 import { Button } from '@/components/ui/button';
 import { List, Loader2, Trash2, Edit } from 'lucide-react';
-import type { Film as FilmType, FilmList as FilmListType } from '@/lib/types';
+import type { Film as FilmType, FilmList as FilmListType, PublicUser } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
@@ -23,8 +23,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { LikeListButton } from '@/components/like-list-button';
 import { CopyListButton } from '@/components/copy-list-button';
-import { createClient } from '@/lib/supabase/client';
-import type { User } from '@supabase/supabase-js';
+import { getSession } from '@/lib/auth';
 
 
 interface UserFilmSets {
@@ -39,18 +38,17 @@ export default function ListDetailPage({ params }: { params: { id: string } }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<PublicUser | null>(null);
   const { toast } = useToast();
   const router = useRouter();
-  const supabase = createClient();
 
   useEffect(() => {
-    const getUser = async () => {
-        const { data } = await supabase.auth.getUser();
-        setUser(data.user);
+    async function getUser() {
+        const session = await getSession({ cookies: document.cookie as any });
+        setUser(session?.user ?? null);
     }
     getUser();
-  }, [supabase.auth]);
+  }, []);
 
   const fetchListData = async () => {
     if (!params.id) return;

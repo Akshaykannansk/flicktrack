@@ -14,25 +14,19 @@ import { WatchlistAction } from './watchlist-action';
 import { LikeAction } from './like-action';
 import { cn } from '@/lib/utils';
 import { AddToListButton } from './add-to-list-button';
-import { createClient } from '@/lib/supabase/client';
+import { getSession } from '@/lib/auth';
 
-interface FilmCardProps {
-  film: Film;
-  isInWatchlist?: boolean;
-  isLiked?: boolean;
-}
 
 function SignInGuard({ children }: { children: React.ReactNode }) {
   const [isSignedIn, setIsSignedIn] = useState(false);
-  const supabase = createClient();
-
+  
   useEffect(() => {
-    const checkUser = async () => {
-        const { data } = await supabase.auth.getUser();
-        setIsSignedIn(!!data.user);
+    async function checkUser() {
+        const session = await getSession({ cookies: document.cookie as any });
+        setIsSignedIn(!!session?.user);
     };
     checkUser();
-  }, [supabase]);
+  }, []);
 
   if (!isSignedIn) {
     return (

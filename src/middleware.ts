@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { getSession } from '@/lib/auth';
+import { decrypt } from '@/lib/auth';
 
 const protectedRoutes = [
     '/profile', 
@@ -10,22 +10,21 @@ const protectedRoutes = [
     '/recommendations'
 ];
 
+const publicRoutes = ['/login', '/signup'];
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const session = await getSession(request);
-
+  const sessionCookie = request.cookies.get('session')?.value;
+  const session = sessionCookie ? await decrypt(sessionCookie) : null;
+  
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
 
-  if (!session && isProtectedRoute) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/login';
-    return NextResponse.redirect(url);
+  if (isProtectedRoute && !session?.user) {
+    return NextResponse.redirect(new URL('/login', request.url));
   }
   
-  if (session && (pathname === '/login' || pathname === '/signup')) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/profile';
-    return NextResponse.redirect(url);
+  if (publicRoutes.includes(pathname) && session?.user) {
+    return NextResponse.redirect(new URL('/profile', request.url));
   }
 
   return NextResponse.next();

@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { z } from 'zod';
-import { createClient } from '@/lib/supabase/server';
+import { getSession } from '@/lib/auth';
+import { cookies } from 'next/headers';
 
 const journalEntryUpdateSchema = z.object({
   rating: z.number().min(0.5).max(5).optional(),
@@ -36,8 +37,8 @@ export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const session = await getSession({ cookies: cookies() });
+  const user = session?.user;
 
   if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });
@@ -68,8 +69,8 @@ export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const session = await getSession({ cookies: cookies() });
+  const user = session?.user;
 
   if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });

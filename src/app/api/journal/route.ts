@@ -2,7 +2,8 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { z } from 'zod';
-import { createClient } from '@/lib/supabase/server';
+import { getSession } from '@/lib/auth';
+import { cookies } from 'next/headers';
 
 const journalEntrySchema = z.object({
   filmId: z.number(),
@@ -10,32 +11,6 @@ const journalEntrySchema = z.object({
   review: z.string().optional(),
   loggedDate: z.string().datetime(),
 });
-
-async function upsertUser(userId: string) {
-    const supabase = createClient();
-    const { data: { user: authUser }, error } = await supabase.auth.getUser();
-
-    if (error || !authUser) {
-        throw new Error('User not found in Supabase Auth');
-    }
-
-    await prisma.user.upsert({
-        where: { id: userId },
-        update: {
-            email: authUser.email,
-            name: authUser.user_metadata.full_name,
-            username: authUser.user_metadata.user_name,
-            imageUrl: authUser.user_metadata.avatar_url,
-        },
-        create: {
-            id: userId,
-            email: authUser.email,
-            name: authUser.user_metadata.full_name,
-            username: authUser.user_metadata.user_name,
-            imageUrl: authUser.user_metadata.avatar_url,
-        },
-    });
-}
 
 async function upsertFilm(filmId: number) {
     await prisma.film.upsert({
@@ -50,8 +25,8 @@ async function upsertFilm(filmId: number) {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const urlUserId = searchParams.get('userId');
-  const supabase = createClient();
-  const { data: { user: authUser } } = await supabase.auth.getUser();
+  const session = await getSession({ cookies: cookies() });
+  const authUser = session?.user;
 
   const targetUserId = urlUserId || authUser?.id;
 
@@ -92,16 +67,14 @@ export async function GET(request: Request) {
 
 // POST a new journal entry
 export async function POST(request: Request) {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const session = await getSession({ cookies: cookies() });
+    const user = session?.user;
 
     if (!user) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
   
   try {
-    await upsertUser(user.id);
-    
     const body = await request.json();
     const validation = journalEntrySchema.safeParse(body);
 

@@ -7,9 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { CommentWithUser } from '@/lib/types';
-import { createClient } from '@/lib/supabase/client';
-import type { User } from '@supabase/supabase-js';
+import type { CommentWithUser, PublicUser } from '@/lib/types';
+import { getSession } from '@/lib/auth';
 
 interface CommentFormProps {
   journalEntryId: string;
@@ -17,19 +16,18 @@ interface CommentFormProps {
 }
 
 export function CommentForm({ journalEntryId, onCommentAdded }: CommentFormProps) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<PublicUser | null>(null);
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-  const supabase = createClient();
-
+  
   useEffect(() => {
-    const getUser = async () => {
-        const { data } = await supabase.auth.getUser();
-        setUser(data.user);
+    async function getUser() {
+        const session = await getSession({ cookies: document.cookie as any });
+        setUser(session?.user ?? null);
     }
     getUser();
-  }, [supabase]);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,8 +66,8 @@ export function CommentForm({ journalEntryId, onCommentAdded }: CommentFormProps
   return (
     <form onSubmit={handleSubmit} className="flex items-start gap-3 pt-4">
       <Avatar className="h-8 w-8">
-        <AvatarImage src={user.user_metadata.avatar_url} />
-        <AvatarFallback>{user.user_metadata.name?.charAt(0) ?? 'U'}</AvatarFallback>
+        <AvatarImage src={user.imageUrl || undefined} />
+        <AvatarFallback>{user.name?.charAt(0) ?? 'U'}</AvatarFallback>
       </Avatar>
       <div className="flex-1 space-y-2">
         <Textarea

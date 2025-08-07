@@ -16,8 +16,7 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { createClient } from '@/lib/supabase/client';
-import type { User } from '@supabase/supabase-js';
+import { getSession } from '@/lib/auth';
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -36,30 +35,26 @@ interface Suggestions {
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
-  const [user, setUser] = React.useState<User | null>(null);
+  const [user, setUser] = React.useState<{ id: string, name: string, username: string, imageUrl: string } | null>(null);
   const [query, setQuery] = React.useState('');
   const [suggestions, setSuggestions] = React.useState<Suggestions>({ films: [], users: [] });
   const [isLoading, setIsLoading] = React.useState(false);
   const [isSuggestionsVisible, setIsSuggestionsVisible] = React.useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const searchContainerRef = React.useRef<HTMLDivElement>(null);
-  const supabase = createClient();
+  
+  const [isClient, setIsClient] = React.useState(false);
 
   React.useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-        setUser(session?.user ?? null);
-    });
-
-    const getUser = async () => {
-        const { data } = await supabase.auth.getUser();
-        setUser(data.user);
-    };
-    getUser();
-
-    return () => {
-        authListener.subscription.unsubscribe();
-    };
-  }, [supabase.auth]);
+    setIsClient(true);
+    async function fetchUserSession() {
+        const session = await getSession({ cookies: document.cookie as any });
+        if(session?.user) {
+            setUser(session.user);
+        }
+    }
+    fetchUserSession();
+  }, [pathname]);
 
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -110,7 +105,8 @@ export default function Header() {
   };
   
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    await fetch('/api/auth/logout', { method: 'POST' });
+    setUser(null);
     router.push('/');
     router.refresh();
   }
@@ -143,6 +139,19 @@ export default function Header() {
         </SheetContent>
     </Sheet>
   );
+
+  if (!isClient) {
+      return (
+        <header className="bg-background/80 backdrop-blur-sm sticky top-0 z-50 border-b border-border">
+          <div className="container mx-auto px-4">
+            <div className="flex items-center justify-between h-16">
+              {/* Render a skeleton or placeholder */}
+            </div>
+          </div>
+        </header>
+      );
+  }
+
 
   return (
     <header className="bg-background/80 backdrop-blur-sm sticky top-0 z-50 border-b border-border">
@@ -256,7 +265,7 @@ export default function Header() {
                 <>
                 <Link href="/profile">
                   <Image 
-                    src={user.user_metadata.avatar_url} 
+                    src={user.imageUrl || 'https://placehold.co/32x32.png'} 
                     alt={'User profile'}
                     width={32}
                     height={32}

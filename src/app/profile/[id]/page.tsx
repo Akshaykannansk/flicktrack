@@ -3,7 +3,8 @@ import { ProfilePageContent } from '@/app/profile/page';
 import prisma from '@/lib/prisma';
 import { notFound, redirect } from 'next/navigation';
 import type { Film as FilmType } from '@/lib/types';
-import { createClient } from '@/lib/supabase/server';
+import { getSession } from '@/lib/auth';
+import { cookies } from 'next/headers';
 import type { FilmDetails, PublicUser } from '@/lib/types';
 
 async function getUserData(userId: string) {
@@ -47,8 +48,8 @@ async function getUserData(userId: string) {
     const watchlistIds = new Set(watchlist.map(item => item.filmId));
     const likedIds = new Set(likes.map(item => item.filmId));
 
-    const supabase = createClient();
-    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    const session = await getSession({ cookies: cookies() });
+    const currentUser = session?.user;
 
     let isFollowing = false;
     if (currentUser && currentUser.id !== userId) {
@@ -92,8 +93,8 @@ async function getUserData(userId: string) {
 
 
 export default async function OtherUserProfilePage({ params }: { params: { id: string } }) {
-    const supabase = createClient();
-    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    const session = await getSession({ cookies: cookies() });
+    const currentUser = session?.user;
 
     if (!currentUser) {
         redirect("/login");

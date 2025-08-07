@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { Film } from 'lucide-react';
 
@@ -16,28 +15,29 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const router = useRouter();
   const { toast } = useToast();
-  const supabase = createClient();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
+    const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
     });
 
-    if (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Login Failed',
-        description: error.message,
-      });
+    if (res.ok) {
+        toast({
+            title: 'Login Successful',
+            description: "Welcome back!",
+        });
+        router.push('/');
+        router.refresh(); // Refresh to update session state in header etc.
     } else {
-      toast({
-        title: 'Login Successful',
-        description: "Welcome back!",
-      });
-      router.push('/');
-      router.refresh();
+        const data = await res.json();
+        toast({
+            variant: 'destructive',
+            title: 'Login Failed',
+            description: data.error || 'An unknown error occurred.',
+        });
     }
   };
 

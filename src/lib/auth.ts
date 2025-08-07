@@ -1,7 +1,6 @@
 
 import { jwtVerify, SignJWT } from 'jose';
-import { cookies } from 'next/headers';
-import type { NextRequest } from 'next/server';
+import type { ReadonlyRequestCookies } from 'next/dist/server/web/spec-extension/adapters/request-cookies';
 
 const secretKey = process.env.JWT_SECRET;
 const key = new TextEncoder().encode(secretKey);
@@ -26,12 +25,8 @@ export async function decrypt(input: string): Promise<any> {
   }
 }
 
-export async function getSession(request: NextRequest) {
-  const session = request.cookies.get('session')?.value;
+export async function getSession({ cookies }: { cookies: ReadonlyRequestCookies }) {
+  const session = cookies.get('session')?.value;
   if (!session) return null;
   return await decrypt(session);
-}
-
-export function deleteSession() {
-  cookies().delete('session');
 }

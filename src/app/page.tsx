@@ -3,13 +3,14 @@ import { getPopularMovies, getTopRatedMovies, getNowPlayingMovies } from '@/lib/
 import { FilmCarouselSection } from '@/components/film-carousel-section';
 import { FollowingFeed } from '@/components/following-feed';
 import { Separator } from '@/components/ui/separator';
-import { createClient } from '@/lib/supabase/server';
 import { Users, TrendingUp } from 'lucide-react';
 import prisma from '@/lib/prisma';
 import React from 'react';
 import { FilmCarouselSkeleton } from '@/components/film-carousel-skeleton';
 import { FeedSkeleton } from '@/components/following-feed';
 import { TrendingReviews } from '@/components/trending-reviews';
+import { getSession } from '@/lib/auth';
+import { cookies } from 'next/headers';
 
 async function getUserFilmSets(userId: string | null) {
     if (!userId) {
@@ -29,8 +30,8 @@ async function getUserFilmSets(userId: string | null) {
 
 
 export default async function HomePage() {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const session = await getSession({ cookies: cookies() });
+  const user = session?.user;
   
   // Pre-fetch the first page of each category and user-specific data in parallel
   const [

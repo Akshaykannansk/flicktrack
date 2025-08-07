@@ -1,15 +1,16 @@
 
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { createClient } from '@/lib/supabase/server';
+import { getSession } from '@/lib/auth';
+import { cookies } from 'next/headers';
 
 // POST to copy a list
 export async function POST(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const supabase = createClient();
-  const { data: { user: newOwner } } = await supabase.auth.getUser();
+  const session = await getSession({ cookies: cookies() });
+  const newOwner = session?.user;
 
   if (!newOwner) {
     return new NextResponse('Unauthorized', { status: 401 });

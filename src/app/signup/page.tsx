@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { Film } from 'lucide-react';
 
@@ -18,41 +17,28 @@ export default function SignupPage() {
   const [username, setUsername] = useState('');
   const router = useRouter();
   const { toast } = useToast();
-  const supabase = createClient();
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-            full_name: fullName,
-            user_name: username,
-        }
-      }
+    const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, fullName, username }),
     });
 
-    if (error) {
-       toast({
-        variant: 'destructive',
-        title: 'Sign Up Failed',
-        description: error.message,
-      });
-    } else if (data.user) {
-        if (data.user.identities?.length === 0) {
-            toast({
-                variant: 'destructive',
-                title: 'Sign Up Failed',
-                description: "A user with this email already exists but with a different sign-in method.",
-            });
-        } else {
-             toast({
-                title: 'Sign Up Successful',
-                description: "Please check your email to verify your account.",
-            });
-            router.push('/login');
-        }
+    if (res.ok) {
+        toast({
+            title: 'Sign Up Successful',
+            description: "You can now log in with your credentials.",
+        });
+        router.push('/login');
+    } else {
+        const data = await res.json();
+        toast({
+            variant: 'destructive',
+            title: 'Sign Up Failed',
+            description: data.error || 'An unknown error occurred.',
+        });
     }
   };
 
