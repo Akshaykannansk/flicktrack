@@ -190,13 +190,13 @@ export function ProfilePageContent({ user, stats, isCurrentUser, isFollowing }: 
                 <div className="text-center md:text-left">
                 <h1 className="text-4xl font-headline font-bold tracking-tighter">{user.fullName || 'User'}</h1>
                 <p className="text-muted-foreground mt-1">@{user.username || 'username'}</p>
-                <div className="flex justify-center md:justify-start space-x-6 text-base text-muted-foreground mt-3">
+                <div className="flex justify-center md:justify-start flex-wrap gap-x-6 gap-y-2 text-base text-muted-foreground mt-3">
                     <span><strong className="text-foreground font-semibold">{journalCount}</strong> Films</span>
                     <span><strong className="text-foreground font-semibold">{followersCount}</strong> Followers</span>
                     <span><strong className="text-foreground font-semibold">{followingCount}</strong> Following</span>
                     <span><strong className="text-foreground font-semibold">{likesCount}</strong> Likes</span>
                 </div>
-                <div className="flex justify-center md:justify-start gap-2 mt-4">
+                <div className="flex justify-center md:justify-start flex-wrap gap-2 mt-4">
                     {isCurrentUser ? (
                         <>
                             <Button variant="outline" asChild>
@@ -304,3 +304,5 @@ export function ProfilePageContent({ user, stats, isCurrentUser, isFollowing }: 
         </div>
     );
 }
+
+    

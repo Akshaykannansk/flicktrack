@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -162,7 +163,7 @@ export function LogFilmDialog({ film, children }: LogFilmDialogProps) {
                           <Button
                             variant={'outline'}
                             className={cn(
-                              'w-[240px] pl-3 text-left font-normal',
+                              'w-full sm:w-[240px] pl-3 text-left font-normal',
                               !field.value && 'text-muted-foreground'
                             )}
                           >
@@ -219,7 +220,7 @@ function StarRating({
         <Star
           key={star}
           className={cn(
-            'w-8 h-8 cursor-pointer transition-colors',
+            'w-8 h-8 sm:w-10 sm:h-10 cursor-pointer transition-colors',
             (hoverRating || currentRating) >= star
               ? 'text-accent fill-accent'
               : 'text-muted-foreground/50'
@@ -232,3 +233,5 @@ function StarRating({
     </div>
   );
 }
+
+    

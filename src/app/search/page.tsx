@@ -1,3 +1,4 @@
+
 import { searchFilms } from '@/lib/tmdb';
 import { FilmCard } from '@/components/film-card';
 import { Search, User, Clapperboard } from 'lucide-react';
@@ -156,3 +157,5 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         </div>
     );
 }
+
+    

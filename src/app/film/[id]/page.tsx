@@ -1,3 +1,4 @@
+
 import { getFilmDetails as getFilmDetailsFromTMDB } from '@/lib/tmdb';
 import { IMAGE_BASE_URL } from '@/lib/tmdb-isomorphic';
 import Image from 'next/image';
@@ -111,13 +112,13 @@ export default async function FilmDetailPage({ params }: { params: { id: string 
         <div className="w-full md:w-2/3 lg:w-3/4 space-y-6">
           <div>
             <h1 className="text-4xl lg:text-5xl font-headline font-bold tracking-tighter">{film.title}</h1>
-            <div className="flex items-center space-x-4 text-muted-foreground mt-2">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 text-muted-foreground mt-2 text-sm sm:text-base">
               <span>{year}</span>
               {film.director && <span>Directed by <span className="text-primary-foreground font-semibold">{film.director.name}</span></span>}
                {film.runtime && <span>{film.runtime} min</span>}
             </div>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-wrap items-center gap-2">
              {film.genres.map(genre => <Badge key={genre.id} variant="outline">{genre.name}</Badge>)}
           </div>
           <div className="flex items-center space-x-4">
@@ -129,9 +130,9 @@ export default async function FilmDetailPage({ params }: { params: { id: string 
             </div>
             <span className="font-bold text-lg text-primary-foreground">{film.vote_average.toFixed(1)} / 10</span>
           </div>
-          <div className="flex flex-wrap gap-4 pt-4">
+          <div className="flex flex-col sm:flex-row flex-wrap gap-4 pt-4">
             <LogFilmDialog film={film}>
-              <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground">
+              <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground w-full sm:w-auto">
                   <PlusCircle className="mr-2 h-5 w-5" /> Log Film
               </Button>
             </LogFilmDialog>
@@ -144,7 +145,7 @@ export default async function FilmDetailPage({ params }: { params: { id: string 
           </div>
            <div>
             <h2 className="text-2xl font-headline font-semibold">Cast</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-2">
               {film.cast.map((actor) => (
                 <div key={actor.id} className="flex items-center gap-3">
                   <div className="relative w-12 h-12 rounded-full overflow-hidden bg-secondary flex-shrink-0">
@@ -175,3 +176,5 @@ export default async function FilmDetailPage({ params }: { params: { id: string 
     </div>
   );
 }
+
+    

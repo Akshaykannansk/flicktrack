@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -6,7 +7,7 @@ import { Film, Search, Loader2, User as UserIcon, Clapperboard, Menu } from 'luc
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { SignedIn, SignedOut, UserButton, useUser } from '@clerk/nextjs';
+import { SignedIn, SignedOut, useUser } from '@clerk/nextjs';
 import * as React from 'react';
 import type { Film as FilmType, PublicUser } from '@/lib/types';
 import Image from 'next/image';
@@ -164,7 +165,7 @@ export default function Header() {
                     />
                 </form>
                  {isSuggestionsVisible && (query.length > 1) && (
-                    <div className="absolute top-full mt-2 w-80 max-h-96 overflow-y-auto rounded-md bg-popover border border-border shadow-lg z-50">
+                    <div className="absolute top-full mt-2 w-full sm:w-80 max-h-96 overflow-y-auto rounded-md bg-popover border border-border shadow-lg z-50">
                         {isLoading ? (
                              <div className="flex items-center justify-center p-4">
                                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -234,7 +235,7 @@ export default function Header() {
                   />
                 </Link>
               ) : (
-                <UserButton afterSignOutUrl="/" />
+                <div/>
               )}
             </SignedIn>
              <SignedOut>
@@ -248,3 +249,5 @@ export default function Header() {
     </header>
   );
 }
+
+    
