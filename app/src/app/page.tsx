@@ -1,17 +1,51 @@
+
 import { getPopularMovies, getTopRatedMovies, getNowPlayingMovies } from '@/lib/tmdb';
 import { FilmCarouselSection } from '@/components/film-carousel-section';
 import { FollowingFeed } from '@/components/following-feed';
 import { Separator } from '@/components/ui/separator';
-import { SignedIn, SignedOut } from '@clerk/nextjs';
+import { SignedIn, SignedOut, auth } from '@clerk/nextjs';
 import { Users } from 'lucide-react';
+import prisma from '@/lib/prisma';
 
 
 export const dynamic = 'force-dynamic';
 
+async function getUserFilmSets(userId: string | null) {
+    if (!userId) {
+        return { watchlistIds: new Set<number>(), likedIds: new Set<number>() };
+    }
+
+    const [watchlist, likes] = await Promise.all([
+        prisma.watchlistItem.findMany({
+            where: { userId },
+            select: { filmId: true }
+        }),
+        prisma.likedFilm.findMany({
+            where: { userId },
+            select: { filmId: true }
+        })
+    ]);
+
+    const watchlistIds = new Set(watchlist.map(item => item.filmId));
+    const likedIds = new Set(likes.map(item => item.filmId));
+
+    return { watchlistIds, likedIds };
+}
+
+
 export default async function HomePage() {
-  const popularFilms = await getPopularMovies();
-  const topRatedFilms = await getTopRatedMovies();
-  const recentFilms = await getNowPlayingMovies();
+  const { userId } = auth();
+  const [
+    popularFilms,
+    topRatedFilms,
+    recentFilms,
+    { watchlistIds, likedIds }
+  ] = await Promise.all([
+    getPopularMovies(),
+    getTopRatedMovies(),
+    getNowPlayingMovies(),
+    getUserFilmSets(userId)
+  ]);
 
   return (
     <div className="space-y-12">
@@ -34,9 +68,9 @@ export default async function HomePage() {
       </SignedIn>
       
       <div className="space-y-12">
-        <FilmCarouselSection title="Popular Films" films={popularFilms} />
-        <FilmCarouselSection title="Top Rated Films" films={topRatedFilms} />
-        <FilmCarouselSection title="Now Playing" films={recentFilms} />
+        <FilmCarouselSection title="Popular Films" films={popularFilms} watchlistIds={watchlistIds} likedIds={likedIds} />
+        <FilmCarouselSection title="Top Rated Films" films={topRatedFilms} watchlistIds={watchlistIds} likedIds={likedIds} />
+        <FilmCarouselSection title="Now Playing" films={recentFilms} watchlistIds={watchlistIds} likedIds={likedIds} />
       </div>
     </div>
   );
