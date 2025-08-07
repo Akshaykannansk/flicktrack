@@ -1,4 +1,5 @@
 
+
 export interface PaginatedResponse<T> {
   page: number;
   results: T[];
@@ -118,4 +119,11 @@ export interface PublicUser {
 export interface SearchResults {
     films: Film[];
     users: PublicUser[];
+}
+
+export interface CommentWithUser {
+  id: string;
+  content: string;
+  createdAt: string;
+  user: PublicUser;
 }

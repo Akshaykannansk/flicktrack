@@ -10,6 +10,7 @@ import { Button } from './ui/button';
 import { auth } from '@clerk/nextjs/server';
 import { LikeReviewButton } from './like-review-button';
 import prisma from '@/lib/prisma';
+import { Comments } from './comments';
 
 
 interface TrendingReviewEntry {
@@ -21,6 +22,7 @@ interface TrendingReviewEntry {
   createdAt: string;
   _count: {
     likedBy: number;
+    comments: number;
   };
   likedBy: { userId: string }[];
 }
@@ -47,7 +49,7 @@ async function getTrendingReviews(): Promise<TrendingReviewEntry[]> {
           },
         },
         _count: {
-          select: { likedBy: true },
+          select: { likedBy: true, comments: true },
         },
         likedBy: {
           where: { userId: userId || '' },
@@ -151,13 +153,21 @@ export async function TrendingReviews() {
                         )}
                     </div>
                 </CardContent>
-                {userId && entry.user.id !== userId && (
-                   <CardFooter>
-                        <LikeReviewButton 
-                            journalEntryId={entry.id}
-                            initialIsLiked={entry.likedBy.length > 0}
-                            initialLikeCount={entry._count.likedBy}
-                        />
+                {userId && (
+                   <CardFooter className="flex-col items-start gap-4">
+                        <div className="flex items-center gap-2">
+                            {entry.user.id !== userId && (
+                                <LikeReviewButton 
+                                    journalEntryId={entry.id}
+                                    initialIsLiked={entry.likedBy.length > 0}
+                                    initialLikeCount={entry._count.likedBy}
+                                />
+                            )}
+                             <Comments 
+                                journalEntryId={entry.id}
+                                initialCommentCount={entry._count.comments}
+                            />
+                        </div>
                    </CardFooter>
                 )}
             </Card>
