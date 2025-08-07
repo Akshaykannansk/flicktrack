@@ -24,7 +24,13 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'img.clerk.com',
+        hostname: 'lh3.googleusercontent.com',
+        port: '',
+        pathname: '/**',
+      },
+       {
+        protocol: 'https',
+        hostname: 'avatars.githubusercontent.com',
         port: '',
         pathname: '/**',
       }
@@ -62,7 +68,7 @@ const nextConfig: NextConfig = {
     }
     return config;
   },
-  allowedDevOrigins: ["9000-firebase-studio-1752943405409.cluster-sumfw3zmzzhzkx4mpvz3ogth4y.cloudworkstations.dev"]
+  allowedDevOrigins: ["9000-firebase-studio-1752943405409.cluster-sumfw3zmzzhzkx4mpvz3ogth4y.dev"]
 };
 
 export default nextConfig;

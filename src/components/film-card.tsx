@@ -1,7 +1,7 @@
 
-
 'use client';
 
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import type { Film } from '@/lib/types';
@@ -12,9 +12,9 @@ import { Button } from './ui/button';
 import { BookPlus } from 'lucide-react';
 import { WatchlistAction } from './watchlist-action';
 import { LikeAction } from './like-action';
-import { useUser } from '@clerk/nextjs';
 import { cn } from '@/lib/utils';
 import { AddToListButton } from './add-to-list-button';
+import { createClient } from '@/lib/supabase/client';
 
 interface FilmCardProps {
   film: Film;
@@ -23,11 +23,20 @@ interface FilmCardProps {
 }
 
 function SignInGuard({ children }: { children: React.ReactNode }) {
-  const { isSignedIn } = useUser();
+  const [isSignedIn, setIsSignedIn] = useState(false);
+  const supabase = createClient();
+
+  useEffect(() => {
+    const checkUser = async () => {
+        const { data } = await supabase.auth.getUser();
+        setIsSignedIn(!!data.user);
+    };
+    checkUser();
+  }, [supabase]);
 
   if (!isSignedIn) {
     return (
-      <Link href="/sign-in" className="w-full">
+      <Link href="/login" className="w-full">
         {children}
       </Link>
     );

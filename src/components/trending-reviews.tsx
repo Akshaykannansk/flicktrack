@@ -6,10 +6,10 @@ import { Star, MessageSquare } from 'lucide-react';
 import { IMAGE_BASE_URL } from '@/lib/tmdb-isomorphic';
 import type { Film, PublicUser } from '@/lib/types';
 import { CardDescription } from './ui/card';
-import { auth } from '@clerk/nextjs/server';
 import { LikeReviewButton } from './like-review-button';
 import prisma from '@/lib/prisma';
 import { Comments } from './comments';
+import { createClient } from '@/lib/supabase/server';
 
 interface TrendingReviewEntry {
   id: string;
@@ -26,9 +26,7 @@ interface TrendingReviewEntry {
 }
 
 
-async function getTrendingReviews(): Promise<TrendingReviewEntry[]> {
-  const { userId } = auth();
-  
+async function getTrendingReviews(userId?: string): Promise<TrendingReviewEntry[]> {
   try {
     const reviews = await prisma.journalEntry.findMany({
         where: {
@@ -58,8 +56,9 @@ async function getTrendingReviews(): Promise<TrendingReviewEntry[]> {
 }
 
 export async function TrendingReviews() {
-  const reviews = await getTrendingReviews();
-  const { userId } = auth();
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const reviews = await getTrendingReviews(user?.id);
   
   if (reviews.length === 0) {
     return (
@@ -80,7 +79,7 @@ export async function TrendingReviews() {
                 <CardHeader>
                     <div className="flex items-center gap-3">
                          <Link href={`/profile/${entry.user.id}`}>
-                            <Image src={entry.user.imageUrl} alt={entry.user.name || 'avatar'} width={40} height={40} className="rounded-full" />
+                            <Image src={entry.user.imageUrl || 'https://placehold.co/40x40.png'} alt={entry.user.name || 'avatar'} width={40} height={40} className="rounded-full" />
                          </Link>
                          <div>
                             <p className="text-sm font-semibold text-foreground">
@@ -123,10 +122,10 @@ export async function TrendingReviews() {
                         )}
                     </div>
                 </CardContent>
-                {userId && (
+                {user && (
                    <CardFooter className="flex-col items-start gap-4">
                         <div className="flex items-center gap-2">
-                            {entry.user.id !== userId && (
+                            {entry.user.id !== user.id && (
                                 <LikeReviewButton 
                                     journalEntryId={entry.id}
                                     initialIsLiked={!!entry.reviewLikes.length}

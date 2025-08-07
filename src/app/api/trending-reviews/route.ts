@@ -1,12 +1,13 @@
 
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { auth } from '@clerk/nextjs/server';
+import { createClient } from '@/lib/supabase/server';
 
 export const revalidate = 60; // Revalidate every 60 seconds
 
 export async function GET() {
-  const { userId } = auth();
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
   try {
     const trendingReviews = await prisma.journalEntry.findMany({
@@ -29,7 +30,7 @@ export async function GET() {
         _count: {
           select: { reviewLikes: true, comments: true }
         },
-        reviewLikes: userId ? { where: { userId: userId } } : false,
+        reviewLikes: user ? { where: { userId: user.id } } : false,
       },
       orderBy: {
         createdAt: 'desc',

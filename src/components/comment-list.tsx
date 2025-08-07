@@ -1,14 +1,15 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { CommentWithUser } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from './ui/button';
 import { Trash2, Loader2 } from 'lucide-react';
-import { useUser } from '@clerk/nextjs';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import { createClient } from '@/lib/supabase/client';
+import type { User } from '@supabase/supabase-js';
 
 interface CommentListProps {
   comments: CommentWithUser[];
@@ -16,9 +17,18 @@ interface CommentListProps {
 }
 
 export function CommentList({ comments, onCommentDeleted }: CommentListProps) {
-    const { user } = useUser();
+    const [user, setUser] = useState<User | null>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const { toast } = useToast();
+    const supabase = createClient();
+
+    useEffect(() => {
+        const getUser = async () => {
+            const { data } = await supabase.auth.getUser();
+            setUser(data.user);
+        }
+        getUser();
+    }, [supabase]);
 
     const handleDelete = async (commentId: string) => {
         setDeletingId(commentId);
@@ -60,7 +70,7 @@ export function CommentList({ comments, onCommentDeleted }: CommentListProps) {
         <div key={comment.id} className="flex items-start gap-3 group">
           <Link href={`/profile/${comment.user.id}`}>
              <Avatar className="h-8 w-8">
-                <AvatarImage src={comment.user.imageUrl} alt={comment.user.name || 'avatar'} />
+                <AvatarImage src={comment.user.imageUrl || undefined} alt={comment.user.name || 'avatar'} />
                 <AvatarFallback>{comment.user.name?.charAt(0) ?? 'U'}</AvatarFallback>
             </Avatar>
           </Link>

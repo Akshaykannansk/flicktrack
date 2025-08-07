@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { auth } from '@clerk/nextjs/server';
+import { createClient } from '@/lib/supabase/server';
 import { z } from 'zod';
 
 const updateListSchema = z.object({
@@ -72,8 +72,9 @@ export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const { userId } = auth();
-  if (!userId) {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
@@ -87,7 +88,7 @@ export async function PUT(
     }
 
     const updatedList = await prisma.filmList.update({
-      where: { id: listId, userId: userId }, // Ensure user owns the list
+      where: { id: listId, userId: user.id }, // Ensure user owns the list
       data: validation.data,
     });
 
@@ -103,15 +104,16 @@ export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-    const { userId } = auth();
-    if (!userId) {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
         return new NextResponse('Unauthorized', { status: 401 });
     }
     
     try {
         const listId = params.id;
         await prisma.filmList.delete({
-            where: { id: listId, userId: userId },
+            where: { id: listId, userId: user.id },
         });
 
         return new NextResponse(null, { status: 204 }); // No Content
@@ -126,8 +128,9 @@ export async function POST(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const { userId } = auth();
-  if (!userId) {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
 

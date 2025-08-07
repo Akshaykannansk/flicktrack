@@ -1,28 +1,30 @@
 
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { auth } from '@clerk/nextjs/server';
+import { createClient } from '@/lib/supabase/server';
 
 // POST to follow a user
 export async function POST(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const { userId: currentUserId } = auth();
-  if (!currentUserId) {
+  const supabase = createClient();
+  const { data: { user: currentUser } } = await supabase.auth.getUser();
+
+  if (!currentUser) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
   const userToFollowId = params.id;
 
-  if (currentUserId === userToFollowId) {
+  if (currentUser.id === userToFollowId) {
       return NextResponse.json({ error: 'You cannot follow yourself.' }, { status: 400 });
   }
   
   try {
     await prisma.follows.create({
       data: {
-        followerId: currentUserId,
+        followerId: currentUser.id,
         followingId: userToFollowId,
       },
     });
@@ -42,8 +44,9 @@ export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const { userId: currentUserId } = auth();
-  if (!currentUserId) {
+  const supabase = createClient();
+  const { data: { user: currentUser } } = await supabase.auth.getUser();
+  if (!currentUser) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
@@ -53,7 +56,7 @@ export async function DELETE(
     await prisma.follows.delete({
         where: {
             followerId_followingId: {
-                followerId: currentUserId,
+                followerId: currentUser.id,
                 followingId: userToUnfollowId,
             }
         },

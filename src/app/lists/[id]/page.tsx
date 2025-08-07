@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { List, Loader2, Trash2, Edit } from 'lucide-react';
 import type { Film as FilmType, FilmList as FilmListType } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useUser } from '@clerk/nextjs';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -24,6 +23,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { LikeListButton } from '@/components/like-list-button';
 import { CopyListButton } from '@/components/copy-list-button';
+import { createClient } from '@/lib/supabase/client';
+import type { User } from '@supabase/supabase-js';
 
 
 interface UserFilmSets {
@@ -38,9 +39,18 @@ export default function ListDetailPage({ params }: { params: { id: string } }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useUser();
+  const [user, setUser] = useState<User | null>(null);
   const { toast } = useToast();
   const router = useRouter();
+  const supabase = createClient();
+
+  useEffect(() => {
+    const getUser = async () => {
+        const { data } = await supabase.auth.getUser();
+        setUser(data.user);
+    }
+    getUser();
+  }, [supabase.auth]);
 
   const fetchListData = async () => {
     if (!params.id) return;

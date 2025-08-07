@@ -4,8 +4,6 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
-import { ClerkProvider } from '@clerk/nextjs';
-import { dark } from '@clerk/themes';
 
 export const metadata: Metadata = {
   title: 'FlickTrack',
@@ -19,50 +17,39 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider
-        appearance={{
-          baseTheme: dark,
-          variables: {
-            colorPrimary: '#FFDA63',
-            colorText: '#F8FAFC',
-            colorBackground: '#121212',
-          },
-        }}
-    >
-      <html lang="en" className="dark">
-        <head>
-          <link rel="preconnect" href="https://fonts.googleapis.com" />
-          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-          <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
-          <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
-          <meta name="theme-color" content="#121212" />
-          <script
-            dangerouslySetInnerHTML={{
-              __html: `
-                if ('serviceWorker' in navigator) {
-                  window.addEventListener('load', () => {
-                    navigator.serviceWorker.register('/sw.js').then(registration => {
-                      console.log('ServiceWorker registration successful with scope: ', registration.scope);
-                    }, err => {
-                      console.log('ServiceWorker registration failed: ', err);
-                    });
+    <html lang="en" className="dark">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        <meta name="theme-color" content="#121212" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                  navigator.serviceWorker.register('/sw.js').then(registration => {
+                    console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                  }, err => {
+                    console.log('ServiceWorker registration failed: ', err);
                   });
-                }
-              `,
-            }}
-          />
-        </head>
-        <body className="font-body antialiased">
-          <div className="flex flex-col min-h-screen">
-            <Header />
-            <main className="flex-grow container mx-auto px-4 py-8">
-              {children}
-            </main>
-            <Footer />
-          </div>
-          <Toaster />
-        </body>
-      </html>
-    </ClerkProvider>
+                });
+              }
+            `,
+          }}
+        />
+      </head>
+      <body className="font-body antialiased">
+        <div className="flex flex-col min-h-screen">
+          <Header />
+          <main className="flex-grow container mx-auto px-4 py-8">
+            {children}
+          </main>
+          <Footer />
+        </div>
+        <Toaster />
+      </body>
+    </html>
   );
 }

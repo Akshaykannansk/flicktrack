@@ -3,8 +3,7 @@ import { getPopularMovies, getTopRatedMovies, getNowPlayingMovies } from '@/lib/
 import { FilmCarouselSection } from '@/components/film-carousel-section';
 import { FollowingFeed } from '@/components/following-feed';
 import { Separator } from '@/components/ui/separator';
-import { SignedIn, SignedOut } from "@clerk/nextjs";
-import { auth } from '@clerk/nextjs/server';
+import { createClient } from '@/lib/supabase/server';
 import { Users, TrendingUp } from 'lucide-react';
 import prisma from '@/lib/prisma';
 import React from 'react';
@@ -30,7 +29,8 @@ async function getUserFilmSets(userId: string | null) {
 
 
 export default async function HomePage() {
-  const { userId } = auth();
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   
   // Pre-fetch the first page of each category and user-specific data in parallel
   const [
@@ -39,7 +39,7 @@ export default async function HomePage() {
     topRatedMovies,
     nowPlayingMovies
   ] = await Promise.all([
-    getUserFilmSets(userId),
+    getUserFilmSets(user?.id ?? null),
     getPopularMovies(),
     getTopRatedMovies(),
     getNowPlayingMovies()
@@ -49,24 +49,25 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-12">
-      <SignedOut>
-        <div className="text-center py-8">
-          <h1 className="text-4xl font-headline font-bold tracking-tighter sm:text-5xl text-foreground">Welcome to FlickTrack</h1>
-          <p className="text-muted-foreground mt-3 max-w-xl mx-auto">Your personal film journal. Discover, log, and share your favorite films.</p>
-        </div>
-         <section className="space-y-6">
-            <div className="flex items-center gap-3">
-                <TrendingUp className="w-7 h-7 text-primary/80" />
-                <h2 className="text-3xl font-headline font-bold text-foreground tracking-tight">Trending Reviews</h2>
-            </div>
-             <React.Suspense fallback={<FeedSkeleton />}>
-              <TrendingReviews />
-            </React.Suspense>
-          </section>
-          <Separator />
-      </SignedOut>
-
-      <SignedIn>
+      {!user ? (
+        <>
+          <div className="text-center py-8">
+            <h1 className="text-4xl font-headline font-bold tracking-tighter sm:text-5xl text-foreground">Welcome to FlickTrack</h1>
+            <p className="text-muted-foreground mt-3 max-w-xl mx-auto">Your personal film journal. Discover, log, and share your favorite films.</p>
+          </div>
+           <section className="space-y-6">
+              <div className="flex items-center gap-3">
+                  <TrendingUp className="w-7 h-7 text-primary/80" />
+                  <h2 className="text-3xl font-headline font-bold text-foreground tracking-tight">Trending Reviews</h2>
+              </div>
+               <React.Suspense fallback={<FeedSkeleton />}>
+                <TrendingReviews />
+              </React.Suspense>
+            </section>
+            <Separator />
+        </>
+      ) : (
+        <>
          <section className="space-y-6">
             <div className="flex items-center gap-3">
                 <Users className="w-7 h-7 text-primary/80" />
@@ -87,7 +88,8 @@ export default async function HomePage() {
             </React.Suspense>
           </section>
           <Separator />
-      </SignedIn>
+        </>
+      )}
       
       <div className="space-y-12">
         <React.Suspense fallback={<FilmCarouselSkeleton title="Popular Films" />}>

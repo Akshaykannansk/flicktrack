@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { z } from 'zod';
-import { auth } from '@clerk/nextjs/server';
+import { createClient } from '@/lib/supabase/server';
 
 async function upsertFilm(filmId: number) {
     await prisma.film.upsert({
@@ -14,14 +14,15 @@ async function upsertFilm(filmId: number) {
 
 // GET all watchlist items for the user
 export async function GET(request: Request) {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return new NextResponse('Unauthorized', { status: 401 });
+  }
+
   try {
-    const { userId } = auth();
-    if (!userId) {
-      return new NextResponse('Unauthorized', { status: 401 });
-    }
-    
     const watchlistItems = await prisma.watchlistItem.findMany({
-      where: { userId: userId },
+      where: { userId: user.id },
       include: {
         film: true,
       },
@@ -43,12 +44,13 @@ const watchlistActionSchema = z.object({
 
 // POST a new film to the watchlist
 export async function POST(request: Request) {
-  try {
-    const { userId } = auth();
-    if (!userId) {
-      return new NextResponse('Unauthorized', { status: 401 });
-    }
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return new NextResponse('Unauthorized', { status: 401 });
+  }
     
+  try {
     const body = await request.json();
     const validation = watchlistActionSchema.safeParse(body);
 
@@ -62,7 +64,7 @@ export async function POST(request: Request) {
 
     const newItem = await prisma.watchlistItem.create({
       data: {
-        userId: userId,
+        userId: user.id,
         filmId: filmId,
       },
     });
@@ -79,12 +81,13 @@ export async function POST(request: Request) {
 
 // DELETE a film from the watchlist
 export async function DELETE(request: Request) {
-  try {
-    const { userId } = auth();
-    if (!userId) {
-      return new NextResponse('Unauthorized', { status: 401 });
-    }
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return new NextResponse('Unauthorized', { status: 401 });
+  }
     
+  try {
     const body = await request.json();
     const validation = watchlistActionSchema.safeParse(body);
 
@@ -97,7 +100,7 @@ export async function DELETE(request: Request) {
     await prisma.watchlistItem.delete({
       where: {
         userId_filmId: {
-          userId: userId,
+          userId: user.id,
           filmId: filmId,
         },
       },

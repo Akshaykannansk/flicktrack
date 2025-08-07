@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { z } from 'zod';
-import { auth, clerkClient } from '@clerk/nextjs/server';
+import { createClient } from '@/lib/supabase/server';
 
 const journalEntrySchema = z.object({
   filmId: z.number(),
@@ -12,31 +12,27 @@ const journalEntrySchema = z.object({
 });
 
 async function upsertUser(userId: string) {
-    const clerkUser = await clerkClient.users.getUser(userId);
-    if (!clerkUser) {
-        throw new Error('User not found in Clerk');
-    }
+    const supabase = createClient();
+    const { data: { user: authUser }, error } = await supabase.auth.getUser();
 
-    const primaryEmail = clerkUser.emailAddresses.find(e => e.id === clerkUser.primaryEmailAddressId)?.emailAddress;
-
-    if (!primaryEmail) {
-        throw new Error('Primary email not found for user');
+    if (error || !authUser) {
+        throw new Error('User not found in Supabase Auth');
     }
 
     await prisma.user.upsert({
         where: { id: userId },
         update: {
-            email: primaryEmail,
-            name: clerkUser.fullName,
-            username: clerkUser.username,
-            imageUrl: clerkUser.imageUrl,
+            email: authUser.email,
+            name: authUser.user_metadata.full_name,
+            username: authUser.user_metadata.user_name,
+            imageUrl: authUser.user_metadata.avatar_url,
         },
         create: {
             id: userId,
-            email: primaryEmail,
-            name: clerkUser.fullName,
-            username: clerkUser.username,
-            imageUrl: clerkUser.imageUrl,
+            email: authUser.email,
+            name: authUser.user_metadata.full_name,
+            username: authUser.user_metadata.user_name,
+            imageUrl: authUser.user_metadata.avatar_url,
         },
     });
 }
@@ -54,15 +50,16 @@ async function upsertFilm(filmId: number) {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const urlUserId = searchParams.get('userId');
-  const { userId: authUserId } = auth();
+  const supabase = createClient();
+  const { data: { user: authUser } } = await supabase.auth.getUser();
 
-  const targetUserId = urlUserId || authUserId;
+  const targetUserId = urlUserId || authUser?.id;
 
   if (!targetUserId) {
     return new NextResponse('User ID must be provided or user must be authenticated', { status: 401 });
   }
 
-  if (!urlUserId && !authUserId) {
+  if (!urlUserId && !authUser) {
      return new NextResponse('Unauthorized', { status: 401 });
   }
   
@@ -95,13 +92,15 @@ export async function GET(request: Request) {
 
 // POST a new journal entry
 export async function POST(request: Request) {
-    const { userId } = auth();
-    if (!userId) {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
   
   try {
-    await upsertUser(userId);
+    await upsertUser(user.id);
     
     const body = await request.json();
     const validation = journalEntrySchema.safeParse(body);
@@ -116,7 +115,7 @@ export async function POST(request: Request) {
 
     const newEntry = await prisma.journalEntry.create({
       data: {
-        userId: userId,
+        userId: user.id,
         filmId: filmId,
         rating,
         review,

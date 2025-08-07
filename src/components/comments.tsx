@@ -1,13 +1,13 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { MessageSquare, Loader2 } from 'lucide-react';
 import { CommentForm } from './comment-form';
 import { CommentList } from './comment-list';
 import type { CommentWithUser } from '@/lib/types';
-import { useUser } from '@clerk/nextjs';
+import { createClient } from '@/lib/supabase/client';
 
 interface CommentsProps {
   journalEntryId: string;
@@ -19,7 +19,17 @@ export function Comments({ journalEntryId, initialCommentCount }: CommentsProps)
   const [comments, setComments] = useState<CommentWithUser[]>([]);
   const [commentCount, setCommentCount] = useState(initialCommentCount);
   const [isLoading, setIsLoading] = useState(false);
-  const { isSignedIn } = useUser();
+  const [isSignedIn, setIsSignedIn] = useState(false);
+  const supabase = createClient();
+
+  useEffect(() => {
+    const checkUser = async () => {
+        const { data } = await supabase.auth.getUser();
+        setIsSignedIn(!!data.user);
+    };
+    checkUser();
+  }, [supabase]);
+
 
   const handleToggle = async () => {
     const newIsOpen = !isOpen;

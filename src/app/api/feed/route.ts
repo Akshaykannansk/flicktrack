@@ -1,19 +1,21 @@
 
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { auth } from '@clerk/nextjs/server';
+import { createClient } from '@/lib/supabase/server';
 
 export const revalidate = 60; // Revalidate every 60 seconds
 
 export async function GET(request: Request) {
-  const { userId } = auth();
-  if (!userId) {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
   
   try {
     const follows = await prisma.follows.findMany({
-        where: { followerId: userId },
+        where: { followerId: user.id },
         select: { followingId: true }
     });
 

@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { z } from 'zod';
-import { auth } from '@clerk/nextjs/server';
+import { createClient } from '@/lib/supabase/server';
 
 const listSchema = z.object({
   name: z.string().min(1, 'List name is required.'),
@@ -11,15 +11,16 @@ const listSchema = z.object({
 
 
 // GET all lists for the user
-export async function GET() {
-  const { userId } = auth();
-  if (!userId) {
+export async function GET(request: Request) {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
       return new NextResponse('Unauthorized', { status: 401 });
   }
 
   try {
     const lists = await prisma.filmList.findMany({
-      where: { userId: userId },
+      where: { userId: user.id },
       include: {
         films: {
           take: 4,
@@ -61,8 +62,9 @@ export async function GET() {
 
 // POST (create) a new list
 export async function POST(request: Request) {
-  const { userId } = auth();
-  if (!userId) {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
@@ -80,7 +82,7 @@ export async function POST(request: Request) {
       data: {
         name,
         description,
-        userId: userId,
+        userId: user.id,
       },
     });
 

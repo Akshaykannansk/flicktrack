@@ -11,7 +11,7 @@ import { LogFilmDialog } from '@/components/log-film-dialog';
 import { WatchlistButton } from '@/components/watchlist-button';
 import prisma from '@/lib/prisma';
 import redis from '@/lib/redis';
-import { auth } from '@clerk/nextjs/server';
+import { createClient } from '@/lib/supabase/server';
 import type { FilmDetails } from '@/lib/types';
 
 const CACHE_EXPIRATION_SECONDS = 60 * 60 * 24; // 24 hours
@@ -58,8 +58,7 @@ async function getFilmDetails(id: string): Promise<FilmDetails | null> {
 }
 
 
-async function getWatchlistStatus(filmId: number) {
-  const { userId } = auth();
+async function getWatchlistStatus(filmId: number, userId: string | null) {
   if (!userId) {
     return false;
   }
@@ -81,6 +80,9 @@ export default async function FilmDetailPage({ params }: { params: { id: string 
   if (isNaN(filmId)) {
     notFound();
   }
+  
+  const supabase = createClient();
+  const { data: { user: authUser } } = await supabase.auth.getUser();
 
   const film = await getFilmDetails(params.id);
 
@@ -88,7 +90,7 @@ export default async function FilmDetailPage({ params }: { params: { id: string 
     notFound();
   }
 
-  const isAlreadyInWatchlist = await getWatchlistStatus(filmId);
+  const isAlreadyInWatchlist = await getWatchlistStatus(filmId, authUser?.id ?? null);
 
   const posterUrl = film.poster_path ? `${IMAGE_BASE_URL}w500${film.poster_path}` : 'https://placehold.co/400x600.png';
   const year = film.release_date ? new Date(film.release_date).getFullYear() : 'N/A';

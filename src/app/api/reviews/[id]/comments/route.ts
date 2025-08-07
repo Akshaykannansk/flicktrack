@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { auth, clerkClient } from '@clerk/nextjs/server';
+import { createClient } from '@/lib/supabase/server';
 import { z } from 'zod';
 
 // GET all comments for a review
@@ -49,8 +49,10 @@ export async function POST(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const { userId } = auth();
-  if (!userId) {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
@@ -66,7 +68,7 @@ export async function POST(
     const newComment = await prisma.comment.create({
       data: {
         content: validation.data.content,
-        userId: userId,
+        userId: user.id,
         journalEntryId: journalEntryId,
       },
       include: {

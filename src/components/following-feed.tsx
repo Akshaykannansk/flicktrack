@@ -7,7 +7,7 @@ import { IMAGE_BASE_URL } from '@/lib/tmdb-isomorphic';
 import type { Film, PublicUser } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from './ui/button';
-import { auth } from '@clerk/nextjs/server';
+import { createClient } from '@/lib/supabase/server';
 import prisma from '@/lib/prisma';
 import { LikeReviewButton } from './like-review-button';
 import { Comments } from './comments';
@@ -52,8 +52,7 @@ export const FeedSkeleton = () => (
     </div>
 )
 
-async function getFeed(): Promise<FeedEntry[]> {
-    const { userId } = auth();
+async function getFeed(userId: string | null): Promise<FeedEntry[]> {
     if (!userId) {
         return [];
     }
@@ -90,8 +89,9 @@ async function getFeed(): Promise<FeedEntry[]> {
 
 
 export async function FollowingFeed() {
-  const feed = await getFeed();
-  const { userId } = auth();
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const feed = await getFeed(user?.id ?? null);
   
   if (feed.length === 0) {
     return (
@@ -117,7 +117,7 @@ export async function FollowingFeed() {
                 <CardHeader>
                     <div className="flex items-center gap-3">
                          <Link href={`/profile/${entry.user.id}`}>
-                            <Image src={entry.user.imageUrl} alt={entry.user.name || 'avatar'} width={40} height={40} className="rounded-full" />
+                            <Image src={entry.user.imageUrl || 'https://placehold.co/40x40.png'} alt={entry.user.name || 'avatar'} width={40} height={40} className="rounded-full" />
                          </Link>
                          <div>
                             <p className="text-sm font-semibold text-foreground">
@@ -160,10 +160,10 @@ export async function FollowingFeed() {
                         )}
                     </div>
                 </CardContent>
-                 {entry.review && userId && (
+                 {entry.review && user && (
                    <CardFooter className="flex-col items-start gap-4">
                         <div className="flex items-center gap-2">
-                            {entry.user.id !== userId && (
+                            {entry.user.id !== user.id && (
                                 <LikeReviewButton 
                                     journalEntryId={entry.id}
                                     initialIsLiked={!!entry.reviewLikes.length}

@@ -1,15 +1,17 @@
 
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { auth } from '@clerk/nextjs/server';
+import { createClient } from '@/lib/supabase/server';
 
 // POST to copy a list
 export async function POST(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const { userId: newOwnerId } = auth();
-  if (!newOwnerId) {
+  const supabase = createClient();
+  const { data: { user: newOwner } } = await supabase.auth.getUser();
+
+  if (!newOwner) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
@@ -26,7 +28,7 @@ export async function POST(
       return NextResponse.json({ error: 'List not found' }, { status: 404 });
     }
     
-    if (originalList.userId === newOwnerId) {
+    if (originalList.userId === newOwner.id) {
         return NextResponse.json({ error: "You cannot copy your own list." }, { status: 400 });
     }
 
@@ -36,7 +38,7 @@ export async function POST(
         data: {
           name: `${originalList.name} (Copy)`,
           description: originalList.description,
-          userId: newOwnerId,
+          userId: newOwner.id,
         },
       });
 

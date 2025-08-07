@@ -6,7 +6,7 @@ import type { Film, PublicUser } from '@/lib/types';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Card } from '@/components/ui/card';
-import { auth, clerkClient } from '@clerk/nextjs/server';
+import { createClient } from '@/lib/supabase/server';
 import prisma from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic'; // Ensure the page is re-rendered for each search
@@ -38,14 +38,23 @@ async function searchUsers(query: string): Promise<PublicUser[]> {
     if (!query) return [];
 
     try {
-        const clerkUsers = await clerkClient.users.getUserList({ query, limit: 10 });
+        const users = await prisma.user.findMany({
+            where: {
+                OR: [
+                    { name: { contains: query, mode: 'insensitive' } },
+                    { username: { contains: query, mode: 'insensitive' } },
+                ],
+            },
+            take: 10,
+            select: {
+                id: true,
+                name: true,
+                username: true,
+                imageUrl: true,
+            }
+        });
 
-        return clerkUsers.map(user => ({
-            id: user.id,
-            name: user.fullName,
-            username: user.username,
-            imageUrl: user.imageUrl,
-        }));
+        return users;
     } catch (error) {
         console.error('Failed to search users:', error);
         return [];
@@ -55,7 +64,8 @@ async function searchUsers(query: string): Promise<PublicUser[]> {
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
     const query = searchParams.q || '';
-    const { userId } = auth();
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
     
     let films: Film[] = [];
     let users: PublicUser[] = [];
@@ -66,7 +76,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       const [filmResults, userResults, filmSets] = await Promise.all([
         searchFilms(query),
         searchUsers(query),
-        getUserFilmSets(userId)
+        getUserFilmSets(user?.id ?? null)
       ]);
       films = filmResults;
       users = userResults;
@@ -115,19 +125,19 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                             <h2 className="text-2xl font-headline font-semibold">Profiles</h2>
                            </div>
                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                               {users.map((user) => (
-                                    <Link key={user.id} href={`/profile/${user.id}`}>
+                               {users.map((userResult) => (
+                                    <Link key={userResult.id} href={`/profile/${userResult.id}`}>
                                         <Card className="flex items-center gap-4 p-4 bg-secondary border-transparent hover:border-primary/50 transition-colors">
                                             <Image 
-                                                src={user.imageUrl} 
-                                                alt={user.name || 'User avatar'} 
+                                                src={userResult.imageUrl || 'https://placehold.co/48x48.png'} 
+                                                alt={userResult.name || 'User avatar'} 
                                                 width={48} 
                                                 height={48} 
                                                 className="rounded-full"
                                             />
                                             <div>
-                                                <p className="font-semibold">{user.name}</p>
-                                                <p className="text-sm text-muted-foreground">@{user.username}</p>
+                                                <p className="font-semibold">{userResult.name}</p>
+                                                <p className="text-sm text-muted-foreground">@{userResult.username}</p>
                                             </div>
                                         </Card>
                                     </Link>

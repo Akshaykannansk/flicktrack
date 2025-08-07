@@ -113,7 +113,8 @@ export interface PublicUser {
     id: string;
     name: string | null;
     username: string | null;
-    imageUrl: string;
+    imageUrl: string | null;
+    bio?: string | null;
 }
 
 export interface SearchResults {

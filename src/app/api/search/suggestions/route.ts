@@ -1,20 +1,29 @@
 import { NextResponse } from 'next/server';
 import { searchFilms } from '@/lib/tmdb';
-import { clerkClient } from '@clerk/nextjs/server';
 import type { PublicUser } from '@/lib/types';
+import prisma from '@/lib/prisma';
 
 async function searchUsers(query: string): Promise<PublicUser[]> {
     if (!query) return [];
 
     try {
-        const clerkUsers = await clerkClient.users.getUserList({ query, limit: 10 });
+        const users = await prisma.user.findMany({
+            where: {
+                OR: [
+                    { name: { contains: query, mode: 'insensitive' } },
+                    { username: { contains: query, mode: 'insensitive' } },
+                ],
+            },
+            take: 10,
+            select: {
+                id: true,
+                name: true,
+                username: true,
+                imageUrl: true,
+            }
+        });
 
-        return clerkUsers.map(user => ({
-            id: user.id,
-            name: user.fullName,
-            username: user.username,
-            imageUrl: user.imageUrl,
-        }));
+        return users;
     } catch (error) {
         console.error('Failed to search users:', error);
         return [];

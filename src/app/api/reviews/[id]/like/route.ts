@@ -1,15 +1,17 @@
 
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { auth } from '@clerk/nextjs/server';
+import { createClient } from '@/lib/supabase/server';
 
 // POST to like a review
 export async function POST(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const { userId } = auth();
-  if (!userId) {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
@@ -25,13 +27,13 @@ export async function POST(
       return NextResponse.json({ error: 'Review not found.' }, { status: 404 });
     }
 
-    if (journalEntry.userId === userId) {
+    if (journalEntry.userId === user.id) {
         return NextResponse.json({ error: 'You cannot like your own review.' }, { status: 400 });
     }
 
     await prisma.reviewLike.create({
       data: {
-        userId: userId,
+        userId: user.id,
         journalEntryId: journalEntryId,
       },
     });
@@ -51,8 +53,9 @@ export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const { userId } = auth();
-  if (!userId) {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
@@ -62,7 +65,7 @@ export async function DELETE(
     await prisma.reviewLike.delete({
       where: {
         userId_journalEntryId: {
-          userId: userId,
+          userId: user.id,
           journalEntryId: journalEntryId,
         },
       },

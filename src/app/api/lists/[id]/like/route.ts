@@ -1,15 +1,17 @@
 
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { auth } from '@clerk/nextjs/server';
+import { createClient } from '@/lib/supabase/server';
 
 // POST to like a list
 export async function POST(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const { userId } = auth();
-  if (!userId) {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
@@ -24,13 +26,13 @@ export async function POST(
     if (!list) {
         return NextResponse.json({ error: 'List not found' }, { status: 404 });
     }
-    if (list.userId === userId) {
+    if (list.userId === user.id) {
         return NextResponse.json({ error: 'You cannot like your own list.' }, { status: 400 });
     }
 
     await prisma.likedList.create({
       data: {
-        userId: userId,
+        userId: user.id,
         listId: listId,
       },
     });
@@ -50,8 +52,9 @@ export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const { userId } = auth();
-  if (!userId) {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
@@ -61,7 +64,7 @@ export async function DELETE(
     await prisma.likedList.delete({
       where: {
         userId_listId: {
-          userId: userId,
+          userId: user.id,
           listId: listId,
         },
       },

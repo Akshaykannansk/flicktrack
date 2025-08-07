@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { auth } from '@clerk/nextjs/server';
+import { createClient } from '@/lib/supabase/server';
 import { z } from 'zod';
 import { getFilmDetails } from '@/lib/tmdb';
 
@@ -10,15 +10,16 @@ const favoriteFilmsSchema = z.object({
 });
 
 // GET user's favorite films
-export async function GET() {
-  const { userId } = auth();
-  if (!userId) {
+export async function GET(request: Request) {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
   try {
     const favoriteFilms = await prisma.favoriteFilm.findMany({
-      where: { userId: userId },
+      where: { userId: user.id },
       include: { film: true },
     });
 
@@ -31,8 +32,9 @@ export async function GET() {
 
 // POST (update) user's favorite films
 export async function POST(request: Request) {
-  const { userId } = auth();
-  if (!userId) {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
@@ -74,20 +76,20 @@ export async function POST(request: Request) {
     await prisma.$transaction(async (tx) => {
         // Delete all existing favorites for the user
         await tx.favoriteFilm.deleteMany({
-            where: { userId: userId },
+            where: { userId: user.id },
         });
 
         // Add the new favorites
         if (filmIds.length > 0) {
             await tx.favoriteFilm.createMany({
-                data: filmIds.map(id => ({ userId: userId, filmId: id })),
+                data: filmIds.map(id => ({ userId: user!.id, filmId: id })),
             });
         }
     });
 
 
     const favorite_films = await prisma.favoriteFilm.findMany({
-      where: { userId },
+      where: { userId: user.id },
       include: { film: true },
     });
 

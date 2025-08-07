@@ -8,49 +8,36 @@ To run this application on your local machine, you'll need [Docker](https://www.
 
 ### 1. Set up Supabase & Prisma
 
-This project uses a Supabase-hosted PostgreSQL database with the Prisma ORM.
+This project uses a Supabase-hosted PostgreSQL database with the Prisma ORM for data storage and Supabase for authentication.
 
 1.  **Create a Supabase Project**: Go to [supabase.com](https://supabase.com), sign in, and create a new project.
-2.  **Get Database Connection String**: In your Supabase project dashboard, navigate to **Project Settings > Database**. Under "Connection string," find the **PostgreSQL connection string**. You will need this for the next step.
-3.  **Create `.env` File**: Create a file named `.env` in the root of the project. Add your connection string to it. **Important**: You must add `?pgbouncer=true&connection_limit=1` to the end of the connection string to use Prisma's connection pooling correctly with Supabase. You also need your TMDB and Clerk keys.
+
+2.  **Create `.env` File**: Create a file named `.env` in the root of the project. You will need to get the following keys from your Supabase project dashboard:
+    *   **Database Connection String**: Navigate to **Project Settings > Database**. Under "Connection string," find the **PostgreSQL connection string**. You must add `?pgbouncer=true&connection_limit=1` to the end of the connection string to use Prisma's connection pooling correctly.
+    *   **Project URL & Anon Key**: Navigate to **Project Settings > API**. Find your Project URL and anon public key.
+    *   **TMDB API Key**: You'll also need an API key from The Movie Database (TMDB). You can get one from [https://www.themoviedb.org/settings/api](https://www.themoviedb.org/settings/api).
+
+    Your `.env` file should look like this:
 
     ```env
     # Get from Supabase Project Settings > Database. Add `?pgbouncer=true&connection_limit=1` to the end.
     DATABASE_URL="your_supabase_connection_string"
 
+    # Get from Supabase Project Settings > API
+    NEXT_PUBLIC_SUPABASE_URL=your_project_url
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_public_key
+
     # Get from https://www.themoviedb.org/settings/api
     TMDB_API_KEY=your_tmdb_api_key
-
-    # Get from https://dashboard.clerk.com -> Your Application -> API Keys
-    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
-    CLERK_SECRET_KEY=your_clerk_secret_key
     ```
 
-4.  **Sync Database Schema**: With your `.env` file configured, run the following command to sync the Prisma schema with your Supabase database. This will create all the necessary tables.
+3.  **Sync Database Schema**: With your `.env` file configured, run the following command to sync the Prisma schema with your Supabase database. This will create all the necessary tables.
 
     ```bash
     npx prisma db push
     ```
 
-### 2. Configure Clerk (Important for Social Login & Bio)
-
-To allow users to update their bio and connect social media accounts, you need to configure custom fields and OAuth providers in your Clerk Dashboard.
-
-*   **Bio Field**:
-    1.  Go to your Clerk Dashboard.
-    2.  Navigate to **Users > User & Organization Settings**.
-    3.  Under "Custom user attributes", add a new attribute.
-    4.  Set the **Name** to `bio`.
-    5.  Set the **Type** to `Text`.
-    6.  Make sure it is a **Public** attribute.
-    This will automatically add a "Bio" field to the "Edit Profile" page for your users.
-
-*   **Social Connections**:
-    1.  In your Clerk Dashboard, go to **User & Authentication > Social Connections**.
-    2.  Enable the providers you want to support (e.g., Google, GitHub). Follow the setup instructions for each.
-    These will then appear as options on the user's "Edit Profile" page.
-
-### 3. Start the Application
+### 2. Start the Application
 
 With Docker running, open your terminal and run the following command from the project root:
 
@@ -60,15 +47,9 @@ docker-compose up --build
 
 This will build the Docker image for the application and start the service. The application will be available at [http://localhost:9002](http://localhost:9002).
 
-### 4. Seed the Database (Optional)
+### 3. Seed the Database (Optional)
 
-After the application has started for the first time, you can seed the database with some sample data. Open a new terminal window and run:
-
-```bash
-docker-compose exec app npm run db:seed
-```
-
-This will populate the database with sample users, films, journal entries, and lists.
+After the application has started for the first time, you can seed the database with some sample data. This is not fully supported with the new Supabase auth setup yet.
 
 ## Exposing Locally with Cloudflare Tunnel (Optional)
 

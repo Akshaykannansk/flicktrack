@@ -1,81 +1,20 @@
 
-import { ProfilePageContent } from '../page';
-import { auth, clerkClient } from '@clerk/nextjs/server';
+import { ProfilePageContent } from '@/app/profile/page';
 import prisma from '@/lib/prisma';
 import { notFound, redirect } from 'next/navigation';
 import type { Film as FilmType } from '@/lib/types';
-import { getFilmDetails as getFilmDetailsFromTMDB } from '@/lib/tmdb';
-import type { FilmDetails } from '@/lib/types';
-import redis from '@/lib/redis';
-
-const CACHE_EXPIRATION_SECONDS = 60 * 60 * 24; // 24 hours
-
-async function getFilmDetails(id: string): Promise<FilmDetails | null> {
-    const cacheKey = `film:${id}`;
-
-    try {
-      if (!redis.isOpen) {
-        await redis.connect().catch(err => {
-            console.error('Failed to connect to Redis for getFilmDetails:', err);
-        });
-      }
-
-      if (redis.isOpen) {
-        const cachedFilm = await redis.get(cacheKey);
-        if (cachedFilm) {
-            console.log(`CACHE HIT for film: ${id}`);
-            return JSON.parse(cachedFilm);
-        }
-      }
-    } catch (error) {
-        console.error("Redis GET error in getFilmDetails:", error);
-    }
-
-    console.log(`CACHE MISS for film: ${id}. Fetching from TMDB.`);
-    const filmDetails = await getFilmDetailsFromTMDB(id);
-    
-    if (!filmDetails) {
-        return null;
-    }
-
-    try {
-        if (redis.isOpen) {
-            await redis.set(cacheKey, JSON.stringify(filmDetails), {
-                EX: CACHE_EXPIRATION_SECONDS
-            });
-        }
-    } catch (error) {
-        console.error("Redis SET error in getFilmDetails:", error);
-    }
-    
-    return filmDetails;
-}
-
+import { createClient } from '@/lib/supabase/server';
+import type { FilmDetails, PublicUser } from '@/lib/types';
 
 async function getUserData(userId: string) {
-    const clerkUser = await clerkClient.users.getUser(userId);
-    if (!clerkUser) {
-        return null;
-    }
-    
-    const dbUser = await prisma.user.upsert({
-      where: { id: userId },
-      update: {
-        bio: (clerkUser.publicMetadata.bio as string) ?? null,
-      },
-      create: {
-        id: userId,
-        bio: (clerkUser.publicMetadata.bio as string) ?? null,
-        email: clerkUser.emailAddresses.find(e => e.id === clerkUser.primaryEmailAddressId)!.emailAddress,
-        name: clerkUser.fullName,
-        username: clerkUser.username,
-        imageUrl: clerkUser.imageUrl,
-      },
-    });
-
-    const stats = await prisma.user.findUnique({
+    const dbUser = await prisma.user.findUnique({
       where: { id: userId },
       select: {
+          id: true,
+          name: true,
+          username: true,
+          imageUrl: true,
+          bio: true,
         _count: {
           select: {
             journalEntries: true,
@@ -96,7 +35,9 @@ async function getUserData(userId: string) {
       }
     });
 
-    if (!stats) return null;
+    if (!dbUser) {
+        return null;
+    }
 
     const [watchlist, likes] = await Promise.all([
       prisma.watchlistItem.findMany({ where: { userId }, select: { filmId: true } }),
@@ -106,29 +47,34 @@ async function getUserData(userId: string) {
     const watchlistIds = new Set(watchlist.map(item => item.filmId));
     const likedIds = new Set(likes.map(item => item.filmId));
 
-    const { userId: currentUserId } = auth();
+    const supabase = createClient();
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+
     let isFollowing = false;
-    if (currentUserId && currentUserId !== userId) {
+    if (currentUser && currentUser.id !== userId) {
         const follow = await prisma.follows.findUnique({
-            where: { followerId_followingId: { followerId: currentUserId, followingId: userId } }
+            where: { followerId_followingId: { followerId: currentUser.id, followingId: userId } }
         });
         isFollowing = !!follow;
     }
 
     return {
         user: {
-            ...clerkUser,
+            id: dbUser.id,
+            name: dbUser.name,
+            username: dbUser.username,
+            imageUrl: dbUser.imageUrl,
             bio: dbUser.bio,
         },
         stats: {
-            journalCount: stats._count.journalEntries,
-            followersCount: stats._count.followers,
-            followingCount: stats._count.following,
-            likesCount: stats._count.likes + stats._count.likedLists,
-            favoriteFilms: stats.favoriteFilms.map(fav => ({ ...fav.film, id: fav.film.id.toString() })) as FilmType[],
+            journalCount: dbUser._count.journalEntries,
+            followersCount: dbUser._count.followers,
+            followingCount: dbUser._count.following,
+            likesCount: dbUser._count.likes + dbUser._count.likedLists,
+            favoriteFilms: dbUser.favoriteFilms.map(fav => ({ ...fav.film, id: fav.film.id.toString() })) as FilmType[],
             watchlistIds,
             likedIds,
-            recentJournalEntries: stats.journalEntries.map(entry => ({
+            recentJournalEntries: dbUser.journalEntries.map(entry => ({
                 id: entry.id,
                 film: {
                     ...entry.film,
@@ -140,18 +86,20 @@ async function getUserData(userId: string) {
             })) || []
         },
         isFollowing,
-        isCurrentUser: currentUserId === userId
+        isCurrentUser: currentUser?.id === userId
     }
 }
 
 
 export default async function OtherUserProfilePage({ params }: { params: { id: string } }) {
-    const { userId: currentUserId } = auth();
-    if (!currentUserId) {
-        redirect("/sign-in");
+    const supabase = createClient();
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+
+    if (!currentUser) {
+        redirect("/login");
     }
 
-    if (currentUserId === params.id) {
+    if (currentUser.id === params.id) {
         redirect("/profile");
     }
 
@@ -162,7 +110,7 @@ export default async function OtherUserProfilePage({ params }: { params: { id: s
     }
 
     return <ProfilePageContent 
-                user={userData.user} 
+                user={userData.user as PublicUser} 
                 stats={userData.stats} 
                 isCurrentUser={userData.isCurrentUser}
                 isFollowing={userData.isFollowing}

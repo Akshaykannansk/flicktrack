@@ -1,14 +1,12 @@
 
-
 'use client';
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Film, Search, Loader2, User as UserIcon, Clapperboard, Menu, List, Heart } from 'lucide-react';
+import { Film, Search, Loader2, User as UserIcon, Clapperboard, Menu, List, Heart, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { SignedIn, SignedOut, useUser } from '@clerk/nextjs';
 import * as React from 'react';
 import type { Film as FilmType, PublicUser } from '@/lib/types';
 import Image from 'next/image';
@@ -17,8 +15,9 @@ import {
   Sheet,
   SheetContent,
   SheetTrigger,
-} from "@/components/ui/sheet"
-
+} from "@/components/ui/sheet";
+import { createClient } from '@/lib/supabase/client';
+import type { User } from '@supabase/supabase-js';
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -37,14 +36,30 @@ interface Suggestions {
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user } = useUser();
+  const [user, setUser] = React.useState<User | null>(null);
   const [query, setQuery] = React.useState('');
   const [suggestions, setSuggestions] = React.useState<Suggestions>({ films: [], users: [] });
   const [isLoading, setIsLoading] = React.useState(false);
   const [isSuggestionsVisible, setIsSuggestionsVisible] = React.useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const searchContainerRef = React.useRef<HTMLDivElement>(null);
+  const supabase = createClient();
 
+  React.useEffect(() => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+        setUser(session?.user ?? null);
+    });
+
+    const getUser = async () => {
+        const { data } = await supabase.auth.getUser();
+        setUser(data.user);
+    };
+    getUser();
+
+    return () => {
+        authListener.subscription.unsubscribe();
+    };
+  }, [supabase.auth]);
 
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -94,6 +109,12 @@ export default function Header() {
     }
   };
   
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.push('/');
+    router.refresh();
+  }
+
   const MobileNav = () => (
     <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
         <SheetTrigger asChild>
@@ -104,7 +125,7 @@ export default function Header() {
         </SheetTrigger>
         <SheetContent side="left" className="w-[300px] sm:w-[400px]">
             <nav className="flex flex-col gap-4 mt-8">
-                {navLinks.map((link) => (
+                {user && navLinks.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
@@ -128,30 +149,34 @@ export default function Header() {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center space-x-4 md:space-x-8">
-            <div className="md:hidden">
-                <MobileNav />
-            </div>
+            {user && (
+                <div className="md:hidden">
+                    <MobileNav />
+                </div>
+            )}
             <Link href="/" className="flex items-center space-x-2">
               <Film className="w-8 h-8 text-primary" />
               <span className="font-headline text-2xl font-bold text-primary-foreground hidden sm:inline">
                 FlickTrack
               </span>
             </Link>
-            <nav className="hidden md:flex items-center space-x-6">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={cn(
-                    'text-sm font-medium transition-colors hover:text-primary flex items-center gap-1.5',
-                    (pathname.startsWith(link.href) && link.href !== '/') || pathname === link.href ? 'text-primary font-semibold' : 'text-muted-foreground'
-                  )}
-                >
-                  {link.icon && <link.icon className="h-4 w-4" />}
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
+            {user && (
+                 <nav className="hidden md:flex items-center space-x-6">
+                    {navLinks.map((link) => (
+                        <Link
+                        key={link.href}
+                        href={link.href}
+                        className={cn(
+                            'text-sm font-medium transition-colors hover:text-primary flex items-center gap-1.5',
+                            (pathname.startsWith(link.href) && link.href !== '/') || pathname === link.href ? 'text-primary font-semibold' : 'text-muted-foreground'
+                        )}
+                        >
+                        {link.icon && <link.icon className="h-4 w-4" />}
+                        {link.label}
+                        </Link>
+                    ))}
+                 </nav>
+            )}
           </div>
           <div className="flex items-center space-x-4">
             <div className="relative" ref={searchContainerRef}>
@@ -209,7 +234,7 @@ export default function Header() {
                                             {suggestions.users.map(u => (
                                                 <li key={u.id}>
                                                     <Link href={`/profile/${u.id}`} className="flex items-center p-2 hover:bg-accent transition-colors rounded-md">
-                                                        <Image src={u.imageUrl} alt={u.name || 'User avatar'} width={40} height={40} className="rounded-full" />
+                                                        <Image src={u.imageUrl!} alt={u.name || 'User avatar'} width={40} height={40} className="rounded-full" />
                                                         <div className="ml-3">
                                                             <p className="text-sm font-semibold truncate">{u.name}</p>
                                                             <p className="text-xs text-muted-foreground">@{u.username}</p>
@@ -227,26 +252,26 @@ export default function Header() {
                     </div>
                  )}
             </div>
-            <SignedIn>
-              {user ? (
+            {user ? (
+                <>
                 <Link href="/profile">
                   <Image 
-                    src={user.imageUrl} 
-                    alt={user.fullName ?? 'User profile'}
+                    src={user.user_metadata.avatar_url} 
+                    alt={'User profile'}
                     width={32}
                     height={32}
                     className="rounded-full"
                   />
                 </Link>
-              ) : (
-                <div/>
-              )}
-            </SignedIn>
-             <SignedOut>
-                <Button asChild>
-                    <Link href="/sign-in">Sign In</Link>
+                <Button variant="ghost" size="icon" onClick={handleSignOut} title="Sign Out">
+                    <LogOut className="h-5 w-5" />
                 </Button>
-            </SignedOut>
+                </>
+              ) : (
+                <Button asChild>
+                    <Link href="/login">Sign In</Link>
+                </Button>
+              )}
           </div>
         </div>
       </div>

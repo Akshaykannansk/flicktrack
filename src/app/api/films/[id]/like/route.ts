@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { auth } from '@clerk/nextjs/server';
+import { createClient } from '@/lib/supabase/server';
 
 async function upsertFilm(filmId: number) {
     await prisma.film.upsert({
@@ -16,8 +16,10 @@ export async function POST(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const { userId } = auth();
-  if (!userId) {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
@@ -31,7 +33,7 @@ export async function POST(
 
     await prisma.likedFilm.create({
       data: {
-        userId: userId,
+        userId: user.id,
         filmId: filmId,
       },
     });
@@ -51,8 +53,9 @@ export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const { userId } = auth();
-  if (!userId) {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
@@ -65,7 +68,7 @@ export async function DELETE(
     await prisma.likedFilm.delete({
       where: {
         userId_filmId: {
-          userId: userId,
+          userId: user.id,
           filmId: filmId,
         },
       },

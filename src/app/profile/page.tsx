@@ -6,60 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Settings, Film as FilmIcon, Star, Heart } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { FilmCard } from '@/components/film-card';
-import type { Film as FilmType } from '@/lib/types';
-import { currentUser } from '@clerk/nextjs/server';
-import type { User } from '@clerk/nextjs/api';
+import type { Film as FilmType, PublicUser } from '@/lib/types';
 import prisma from '@/lib/prisma';
 import { notFound, redirect } from 'next/navigation';
-import { getFilmDetails as getFilmDetailsFromTMDB } from '@/lib/tmdb';
 import { FollowButton } from './follow-button';
 import { IMAGE_BASE_URL } from '@/lib/tmdb-isomorphic';
-import type { FilmDetails } from '@/lib/types';
-import redis from '@/lib/redis';
-
-const CACHE_EXPIRATION_SECONDS = 60 * 60 * 24; // 24 hours
-
-async function getFilmDetails(id: string): Promise<FilmDetails | null> {
-    const cacheKey = `film:${id}`;
-
-    try {
-      if (!redis.isOpen) {
-        await redis.connect().catch(err => {
-            console.error('Failed to connect to Redis for getFilmDetails:', err);
-        });
-      }
-
-      if (redis.isOpen) {
-        const cachedFilm = await redis.get(cacheKey);
-        if (cachedFilm) {
-            console.log(`CACHE HIT for film: ${id}`);
-            return JSON.parse(cachedFilm);
-        }
-      }
-    } catch (error) {
-        console.error("Redis GET error in getFilmDetails:", error);
-    }
-
-    console.log(`CACHE MISS for film: ${id}. Fetching from TMDB.`);
-    const filmDetails = await getFilmDetailsFromTMDB(id);
-    
-    if (!filmDetails) {
-        return null;
-    }
-
-    try {
-        if (redis.isOpen) {
-            await redis.set(cacheKey, JSON.stringify(filmDetails), {
-                EX: CACHE_EXPIRATION_SECONDS
-            });
-        }
-    } catch (error) {
-        console.error("Redis SET error in getFilmDetails:", error);
-    }
-    
-    return filmDetails;
-}
-
+import { createClient } from '@/lib/supabase/server';
 
 async function getUserStats(userId: string) {
     const stats = await prisma.user.findUnique({
@@ -120,29 +72,29 @@ async function getUserStats(userId: string) {
 
 
 export default async function ProfilePage() {
-  const user = await currentUser();
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
   if (!user) {
-    redirect("/sign-in");
+    redirect("/login");
   }
 
    // Upsert user in DB on their own profile visit
    const dbUser = await prisma.user.upsert({
         where: { id: user.id },
         update: {
-            name: user.fullName,
-            username: user.username,
-            imageUrl: user.imageUrl,
-            bio: (user.publicMetadata.bio as string) ?? null,
+            name: user.user_metadata.name,
+            username: user.user_metadata.user_name,
+            imageUrl: user.user_metadata.avatar_url,
         },
         create: {
             id: user.id,
-            email: user.emailAddresses.find(e => e.id === user.primaryEmailAddressId)!.emailAddress,
-            name: user.fullName,
-            username: user.username,
-            imageUrl: user.imageUrl,
-            bio: (user.publicMetadata.bio as string) ?? null,
+            email: user.email!,
+            name: user.user_metadata.name,
+            username: user.user_metadata.user_name,
+            imageUrl: user.user_metadata.avatar_url,
         },
-        select: { bio: true }
+        select: { bio: true, name: true, username: true, imageUrl: true, id: true }
     });
 
   const stats = await getUserStats(user.id);
@@ -150,18 +102,13 @@ export default async function ProfilePage() {
   if (!stats) {
     notFound();
   }
-
-  const userWithBio = {
-      ...user,
-      bio: dbUser?.bio || null,
-  }
   
-  return <ProfilePageContent user={userWithBio} stats={stats} isCurrentUser={true} />;
+  return <ProfilePageContent user={dbUser} stats={stats} isCurrentUser={true} />;
 }
 
 
 interface ProfilePageContentProps {
-    user: User & { bio: string | null },
+    user: PublicUser,
     stats: NonNullable<Awaited<ReturnType<typeof getUserStats>>>,
     isCurrentUser: boolean,
     isFollowing?: boolean,
@@ -175,7 +122,7 @@ export function ProfilePageContent({ user, stats, isCurrentUser, isFollowing }: 
             <div className="flex flex-col md:flex-row items-center gap-6">
                 <div className="relative">
                 <Image
-                    src={user.imageUrl}
+                    src={user.imageUrl || 'https://placehold.co/128x128.png'}
                     alt="User Avatar"
                     width={128}
                     height={128}
@@ -184,7 +131,7 @@ export function ProfilePageContent({ user, stats, isCurrentUser, isFollowing }: 
                 />
                 </div>
                 <div className="text-center md:text-left">
-                <h1 className="text-4xl font-headline font-bold tracking-tighter">{user.fullName || 'User'}</h1>
+                <h1 className="text-4xl font-headline font-bold tracking-tighter">{user.name || 'User'}</h1>
                 <p className="text-muted-foreground mt-1">@{user.username || 'username'}</p>
                  {user.bio && <p className="text-foreground mt-3 max-w-xl">{user.bio}</p>}
                 <div className="flex justify-center md:justify-start flex-wrap gap-x-6 gap-y-2 text-base text-muted-foreground mt-3">
@@ -199,15 +146,9 @@ export function ProfilePageContent({ user, stats, isCurrentUser, isFollowing }: 
                     {isCurrentUser ? (
                         <>
                             <Button variant="outline" asChild>
-                                <Link href="/user-profile">
+                                <Link href="/profile/edit">
                                     <Settings className="mr-2 h-4 w-4" />
                                     Edit Profile
-                                </Link>
-                            </Button>
-                            <Button variant="outline" asChild>
-                                <Link href="/profile/edit">
-                                    <FilmIcon className="mr-2 h-4 w-4" />
-                                    Edit Favorites
                                 </Link>
                             </Button>
                         </>
@@ -229,7 +170,7 @@ export function ProfilePageContent({ user, stats, isCurrentUser, isFollowing }: 
                         return (
                             <FilmCard 
                                 key={film.id} 
-                                film={film}
+                                film={film as FilmType}
                                 isInWatchlist={watchlistIds.has(filmId)}
                                 isLiked={likedIds.has(filmId)}
                             />

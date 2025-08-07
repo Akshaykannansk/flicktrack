@@ -1,18 +1,19 @@
 
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { auth } from '@clerk/nextjs/server';
+import { createClient } from '@/lib/supabase/server';
 
 // GET all liked lists for the user
 export async function GET(request: Request) {
-  try {
-    const { userId } = auth();
-    if (!userId) {
-      return new NextResponse('Unauthorized', { status: 401 });
-    }
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return new NextResponse('Unauthorized', { status: 401 });
+  }
     
+  try {
     const likedLists = await prisma.likedList.findMany({
-      where: { userId: userId },
+      where: { userId: user.id },
       select: { listId: true },
       orderBy: {
         createdAt: 'desc',
