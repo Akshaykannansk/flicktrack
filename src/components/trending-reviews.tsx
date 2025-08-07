@@ -1,12 +1,16 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Star, MessageSquare } from 'lucide-react';
 import { IMAGE_BASE_URL } from '@/lib/tmdb-isomorphic';
 import type { Film, PublicUser } from '@/lib/types';
 import { FeedSkeleton } from './following-feed';
 import { Button } from './ui/button';
+import { auth } from '@clerk/nextjs/server';
+import { LikeReviewButton } from './like-review-button';
+import prisma from '@/lib/prisma';
+
 
 interface TrendingReviewEntry {
   id: string;
@@ -15,20 +19,48 @@ interface TrendingReviewEntry {
   rating: number;
   review: string | null;
   createdAt: string;
+  _count: {
+    likedBy: number;
+  };
+  likedBy: { userId: string }[];
 }
 
 async function getTrendingReviews(): Promise<TrendingReviewEntry[]> {
-  // In a real app, you'd fetch this from your API endpoint
-  // For now, we simulate by fetching directly from the DB logic.
+  const { userId } = auth();
+  
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/trending-reviews`, { next: { revalidate: 60 }});
-    if (!res.ok) {
-        console.error('Failed to fetch trending reviews', res.statusText);
-        return [];
-    }
-    const data = await res.json();
+    const trendingReviews = await prisma.journalEntry.findMany({
+      where: {
+        review: {
+          not: null, 
+          not: '',
+        },
+      },
+      include: {
+        film: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+            imageUrl: true,
+          },
+        },
+        _count: {
+          select: { likedBy: true },
+        },
+        likedBy: {
+          where: { userId: userId || '' },
+          select: { userId: true },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc', 
+      },
+      take: 10,
+    });
 
-     const responseData: TrendingReviewEntry[] = data.map((entry: any) => ({
+    const responseData: TrendingReviewEntry[] = trendingReviews.map((entry: any) => ({
         ...entry,
         createdAt: entry.createdAt.toISOString(),
         film: {
@@ -48,13 +80,14 @@ async function getTrendingReviews(): Promise<TrendingReviewEntry[]> {
     }));
     return responseData;
   } catch (error) {
-    console.error(error);
+    console.error('Failed to fetch trending reviews:', error);
     return [];
   }
 }
 
 export async function TrendingReviews() {
   const reviews = await getTrendingReviews();
+  const { userId } = auth();
   
   if (reviews.length === 0) {
     return (
@@ -118,6 +151,15 @@ export async function TrendingReviews() {
                         )}
                     </div>
                 </CardContent>
+                {userId && entry.user.id !== userId && (
+                   <CardFooter>
+                        <LikeReviewButton 
+                            journalEntryId={entry.id}
+                            initialIsLiked={entry.likedBy.length > 0}
+                            initialLikeCount={entry._count.likedBy}
+                        />
+                   </CardFooter>
+                )}
             </Card>
           )
       })}

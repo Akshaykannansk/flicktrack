@@ -1,10 +1,13 @@
 
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { auth } from '@clerk/nextjs/server';
 
 export const revalidate = 60; // Revalidate every 60 seconds
 
 export async function GET() {
+  const { userId } = auth();
+
   try {
     const trendingReviews = await prisma.journalEntry.findMany({
       where: {
@@ -22,6 +25,13 @@ export async function GET() {
             username: true,
             imageUrl: true,
           },
+        },
+         _count: {
+          select: { likedBy: true },
+        },
+        likedBy: {
+          where: { userId: userId || '' },
+          select: { userId: true },
         },
       },
       orderBy: {

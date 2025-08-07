@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from './ui/button';
 import { auth } from '@clerk/nextjs/server';
 import prisma from '@/lib/prisma';
+import { LikeReviewButton } from './like-review-button';
 
 interface FeedEntry {
   id: string;
@@ -17,6 +18,10 @@ interface FeedEntry {
   rating: number;
   review: string | null;
   loggedDate: string;
+  _count: {
+    likedBy: number;
+  };
+  likedBy: { userId: string }[];
 }
 
 export const FeedSkeleton = () => (
@@ -77,7 +82,14 @@ async function getFeed(): Promise<FeedEntry[]> {
                 username: true,
                 imageUrl: true,
             }
-        }
+        },
+        _count: {
+          select: { likedBy: true },
+        },
+        likedBy: {
+          where: { userId: userId },
+          select: { userId: true },
+        },
       },
       orderBy: {
         loggedDate: 'desc',
@@ -110,6 +122,7 @@ async function getFeed(): Promise<FeedEntry[]> {
 
 export async function FollowingFeed() {
   const feed = await getFeed();
+  const { userId } = auth();
   
   if (feed.length === 0) {
     return (
@@ -178,6 +191,15 @@ export async function FollowingFeed() {
                         )}
                     </div>
                 </CardContent>
+                 {entry.review && userId && entry.user.id !== userId && (
+                   <CardFooter>
+                        <LikeReviewButton 
+                            journalEntryId={entry.id}
+                            initialIsLiked={entry.likedBy.length > 0}
+                            initialLikeCount={entry._count.likedBy}
+                        />
+                   </CardFooter>
+                )}
             </Card>
           )
       })}
