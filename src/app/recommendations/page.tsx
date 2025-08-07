@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { createClient } from '@/lib/supabase/server';
+import prisma from '@/lib/prisma';
 import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 
@@ -17,18 +17,21 @@ export default async function RecommendationsPage() {
   if (!userId) {
     redirect('/sign-in');
   }
-  const supabase = createClient();
 
-  const { data: journalEntries, error } = await supabase
-    .from('journal_entries')
-    .select('*, films(title)')
-    .eq('user_id', userId)
-    .order('logged_date', { ascending: false })
-    .limit(20);
-
-  if (error) {
-    console.error("Error fetching journal entries for recommendations:", error);
-  }
+  const journalEntries = await prisma.journalEntry.findMany({
+    where: {
+      userId: userId,
+    },
+    include: {
+      films: {
+        select: { title: true },
+      },
+    },
+    orderBy: {
+      logged_date: 'desc',
+    },
+    take: 20,
+  });
 
   const viewingHistory = journalEntries?.map(entry => ({
     filmTitle: entry.films.title,

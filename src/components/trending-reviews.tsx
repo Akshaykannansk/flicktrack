@@ -8,7 +8,7 @@ import type { Film, PublicUser } from '@/lib/types';
 import { CardDescription } from './ui/card';
 import { auth } from '@clerk/nextjs/server';
 import { LikeReviewButton } from './like-review-button';
-import { createClient } from '@/lib/supabase/server';
+import prisma from '@/lib/prisma';
 import { Comments } from './comments';
 
 interface TrendingReviewEntry {
@@ -18,23 +18,39 @@ interface TrendingReviewEntry {
   rating: number;
   review: string | null;
   created_at: string;
-  liked_by_user: { user_id: string }[];
-  review_likes_count: number;
-  comments_count: number;
+  reviewLikes: { userId: string }[];
+  _count: {
+    reviewLikes: number;
+    comments: number;
+  }
 }
 
 
 async function getTrendingReviews(): Promise<TrendingReviewEntry[]> {
   const { userId } = auth();
-  const supabase = createClient();
   
   try {
-    const { data, error } = await supabase
-        .rpc('get_trending_reviews', { p_user_id: userId });
-
-    if (error) throw error;
+    const reviews = await prisma.journalEntry.findMany({
+        where: {
+            review: { not: null, notIn: [''] }
+        },
+        include: {
+            film: true,
+            user: {
+                select: { id: true, name: true, username: true, imageUrl: true }
+            },
+            reviewLikes: userId ? { where: { userId } } : false,
+            _count: {
+                select: { reviewLikes: true, comments: true }
+            }
+        },
+        orderBy: {
+            createdAt: 'desc',
+        },
+        take: 10,
+    });
     
-    return data as TrendingReviewEntry[];
+    return reviews as unknown as TrendingReviewEntry[];
   } catch (error) {
     console.error('Failed to fetch trending reviews:', error);
     return [];
@@ -113,13 +129,13 @@ export async function TrendingReviews() {
                             {entry.user.id !== userId && (
                                 <LikeReviewButton 
                                     journalEntryId={entry.id}
-                                    initialIsLiked={!!entry.liked_by_user}
-                                    initialLikeCount={entry.review_likes_count}
+                                    initialIsLiked={!!entry.reviewLikes.length}
+                                    initialLikeCount={entry._count.reviewLikes}
                                 />
                             )}
                              <Comments 
                                 journalEntryId={entry.id}
-                                initialCommentCount={entry.comments_count}
+                                initialCommentCount={entry._count.comments}
                             />
                         </div>
                    </CardFooter>

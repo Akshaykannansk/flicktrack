@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import prisma from '@/lib/prisma';
 import { z } from 'zod';
 import { auth } from '@clerk/nextjs/server';
 
@@ -16,29 +16,41 @@ export async function GET() {
   if (!userId) {
       return new NextResponse('Unauthorized', { status: 401 });
   }
-  const supabase = createClient();
 
   try {
-    const { data: lists, error } = await supabase
-      .from('film_lists_with_details')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-      
-    if (error) throw error;
+    const lists = await prisma.filmList.findMany({
+      where: { userId: userId },
+      include: {
+        films: {
+          take: 4,
+          orderBy: {
+            addedAt: 'desc',
+          },
+          include: {
+            film: {
+              select: { id: true, poster_path: true },
+            },
+          },
+        },
+        _count: {
+          select: { films: true },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
     
     const responseData = lists.map(list => ({
-      id: list.id,
-      name: list.name,
-      description: list.description,
-      _count: { films: list.film_count || 0 },
-      films: list.films ? list.films.slice(0, 4).map((film: any) => ({
-        film: {
-          id: film.id.toString(),
-          poster_path: film.poster_path
-        }
-      })) : []
-    }));
+        ...list,
+        id: list.id,
+        films: list.films.map(f => ({
+            film: {
+                id: f.film.id.toString(),
+                poster_path: f.film.poster_path
+            }
+        }))
+    }))
 
     return NextResponse.json(responseData);
   } catch (error) {
@@ -54,8 +66,6 @@ export async function POST(request: Request) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
-  const supabase = createClient();
-
   try {
     const body = await request.json();
     const validation = listSchema.safeParse(body);
@@ -66,17 +76,13 @@ export async function POST(request: Request) {
 
     const { name, description } = validation.data;
     
-    const { data: newList, error } = await supabase
-      .from('film_lists')
-      .insert({
+    const newList = await prisma.filmList.create({
+      data: {
         name,
         description,
-        user_id: userId,
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
+        userId: userId,
+      },
+    });
 
     return NextResponse.json(newList, { status: 201 });
   } catch (error) {

@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { LogFilmDialog } from '@/components/log-film-dialog';
 import { WatchlistButton } from '@/components/watchlist-button';
-import { createClient } from '@/lib/supabase/server';
+import prisma from '@/lib/prisma';
 import redis from '@/lib/redis';
 import { auth } from '@clerk/nextjs/server';
 import type { FilmDetails } from '@/lib/types';
@@ -63,16 +63,17 @@ async function getWatchlistStatus(filmId: number) {
   if (!userId) {
     return false;
   }
-  const supabase = createClient();
   
-  const { data, error } = await supabase
-    .from('watchlist_items')
-    .select('film_id')
-    .eq('user_id', userId)
-    .eq('film_id', filmId)
-    .single();
+  const watchlistItem = await prisma.watchlistItem.findUnique({
+    where: {
+      userId_filmId: {
+        userId: userId,
+        filmId: filmId,
+      },
+    },
+  });
 
-  return !!data;
+  return !!watchlistItem;
 }
 
 export default async function FilmDetailPage({ params }: { params: { id: string } }) {

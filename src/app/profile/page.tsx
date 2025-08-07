@@ -9,7 +9,7 @@ import { FilmCard } from '@/components/film-card';
 import type { Film as FilmType } from '@/lib/types';
 import { currentUser } from '@clerk/nextjs/server';
 import type { User } from '@clerk/nextjs/api';
-import { createClient } from '@/lib/supabase/server';
+import prisma from '@/lib/prisma';
 import { notFound, redirect } from 'next/navigation';
 import { getFilmDetails as getFilmDetailsFromTMDB } from '@/lib/tmdb';
 import { FollowButton } from './follow-button';
@@ -62,56 +62,54 @@ async function getFilmDetails(id: string): Promise<FilmDetails | null> {
 
 
 async function getUserStats(userId: string) {
-    const supabase = createClient();
-    
-    const { data: dbUser, error } = await supabase
-      .from('users')
-      .select(`
-        *,
-        followers:follows!following_id(count),
-        following:follows!follower_id(count),
-        journal_entries(count),
-        liked_films(count),
-        liked_lists(count),
-        favorite_films:favorite_films(films(*))
-      `)
-      .eq('id', userId)
-      .single();
+    const stats = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+            _count: {
+                select: {
+                    journalEntries: true,
+                    followers: true,
+                    following: true,
+                    likes: true, // Liked Films
+                    likedLists: true,
+                },
+            },
+            favoriteFilms: {
+                include: { film: true },
+            },
+            journalEntries: {
+                take: 10,
+                orderBy: { logged_date: 'desc' },
+                include: { film: true }
+            }
+        }
+    });
 
-    if (error || !dbUser) {
-        console.error("Error getting user stats from Supabase:", error);
+    if (!stats) {
         return null;
     }
-
-    const journalCount = dbUser.journal_entries[0]?.count || 0;
-    const followersCount = dbUser.followers[0]?.count || 0;
-    const followingCount = dbUser.following[0]?.count || 0;
-    const likesCount = (dbUser.liked_films[0]?.count || 0) + (dbUser.liked_lists[0]?.count || 0);
-    const favoriteFilms = dbUser.favorite_films.map(fav => fav.films) as FilmType[];
     
-    const [watchlistRes, likesRes, recentJournalRes] = await Promise.all([
-      supabase.from('watchlist_items').select('film_id').eq('user_id', userId),
-      supabase.from('liked_films').select('film_id').eq('user_id', userId),
-      supabase.from('journal_entries').select('*, films(*)').eq('user_id', userId).order('logged_date', { ascending: false }).limit(10)
+    const [watchlist, likes] = await Promise.all([
+      prisma.watchlistItem.findMany({ where: { userId }, select: { filmId: true } }),
+      prisma.likedFilm.findMany({ where: { userId }, select: { filmId: true } }),
     ]);
     
-    const watchlistIds = new Set(watchlistRes.data?.map(item => item.film_id));
-    const likedIds = new Set(likesRes.data?.map(item => item.film_id));
+    const watchlistIds = new Set(watchlist.map(item => item.filmId));
+    const likedIds = new Set(likes.map(item => item.filmId));
 
     return { 
-        journalCount, 
-        followersCount, 
-        followingCount,
-        likesCount, 
-        favoriteFilms,
+        journalCount: stats._count.journalEntries, 
+        followersCount: stats._count.followers, 
+        followingCount: stats._count.following,
+        likesCount: stats._count.likes + stats._count.likedLists, 
+        favoriteFilms: stats.favoriteFilms.map(fav => ({ ...fav.film, id: fav.film.id.toString() })),
         watchlistIds,
         likedIds,
-        recentJournalEntries: recentJournalRes.data?.map(entry => ({
+        recentJournalEntries: stats.journalEntries.map(entry => ({
             id: entry.id,
             film: {
-                ...entry.films,
-                id: entry.films.id.toString(),
-                poster_path: entry.films.poster_path,
+                ...entry.film,
+                id: entry.film.id.toString(),
             },
             rating: entry.rating,
             review: entry.review || undefined,
@@ -126,17 +124,26 @@ export default async function ProfilePage() {
   if (!user) {
     redirect("/sign-in");
   }
-  const supabase = createClient();
 
    // Upsert user in DB on their own profile visit
-   const { data: dbUser, error } = await supabase.from('users').upsert({
-        id: user.id,
-        email: user.emailAddresses[0].emailAddress,
-        name: user.fullName,
-        username: user.username,
-        image_url: user.imageUrl,
-        bio: (user.publicMetadata.bio as string) ?? null,
-    }).select('bio').single();
+   const dbUser = await prisma.user.upsert({
+        where: { id: user.id },
+        update: {
+            name: user.fullName,
+            username: user.username,
+            imageUrl: user.imageUrl,
+            bio: (user.publicMetadata.bio as string) ?? null,
+        },
+        create: {
+            id: user.id,
+            email: user.emailAddresses.find(e => e.id === user.primaryEmailAddressId)!.emailAddress,
+            name: user.fullName,
+            username: user.username,
+            imageUrl: user.imageUrl,
+            bio: (user.publicMetadata.bio as string) ?? null,
+        },
+        select: { bio: true }
+    });
 
   const stats = await getUserStats(user.id);
   

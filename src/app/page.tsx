@@ -6,7 +6,7 @@ import { Separator } from '@/components/ui/separator';
 import { SignedIn, SignedOut } from "@clerk/nextjs";
 import { auth } from '@clerk/nextjs/server';
 import { Users, TrendingUp } from 'lucide-react';
-import { createClient } from '@/lib/supabase/server';
+import prisma from '@/lib/prisma';
 import React from 'react';
 import { FilmCarouselSkeleton } from '@/components/film-carousel-skeleton';
 import { FeedSkeleton } from '@/components/following-feed';
@@ -16,15 +16,14 @@ async function getUserFilmSets(userId: string | null) {
     if (!userId) {
         return { watchlistIds: new Set<number>(), likedIds: new Set<number>() };
     }
-    const supabase = createClient();
 
-    const [watchlistRes, likesRes] = await Promise.all([
-        supabase.from('watchlist_items').select('film_id').eq('user_id', userId),
-        supabase.from('liked_films').select('film_id').eq('user_id', userId),
+    const [watchlist, likes] = await Promise.all([
+        prisma.watchlistItem.findMany({ where: { userId }, select: { filmId: true } }),
+        prisma.likedFilm.findMany({ where: { userId }, select: { filmId: true } }),
     ]);
 
-    const watchlistIds = new Set(watchlistRes.data?.map(item => item.film_id) || []);
-    const likedIds = new Set(likesRes.data?.map(item => item.film_id) || []);
+    const watchlistIds = new Set(watchlist.map(item => item.filmId));
+    const likedIds = new Set(likes.map(item => item.filmId));
 
     return { watchlistIds, likedIds };
 }

@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import prisma from '@/lib/prisma';
 import { auth } from '@clerk/nextjs/server';
 import { z } from 'zod';
 
@@ -13,11 +13,12 @@ const filmActionSchema = z.object({
   filmId: z.number(),
 });
 
-async function upsertFilm(supabase: ReturnType<typeof createClient>, filmId: number) {
-    const { error } = await supabase
-      .from('films')
-      .upsert({ id: filmId, title: 'Unknown Film' }, { onConflict: 'id' });
-    if (error) throw error;
+async function upsertFilm(filmId: number) {
+    await prisma.film.upsert({
+        where: { id: filmId },
+        update: {},
+        create: { id: filmId, title: 'Unknown Film' },
+    });
 }
 
 // GET a single list with its films
@@ -25,50 +26,39 @@ export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const supabase = createClient();
   try {
     const listId = params.id;
-    const { data, error } = await supabase
-      .from('film_lists')
-      .select(`
-        *,
-        users ( id, name, username ),
-        films_on_lists (
-          added_at,
-          films ( * )
-        ),
-        liked_lists ( count )
-      `)
-      .eq('id', listId)
-      .single();
+    const list = await prisma.filmList.findUnique({
+      where: { id: listId },
+      include: {
+        user: {
+            select: { id: true, name: true, username: true }
+        },
+        films: {
+          include: {
+            film: true,
+          },
+          orderBy: {
+            addedAt: 'desc',
+          },
+        },
+        _count: {
+          select: { likedBy: true },
+        },
+      },
+    });
 
-    if (error || !data) {
+    if (!list) {
       return NextResponse.json({ error: 'List not found' }, { status: 404 });
     }
     
-    // Sort films by added_at date
-    const sortedFilms = data.films_on_lists.sort((a, b) => 
-        new Date(b.added_at).getTime() - new Date(a.added_at).getTime()
-    );
-
     const responseData = {
-        ...data,
-        user: data.users,
-        films: sortedFilms.map(item => ({
-            addedAt: item.added_at,
-            film: {
-                ...item.films,
-                id: item.films.id.toString(),
-            }
+        ...list,
+        films: list.films.map(item => ({
+            ...item,
+            film: item.film ? { ...item.film, id: item.film.id.toString() } : null
         })),
-        _count: {
-            likedBy: data.liked_lists[0]?.count || 0
-        }
     }
-    // remove original relational fields
-    delete (responseData as any).users;
-    delete (responseData as any).films_on_lists;
-    delete (responseData as any).liked_lists;
 
     return NextResponse.json(responseData);
   } catch (error) {
@@ -86,7 +76,6 @@ export async function PUT(
   if (!userId) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
-  const supabase = createClient();
 
   try {
     const listId = params.id;
@@ -97,15 +86,10 @@ export async function PUT(
       return NextResponse.json({ error: validation.error.formErrors }, { status: 400 });
     }
 
-    const { data: updatedList, error } = await supabase
-      .from('film_lists')
-      .update(validation.data)
-      .eq('id', listId)
-      .eq('user_id', userId)
-      .select()
-      .single();
-
-    if (error) throw error;
+    const updatedList = await prisma.filmList.update({
+      where: { id: listId, userId: userId }, // Ensure user owns the list
+      data: validation.data,
+    });
 
     return NextResponse.json(updatedList);
   } catch (error) {
@@ -123,17 +107,12 @@ export async function DELETE(
     if (!userId) {
         return new NextResponse('Unauthorized', { status: 401 });
     }
-    const supabase = createClient();
     
     try {
         const listId = params.id;
-        const { error } = await supabase
-            .from('film_lists')
-            .delete()
-            .eq('id', listId)
-            .eq('user_id', userId);
-
-        if (error) throw error;
+        await prisma.filmList.delete({
+            where: { id: listId, userId: userId },
+        });
 
         return new NextResponse(null, { status: 204 }); // No Content
     } catch (error) {
@@ -151,7 +130,6 @@ export async function POST(
   if (!userId) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
-  const supabase = createClient();
 
   try {
     const listId = params.id;
@@ -164,22 +142,20 @@ export async function POST(
 
     const { filmId } = validation.data;
     
-    await upsertFilm(supabase, filmId);
+    await upsertFilm(filmId);
 
-    const { data: filmOnList, error } = await supabase.from('films_on_lists').insert({
-      list_id: listId,
-      film_id: filmId,
-    }).select().single();
-
-    if (error) {
-      if (error.code === '23505') { // unique constraint
-         return NextResponse.json({ error: 'Film is already in this list' }, { status: 409 });
-      }
-      throw error;
-    }
+    const filmOnList = await prisma.filmsOnList.create({
+      data: {
+        listId: listId,
+        filmId: filmId,
+      },
+    });
 
     return NextResponse.json(filmOnList, { status: 201 });
   } catch (error: any) {
+    if (error.code === 'P2002') { // Prisma unique constraint
+        return NextResponse.json({ error: 'Film is already in this list' }, { status: 409 });
+    }
     console.error(`Failed to add film to list ${params.id}:`, error);
     return NextResponse.json({ error: 'Failed to add film to list' }, { status: 500 });
   }

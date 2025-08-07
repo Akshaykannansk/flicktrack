@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import prisma from '@/lib/prisma';
 import { auth } from '@clerk/nextjs/server';
 
 // DELETE a comment
@@ -13,34 +13,27 @@ export async function DELETE(
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
-  const supabase = createClient();
   const commentId = params.id;
 
   try {
     // First, verify the user owns the comment
-    const { data: comment, error: findError } = await supabase
-      .from('comments')
-      .select('user_id')
-      .eq('id', commentId)
-      .single();
+    const comment = await prisma.comment.findUnique({
+      where: { id: commentId },
+      select: { userId: true },
+    });
 
-    if (findError || !comment) {
+    if (!comment) {
       return NextResponse.json({ error: 'Comment not found.' }, { status: 404 });
     }
 
-    if (comment.user_id !== userId) {
+    if (comment.userId !== userId) {
       return NextResponse.json({ error: 'You are not authorized to delete this comment.' }, { status: 403 });
     }
 
     // If authorized, delete the comment
-    const { error: deleteError } = await supabase
-      .from('comments')
-      .delete()
-      .eq('id', commentId);
-
-    if (deleteError) {
-      throw deleteError;
-    }
+    await prisma.comment.delete({
+      where: { id: commentId },
+    });
 
     return new NextResponse(null, { status: 204 }); // No Content
   } catch (error) {

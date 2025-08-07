@@ -1,7 +1,7 @@
 
 import { ProfilePageContent } from '../page';
 import { auth, clerkClient } from '@clerk/nextjs/server';
-import { createClient } from '@/lib/supabase/server';
+import prisma from '@/lib/prisma';
 import { notFound, redirect } from 'next/navigation';
 import type { Film as FilmType } from '@/lib/types';
 import { getFilmDetails as getFilmDetailsFromTMDB } from '@/lib/tmdb';
@@ -53,64 +53,65 @@ async function getFilmDetails(id: string): Promise<FilmDetails | null> {
 
 
 async function getUserData(userId: string) {
-    const supabase = createClient();
     const clerkUser = await clerkClient.users.getUser(userId);
-
     if (!clerkUser) {
         return null;
     }
     
-    const { data: dbUser, error } = await supabase
-      .from('users')
-      .upsert({
+    const dbUser = await prisma.user.upsert({
+      where: { id: userId },
+      update: {
+        bio: (clerkUser.publicMetadata.bio as string) ?? null,
+      },
+      create: {
         id: userId,
         bio: (clerkUser.publicMetadata.bio as string) ?? null,
-        email: clerkUser.emailAddresses.find(e => e.id === clerkUser.primaryEmailAddressId)?.emailAddress,
+        email: clerkUser.emailAddresses.find(e => e.id === clerkUser.primaryEmailAddressId)!.emailAddress,
         name: clerkUser.fullName,
         username: clerkUser.username,
-        image_url: clerkUser.imageUrl
-      }, { onConflict: 'id' })
-      .select(`
-        *,
-        followers:follows!following_id(count),
-        following:follows!follower_id(count),
-        journal_entries(count),
-        liked_films(count),
-        liked_lists(count),
-        favorite_films:favorite_films(films(*))
-      `)
-      .single();
+        imageUrl: clerkUser.imageUrl,
+      },
+    });
 
-    if (error || !dbUser) {
-        console.error("Error fetching user data from Supabase:", error);
-        return null;
-    }
+    const stats = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        _count: {
+          select: {
+            journalEntries: true,
+            followers: true,
+            following: true,
+            likes: true,
+            likedLists: true,
+          }
+        },
+        favoriteFilms: {
+            include: { film: true },
+        },
+        journalEntries: {
+            take: 10,
+            orderBy: { logged_date: 'desc' },
+            include: { film: true }
+        }
+      }
+    });
 
-    const journalCount = dbUser.journal_entries[0]?.count || 0;
-    const followersCount = dbUser.followers[0]?.count || 0;
-    const followingCount = dbUser.following[0]?.count || 0;
-    const likesCount = (dbUser.liked_films[0]?.count || 0) + (dbUser.liked_lists[0]?.count || 0);
+    if (!stats) return null;
 
-    const favoriteFilms = dbUser.favorite_films.map(fav => fav.films) as FilmType[];
-
-    const [watchlistRes, likesRes, recentJournalRes] = await Promise.all([
-      supabase.from('watchlist_items').select('film_id').eq('user_id', userId),
-      supabase.from('liked_films').select('film_id').eq('user_id', userId),
-      supabase.from('journal_entries').select('*, films(*)').eq('user_id', userId).order('logged_date', { ascending: false }).limit(10)
+    const [watchlist, likes] = await Promise.all([
+      prisma.watchlistItem.findMany({ where: { userId }, select: { filmId: true } }),
+      prisma.likedFilm.findMany({ where: { userId }, select: { filmId: true } }),
     ]);
-    
-    const watchlistIds = new Set(watchlistRes.data?.map(item => item.film_id));
-    const likedIds = new Set(likesRes.data?.map(item => item.film_id));
+
+    const watchlistIds = new Set(watchlist.map(item => item.filmId));
+    const likedIds = new Set(likes.map(item => item.filmId));
 
     const { userId: currentUserId } = auth();
     let isFollowing = false;
     if (currentUserId && currentUserId !== userId) {
-        const { data: follow, error: followError } = await supabase
-            .from('follows')
-            .select('*')
-            .eq('follower_id', currentUserId)
-            .eq('following_id', userId)
-            .maybeSingle();
+        const follow = await prisma.follows.findUnique({
+            where: { followerId_followingId: { followerId: currentUserId, followingId: userId } }
+        });
         isFollowing = !!follow;
     }
 
@@ -120,19 +121,18 @@ async function getUserData(userId: string) {
             bio: dbUser.bio,
         },
         stats: {
-            journalCount,
-            followersCount,
-            followingCount,
-            likesCount,
-            favoriteFilms,
+            journalCount: stats._count.journalEntries,
+            followersCount: stats._count.followers,
+            followingCount: stats._count.following,
+            likesCount: stats._count.likes + stats._count.likedLists,
+            favoriteFilms: stats.favoriteFilms.map(fav => ({ ...fav.film, id: fav.film.id.toString() })) as FilmType[],
             watchlistIds,
             likedIds,
-            recentJournalEntries: recentJournalRes.data?.map(entry => ({
+            recentJournalEntries: stats.journalEntries.map(entry => ({
                 id: entry.id,
                 film: {
-                    ...entry.films,
-                    id: entry.films.id.toString(),
-                    poster_path: entry.films.poster_path,
+                    ...entry.film,
+                    id: entry.film.id.toString(),
                 },
                 rating: entry.rating,
                 review: entry.review || undefined,

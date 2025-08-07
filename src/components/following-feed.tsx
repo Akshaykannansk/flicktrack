@@ -8,7 +8,7 @@ import type { Film, PublicUser } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from './ui/button';
 import { auth } from '@clerk/nextjs/server';
-import { createClient } from '@/lib/supabase/server';
+import prisma from '@/lib/prisma';
 import { LikeReviewButton } from './like-review-button';
 import { Comments } from './comments';
 
@@ -19,9 +19,11 @@ interface FeedEntry {
   rating: number;
   review: string | null;
   logged_date: string;
-  liked_by_user: { user_id: string }[];
-  review_likes_count: number;
-  comments_count: number;
+  reviewLikes: { userId: string }[];
+  _count: {
+    reviewLikes: number;
+    comments: number;
+  }
 }
 
 export const FeedSkeleton = () => (
@@ -55,33 +57,35 @@ async function getFeed(): Promise<FeedEntry[]> {
     if (!userId) {
         return [];
     }
-    const supabase = createClient();
 
-    const { data: follows, error: followsError } = await supabase
-        .from('follows')
-        .select('following_id')
-        .eq('follower_id', userId);
+    const follows = await prisma.follows.findMany({
+        where: { followerId: userId },
+        select: { followingId: true },
+    });
 
-    if (followsError) {
-        console.error("Error fetching follows:", followsError);
-        return [];
-    }
-
-    const followingIds = follows.map(f => f.following_id);
+    const followingIds = follows.map(f => f.followingId);
 
     if (followingIds.length === 0) {
       return [];
     }
     
-    const { data, error } = await supabase
-      .rpc('get_feed_for_user', { p_user_id: userId, p_following_ids: followingIds });
+    const feed = await prisma.journalEntry.findMany({
+        where: { userId: { in: followingIds } },
+        include: {
+            film: true,
+            user: {
+                select: { id: true, name: true, username: true, imageUrl: true },
+            },
+            reviewLikes: userId ? { where: { userId } } : false,
+             _count: {
+                select: { reviewLikes: true, comments: true },
+            }
+        },
+        orderBy: { logged_date: 'desc' },
+        take: 20
+    });
 
-    if (error) {
-        console.error("Error fetching feed:", error);
-        return [];
-    }
-    
-    return data as FeedEntry[];
+    return feed as unknown as FeedEntry[];
 }
 
 
@@ -162,13 +166,13 @@ export async function FollowingFeed() {
                             {entry.user.id !== userId && (
                                 <LikeReviewButton 
                                     journalEntryId={entry.id}
-                                    initialIsLiked={!!entry.liked_by_user}
-                                    initialLikeCount={entry.review_likes_count}
+                                    initialIsLiked={!!entry.reviewLikes.length}
+                                    initialLikeCount={entry._count.reviewLikes}
                                 />
                             )}
                              <Comments 
                                 journalEntryId={entry.id}
-                                initialCommentCount={entry.comments_count}
+                                initialCommentCount={entry._count.comments}
                             />
                         </div>
                    </CardFooter>

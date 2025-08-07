@@ -7,7 +7,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Card } from '@/components/ui/card';
 import { auth, clerkClient } from '@clerk/nextjs/server';
-import { createClient } from '@/lib/supabase/server';
+import prisma from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic'; // Ensure the page is re-rendered for each search
 
@@ -22,15 +22,14 @@ async function getUserFilmSets(userId: string | null) {
     if (!userId) {
         return { watchlistIds: new Set<number>(), likedIds: new Set<number>() };
     }
-    const supabase = createClient();
 
     const [watchlist, likes] = await Promise.all([
-        supabase.from('watchlist_items').select('film_id').eq('user_id', userId),
-        supabase.from('liked_films').select('film_id').eq('user_id', userId),
+        prisma.watchlistItem.findMany({ where: { userId }, select: { filmId: true } }),
+        prisma.likedFilm.findMany({ where: { userId }, select: { filmId: true } }),
     ]);
 
-    const watchlistIds = new Set(watchlist.data?.map(item => item.film_id) || []);
-    const likedIds = new Set(likes.data?.map(item => item.film_id) || []);
+    const watchlistIds = new Set(watchlist.map(item => item.filmId));
+    const likedIds = new Set(likes.map(item => item.filmId));
 
     return { watchlistIds, likedIds };
 }

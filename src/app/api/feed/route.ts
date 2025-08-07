@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import prisma from '@/lib/prisma';
 import { auth } from '@clerk/nextjs/server';
 
 export const revalidate = 60; // Revalidate every 60 seconds
@@ -10,42 +10,43 @@ export async function GET(request: Request) {
   if (!userId) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
-  const supabase = createClient();
-
+  
   try {
-    const { data: follows, error: followsError } = await supabase
-        .from('follows')
-        .select('following_id')
-        .eq('follower_id', userId);
+    const follows = await prisma.follows.findMany({
+        where: { followerId: userId },
+        select: { followingId: true }
+    });
 
-    if (followsError) throw followsError;
-
-    const followingIds = follows.map(f => f.following_id);
+    const followingIds = follows.map(f => f.followingId);
 
     if (followingIds.length === 0) {
       return NextResponse.json([]);
     }
 
-    const { data: feedEntries, error: feedError } = await supabase
-      .from('journal_entries')
-      .select(`
-        *,
-        films(*),
-        users (id, name, username, image_url)
-      `)
-      .in('user_id', followingIds)
-      .order('logged_date', { ascending: false })
-      .limit(20);
-
-    if (feedError) throw feedError;
-
-    const responseData = feedEntries.map(entry => ({
-      ...entry,
-      film: entry.films,
-      user: entry.users
-    }));
-
-    return NextResponse.json(responseData);
+    const feedEntries = await prisma.journalEntry.findMany({
+      where: {
+        userId: {
+          in: followingIds,
+        },
+      },
+      include: {
+        film: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+            imageUrl: true
+          }
+        },
+      },
+      orderBy: {
+        logged_date: 'desc',
+      },
+      take: 20,
+    });
+    
+    return NextResponse.json(feedEntries);
   } catch (error) {
     console.error('Failed to fetch activity feed:', error);
     return NextResponse.json({ error: 'Failed to fetch activity feed' }, { status: 500 });
