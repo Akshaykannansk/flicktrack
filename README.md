@@ -6,7 +6,19 @@ This is a Next.js application for tracking films you've watched, creating lists,
 
 To run this application on your local machine, you'll need [Docker](https://www.docker.com/products/docker-desktop/) installed.
 
-### 1. Create an Environment File
+### 1. Set up Supabase
+
+This project uses Supabase for its database.
+
+1.  Go to [supabase.com](https://supabase.com), sign in, and create a new project.
+2.  Once your project is created, navigate to the **SQL Editor** in the sidebar.
+3.  Click on "+ New query".
+4.  Copy the entire content of the `supabase_schema.sql` file from the root of this project and paste it into the query editor.
+5.  Click "Run" to create all the necessary database tables.
+6.  Next, go to **Project Settings > API**.
+7.  Find your **Project URL** and the **Service Role Key**. You will need these for the next step.
+
+### 2. Create an Environment File
 
 The application requires API keys and other secrets to be stored in a local environment file.
 
@@ -19,9 +31,13 @@ TMDB_API_KEY=your_tmdb_api_key
 # Get from https://dashboard.clerk.com -> Your Application -> API Keys
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
 CLERK_SECRET_KEY=your_clerk_secret_key
+
+# Get from your Supabase project settings (Project Settings > API)
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 ```
 
-### 2. Configure Clerk (Important for Social Login & Bio)
+### 3. Configure Clerk (Important for Social Login & Bio)
 
 To allow users to update their bio and connect social media accounts, you need to configure custom fields and OAuth providers in your Clerk Dashboard.
 
@@ -39,7 +55,7 @@ To allow users to update their bio and connect social media accounts, you need t
     2.  Enable the providers you want to support (e.g., Google, GitHub). Follow the setup instructions for each.
     These will then appear as options on the user's "Edit Profile" page.
 
-### 3. Start the Application
+### 4. Start the Application
 
 With Docker running, open your terminal and run the following command from the project root:
 
@@ -47,9 +63,9 @@ With Docker running, open your terminal and run the following command from the p
 docker-compose up --build
 ```
 
-This will build the Docker images for the application, database, and cache, and then start all the services. The application will be available at [http://localhost:9002](http://localhost:9002).
+This will build the Docker image for the application and start the service. The application will be available at [http://localhost:9002](http://localhost:9002).
 
-### 4. Seed the Database (Optional)
+### 5. Seed the Database (Optional)
 
 After the application has started for the first time, you can seed the database with some sample data. Open a new terminal window and run:
 
