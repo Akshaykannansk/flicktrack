@@ -16,6 +16,7 @@ This project uses a Supabase-hosted PostgreSQL database with the Prisma ORM for 
     *   **Database Connection String**: Navigate to **Project Settings > Database**. Under "Connection string," find the **PostgreSQL connection string**. You must add `?pgbouncer=true&connection_limit=1` to the end of the connection string to use Prisma's connection pooling correctly.
     *   **Project URL & Anon Key**: Navigate to **Project Settings > API**. Find your Project URL and anon public key.
     *   **TMDB API Key**: You'll also need an API key from The Movie Database (TMDB). You can get one from [https://www.themoviedb.org/settings/api](https://www.themoviedb.org/settings/api).
+    *   **JWT Secret**: This is for securing the custom authentication sessions. You can generate a strong secret.
 
     Your `.env` file should look like this:
 
@@ -29,6 +30,9 @@ This project uses a Supabase-hosted PostgreSQL database with the Prisma ORM for 
 
     # Get from https://www.themoviedb.org/settings/api
     TMDB_API_KEY=your_tmdb_api_key
+    
+    # A long, random string for signing JWTs
+    JWT_SECRET=your_super_secret_jwt_key
     ```
 
 3.  **Sync Database Schema**: With your `.env` file configured, run the following command to sync the Prisma schema with your Supabase database. This will create all the necessary tables.
