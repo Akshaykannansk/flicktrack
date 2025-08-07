@@ -1,5 +1,4 @@
 
-
 export interface PaginatedResponse<T> {
   page: number;
   results: T[];
@@ -68,7 +67,7 @@ export interface FilmListSummary {
     id: string;
     name: string;
     description: string;
-    films: FilmOnList[];
+    films: { film: Pick<Film, 'id' | 'poster_path'> }[];
     _count: {
         films: number;
     }

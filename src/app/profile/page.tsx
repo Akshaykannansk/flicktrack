@@ -3,7 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Settings, Film as FilmIcon, Star } from 'lucide-react';
+import { Settings, Film as FilmIcon, Star, Heart } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { FilmCard } from '@/components/film-card';
 import type { Film as FilmType } from '@/lib/types';
@@ -195,7 +195,9 @@ export function ProfilePageContent({ user, stats, isCurrentUser, isFollowing }: 
                     <span><strong className="text-foreground font-semibold">{journalCount}</strong> Films</span>
                     <span><strong className="text-foreground font-semibold">{followersCount}</strong> Followers</span>
                     <span><strong className="text-foreground font-semibold">{followingCount}</strong> Following</span>
-                    <span><strong className="text-foreground font-semibold">{likesCount}</strong> Likes</span>
+                    <Link href={isCurrentUser ? '/likes' : `/profile/${user.id}/likes`} className="hover:text-primary">
+                        <strong className="text-foreground font-semibold">{likesCount}</strong> Likes
+                    </Link>
                 </div>
                 <div className="flex justify-center md:justify-start flex-wrap gap-2 mt-4">
                     {isCurrentUser ? (

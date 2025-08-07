@@ -4,7 +4,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Film, Search, Loader2, User as UserIcon, Clapperboard, Menu, List } from 'lucide-react';
+import { Film, Search, Loader2, User as UserIcon, Clapperboard, Menu, List, Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,7 @@ const navLinks = [
   { href: '/journal', label: 'Journal' },
   { href: '/lists', label: 'Lists' },
   { href: '/watchlist', label: 'Watchlist' },
+  { href: '/likes', label: 'Likes', icon: Heart },
   { href: '/recommendations', label: 'For You' },
 ];
 
@@ -109,10 +110,11 @@ export default function Header() {
                   href={link.href}
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={cn(
-                    'text-lg font-medium transition-colors hover:text-primary',
+                    'flex items-center gap-2 text-lg font-medium transition-colors hover:text-primary',
                     (pathname.startsWith(link.href) && link.href !== '/') || pathname === link.href ? 'text-primary font-semibold' : 'text-muted-foreground'
                   )}
                 >
+                  {link.icon && <link.icon className="h-5 w-5" />}
                   {link.label}
                 </Link>
               ))}
@@ -141,10 +143,11 @@ export default function Header() {
                   key={link.href}
                   href={link.href}
                   className={cn(
-                    'text-sm font-medium transition-colors hover:text-primary',
+                    'text-sm font-medium transition-colors hover:text-primary flex items-center gap-1.5',
                     (pathname.startsWith(link.href) && link.href !== '/') || pathname === link.href ? 'text-primary font-semibold' : 'text-muted-foreground'
                   )}
                 >
+                  {link.icon && <link.icon className="h-4 w-4" />}
                   {link.label}
                 </Link>
               ))}
@@ -250,5 +253,3 @@ export default function Header() {
     </header>
   );
 }
-
-    
