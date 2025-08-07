@@ -1,0 +1,16 @@
+services:
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+    depends_on:
+      - app
+    networks:
+      - default
+
+networks:
+  default:
+    external:
+      name: flicktrack_default

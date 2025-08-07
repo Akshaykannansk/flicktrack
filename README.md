@@ -37,4 +37,62 @@ This will build the Docker images for the application, database, and cache, and 
 After the application has started for the first time, you can seed the database with some sample data. Open a new terminal window and run:
 
 ```bash
-docker-compose exec app
+docker-compose exec app npm run db:seed
+```
+
+This will populate the database with sample users, films, journal entries, and lists.
+
+## Exposing Locally with Cloudflare Tunnel (Optional)
+
+If you want to expose your local development server to the internet for webhooks or sharing, you can use Cloudflare Tunnel.
+
+### 1. Install `cloudflared`
+
+Follow the [official Cloudflare instructions](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/install-and-setup/installation/) to install the `cloudflared` CLI tool on your machine.
+
+### 2. Login to Cloudflare
+
+Run the following command to authenticate `cloudflared` with your Cloudflare account.
+
+```bash
+cloudflared tunnel login
+```
+
+### 3. Create a Tunnel
+
+Create a tunnel and give it a name. We'll use `flicktrack-dev`.
+
+```bash
+cloudflared tunnel create flicktrack-dev
+```
+
+This command will output a tunnel ID and create a credentials file in your `~/.cloudflared/` directory.
+
+### 4. Get Your Tunnel Token
+
+Now, you can get the token for your newly created tunnel.
+
+```bash
+cloudflared tunnel token flicktrack-dev
+```
+
+Copy the token that is displayed.
+
+### 5. Add Token to Environment File
+
+Open your `.env` file and add the tunnel token to it.
+
+```env
+# ... your other keys ...
+TUNNEL_TOKEN=your_copied_tunnel_token
+```
+
+### 6. Start the Tunnel
+
+In a new terminal window (while your main application from `docker-compose up` is still running), run the following command:
+
+```bash
+docker-compose -f docker-compose.yml -f docker-compose.tunnel.yml up
+```
+
+This will start the `cloudflared` container, which will connect to your `app` container and expose it to the internet through a secure tunnel. Check the terminal output for the public URL.
