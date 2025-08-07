@@ -7,7 +7,8 @@ import { Settings, Film as FilmIcon, Star, Heart } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { FilmCard } from '@/components/film-card';
 import type { Film as FilmType } from '@/lib/types';
-import { currentUser, User } from '@clerk/nextjs/server';
+import { currentUser } from '@clerk/nextjs/server';
+import type { User } from '@clerk/nextjs/api';
 import prisma from '@/lib/prisma';
 import { notFound, redirect } from 'next/navigation';
 import { getFilmDetails as getFilmDetailsFromTMDB } from '@/lib/tmdb';
@@ -144,14 +145,17 @@ export default async function ProfilePage() {
   }
 
   // Upsert user in DB on their own profile visit
-   await prisma.user.upsert({
+   const dbUser = await prisma.user.upsert({
         where: { id: user.id },
-        update: {},
+        update: {
+            bio: (user.publicMetadata.bio as string) ?? null,
+        },
         create: {
             id: user.id,
             email: user.emailAddresses[0].emailAddress,
             name: user.fullName,
-            username: user.username
+            username: user.username,
+            bio: (user.publicMetadata.bio as string) ?? null,
         }
     });
 
@@ -160,13 +164,18 @@ export default async function ProfilePage() {
   if (!stats) {
     notFound();
   }
+
+  const userWithBio = {
+      ...user,
+      bio: dbUser.bio,
+  }
   
-  return <ProfilePageContent user={user} stats={stats} isCurrentUser={true} />;
+  return <ProfilePageContent user={userWithBio} stats={stats} isCurrentUser={true} />;
 }
 
 
 interface ProfilePageContentProps {
-    user: User,
+    user: User & { bio: string | null },
     stats: NonNullable<Awaited<ReturnType<typeof getUserStats>>>,
     isCurrentUser: boolean,
     isFollowing?: boolean,
@@ -191,6 +200,7 @@ export function ProfilePageContent({ user, stats, isCurrentUser, isFollowing }: 
                 <div className="text-center md:text-left">
                 <h1 className="text-4xl font-headline font-bold tracking-tighter">{user.fullName || 'User'}</h1>
                 <p className="text-muted-foreground mt-1">@{user.username || 'username'}</p>
+                 {user.bio && <p className="text-foreground mt-3 max-w-xl">{user.bio}</p>}
                 <div className="flex justify-center md:justify-start flex-wrap gap-x-6 gap-y-2 text-base text-muted-foreground mt-3">
                     <span><strong className="text-foreground font-semibold">{journalCount}</strong> Films</span>
                     <span><strong className="text-foreground font-semibold">{followersCount}</strong> Followers</span>

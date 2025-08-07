@@ -18,6 +18,7 @@ async function main() {
       email: 'alex.doe@example.com',
       name: 'Alex Doe',
       username: 'alexdoe',
+      bio: 'Just a film enthusiast chronicling my journey through cinema. Big fan of sci-fi and anything by Tarantino.',
     },
   });
   console.log(`Upserted user: ${alex.name}`);
@@ -30,7 +31,8 @@ async function main() {
           id: JANE_USER_ID,
           email: 'jane.doe@example.com',
           name: 'Jane Doe',
-          username: 'janedoe'
+          username: 'janedoe',
+          bio: 'Aspiring filmmaker and lover of classic movies. Join me as I watch and review the greats.'
       }
   });
   console.log(`Upserted user: ${jane.name}`);

@@ -62,12 +62,15 @@ async function getUserData(userId: string) {
     // Check if the user exists in our DB, if not, create them
     const dbUser = await prisma.user.upsert({
         where: { id: userId },
-        update: {},
+        update: {
+            bio: (user.publicMetadata.bio as string) ?? null,
+        },
         create: {
             id: userId,
             email: user.emailAddresses[0].emailAddress,
             name: user.fullName,
             username: user.username,
+            bio: (user.publicMetadata.bio as string) ?? null,
         },
         include: {
             favoriteFilms: true,
@@ -130,7 +133,10 @@ async function getUserData(userId: string) {
     }
 
     return {
-        user,
+        user: {
+            ...user,
+            bio: dbUser.bio,
+        },
         stats: {
             journalCount,
             followersCount,

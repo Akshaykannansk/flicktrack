@@ -1,4 +1,3 @@
-
 # FlickTrack - Your Personal Film Journal
 
 This is a Next.js application for tracking films you've watched, creating lists, and getting AI-powered recommendations.
@@ -22,7 +21,25 @@ NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
 CLERK_SECRET_KEY=your_clerk_secret_key
 ```
 
-### 2. Start the Application
+### 2. Configure Clerk (Important for Social Login & Bio)
+
+To allow users to update their bio and connect social media accounts, you need to configure custom fields and OAuth providers in your Clerk Dashboard.
+
+*   **Bio Field**:
+    1.  Go to your Clerk Dashboard.
+    2.  Navigate to **Users > User & Organization Settings**.
+    3.  Under "Custom user attributes", add a new attribute.
+    4.  Set the **Name** to `bio`.
+    5.  Set the **Type** to `Text`.
+    6.  Make sure it is a **Public** attribute.
+    This will automatically add a "Bio" field to the "Edit Profile" page for your users.
+
+*   **Social Connections**:
+    1.  In your Clerk Dashboard, go to **User & Authentication > Social Connections**.
+    2.  Enable the providers you want to support (e.g., Google, GitHub). Follow the setup instructions for each.
+    These will then appear as options on the user's "Edit Profile" page.
+
+### 3. Start the Application
 
 With Docker running, open your terminal and run the following command from the project root:
 
@@ -32,7 +49,7 @@ docker-compose up --build
 
 This will build the Docker images for the application, database, and cache, and then start all the services. The application will be available at [http://localhost:9002](http://localhost:9002).
 
-### 3. Seed the Database (Optional)
+### 4. Seed the Database (Optional)
 
 After the application has started for the first time, you can seed the database with some sample data. Open a new terminal window and run:
 
