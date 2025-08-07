@@ -132,24 +132,3 @@ export async function searchFilms(query: string): Promise<Film[]> {
   const data = await fetchFromTMDB<PaginatedResponse<any>>('search/movie', { query });
   return data?.results.map(transformFilmData) || [];
 }
-
-// This function can no longer live here as it uses a server-only dependency
-// and this file is used by client components.
-// I have moved the implementation to the API route and server page that use it.
-export async function searchUsers(query: string, clerkClient: any): Promise<PublicUser[]> {
-    if (!query) return [];
-
-    try {
-        const clerkUsers = await clerkClient.users.getUserList({ query, limit: 10 });
-
-        return clerkUsers.map(user => ({
-            id: user.id,
-            name: user.fullName,
-            username: user.username,
-            imageUrl: user.imageUrl,
-        }));
-    } catch (error) {
-        console.error('Failed to search users:', error);
-        return [];
-    }
-}

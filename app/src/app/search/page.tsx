@@ -1,4 +1,4 @@
-import { searchFilms, searchUsers } from '@/lib/tmdb';
+import { searchFilms } from '@/lib/tmdb';
 import { FilmCard } from '@/components/film-card';
 import { Search, User, Clapperboard } from 'lucide-react';
 import type { Film, PublicUser } from '@/lib/types';
@@ -39,6 +39,24 @@ async function getUserFilmSets(userId: string | null) {
     return { watchlistIds, likedIds };
 }
 
+async function searchUsers(query: string): Promise<PublicUser[]> {
+    if (!query) return [];
+
+    try {
+        const clerkUsers = await clerkClient.users.getUserList({ query, limit: 10 });
+
+        return clerkUsers.map(user => ({
+            id: user.id,
+            name: user.fullName,
+            username: user.username,
+            imageUrl: user.imageUrl,
+        }));
+    } catch (error) {
+        console.error('Failed to search users:', error);
+        return [];
+    }
+}
+
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
     const query = searchParams.q || '';
@@ -52,7 +70,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     if (query) {
       const [filmResults, userResults, filmSets] = await Promise.all([
         searchFilms(query),
-        searchUsers(query, clerkClient),
+        searchUsers(query),
         getUserFilmSets(userId)
       ]);
       films = filmResults;

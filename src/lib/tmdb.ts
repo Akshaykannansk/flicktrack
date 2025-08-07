@@ -3,7 +3,6 @@ import type { Film, FilmDetails, PaginatedResponse, Video, PublicUser } from './
 import redis from './redis';
 import { IMAGE_BASE_URL } from './tmdb-isomorphic';
 import prisma from './prisma';
-import { clerkClient } from '@clerk/nextjs/server';
 
 const API_BASE_URL = 'https://api.themoviedb.org/3';
 const API_KEY = process.env.TMDB_API_KEY;
@@ -132,22 +131,4 @@ export async function searchFilms(query: string): Promise<Film[]> {
   if (!query) return [];
   const data = await fetchFromTMDB<PaginatedResponse<any>>('search/movie', { query });
   return data?.results.map(transformFilmData) || [];
-}
-
-export async function searchUsers(query: string): Promise<PublicUser[]> {
-    if (!query) return [];
-
-    try {
-        const clerkUsers = await clerkClient.users.getUserList({ query, limit: 10 });
-
-        return clerkUsers.map(user => ({
-            id: user.id,
-            name: user.fullName,
-            username: user.username,
-            imageUrl: user.imageUrl,
-        }));
-    } catch (error) {
-        console.error('Failed to search users:', error);
-        return [];
-    }
 }

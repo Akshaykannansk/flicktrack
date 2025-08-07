@@ -1,11 +1,11 @@
-import { searchFilms, searchUsers } from '@/lib/tmdb';
+import { searchFilms } from '@/lib/tmdb';
 import { FilmCard } from '@/components/film-card';
 import { Search, User, Clapperboard } from 'lucide-react';
 import type { Film, PublicUser } from '@/lib/types';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Card } from '@/components/ui/card';
-import { auth } from '@clerk/nextjs/server';
+import { auth, clerkClient } from '@clerk/nextjs/server';
 import prisma from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic'; // Ensure the page is re-rendered for each search
@@ -30,13 +30,31 @@ async function getUserFilmSets(userId: string | null) {
         prisma.likedFilm.findMany({
             where: { userId },
             select: { filmId: true }
-        })
+        }),
     ]);
 
     const watchlistIds = new Set(watchlist.map(item => item.filmId));
     const likedIds = new Set(likes.map(item => item.filmId));
 
     return { watchlistIds, likedIds };
+}
+
+async function searchUsers(query: string): Promise<PublicUser[]> {
+    if (!query) return [];
+
+    try {
+        const clerkUsers = await clerkClient.users.getUserList({ query, limit: 10 });
+
+        return clerkUsers.map(user => ({
+            id: user.id,
+            name: user.fullName,
+            username: user.username,
+            imageUrl: user.imageUrl,
+        }));
+    } catch (error) {
+        console.error('Failed to search users:', error);
+        return [];
+    }
 }
 
 

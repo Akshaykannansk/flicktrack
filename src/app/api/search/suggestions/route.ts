@@ -1,5 +1,25 @@
 import { NextResponse } from 'next/server';
-import { searchFilms, searchUsers } from '@/lib/tmdb';
+import { searchFilms } from '@/lib/tmdb';
+import { clerkClient } from '@clerk/nextjs/server';
+import type { PublicUser } from '@/lib/types';
+
+async function searchUsers(query: string): Promise<PublicUser[]> {
+    if (!query) return [];
+
+    try {
+        const clerkUsers = await clerkClient.users.getUserList({ query, limit: 10 });
+
+        return clerkUsers.map(user => ({
+            id: user.id,
+            name: user.fullName,
+            username: user.username,
+            imageUrl: user.imageUrl,
+        }));
+    } catch (error) {
+        console.error('Failed to search users:', error);
+        return [];
+    }
+}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
