@@ -1,3 +1,4 @@
+
 import type { Film, FilmDetails, PaginatedResponse, Video, PublicUser } from './types';
 import redis from './redis';
 import { IMAGE_BASE_URL } from './tmdb-isomorphic';
@@ -9,10 +10,13 @@ const API_KEY = process.env.TMDB_API_KEY;
 
 const CACHE_EXPIRATION_SECONDS = 60 * 60 * 24; // 24 hours
 
-async function fetchFromTMDB<T>(endpoint: string, params: Record<string, string> = {}): Promise<T | null> {
+async function fetchFromTMDB<T>(endpoint: string, params: Record<string, string> = {}): Promise<T | any> {
   if (!API_KEY) {
+    // In a real-world scenario, you'd want to handle this more gracefully.
+    // Maybe return a specific error or have a fallback mechanism.
     console.warn('TMDB_API_KEY is not defined. Returning empty data.');
-    return null;
+    if (endpoint.includes('search')) return { results: [] };
+    return { results: [] };
   }
 
   const url = new URL(`${API_BASE_URL}/${endpoint}`);
@@ -22,17 +26,18 @@ async function fetchFromTMDB<T>(endpoint: string, params: Record<string, string>
   });
 
   try {
-    const response = await fetch(url.toString(), {
-      next: { revalidate: 3600 } // Revalidate cache every hour for Next.js fetch
-    });
+    // Note: No next.revalidate here as this function can be called from client components now
+    const response = await fetch(url.toString());
 
     if (!response.ok) {
       console.error(`Failed to fetch from TMDB endpoint: ${endpoint}`, await response.text());
+      if (endpoint.includes('search')) return { results: [] };
       return null;
     }
     return response.json();
   } catch (error) {
      console.error(`Network error when fetching from TMDB endpoint: ${endpoint}`, error);
+     if (endpoint.includes('search')) return { results: [] };
      return null;
   }
 }
@@ -139,11 +144,4 @@ export async function searchUsers(query: string): Promise<PublicUser[]> {
             id: user.id,
             name: user.fullName,
             username: user.username,
-            imageUrl: user.imageUrl,
-        }))
-
-    } catch (error) {
-        console.error("Failed to search users from Clerk:", error);
-        return [];
-    }
-}
+            imageUrl: user

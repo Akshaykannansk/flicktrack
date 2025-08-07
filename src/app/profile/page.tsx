@@ -1,12 +1,11 @@
-
 import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Settings, Film as FilmIcon, Star, Heart } from 'lucide-react';
+import { Settings, Film as FilmIcon, Star } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { FilmCard } from '@/components/film-card';
-import type { Film as FilmType, LoggedFilm } from '@/lib/types';
+import type { Film as FilmType } from '@/lib/types';
 import { currentUser, User } from '@clerk/nextjs/server';
 import prisma from '@/lib/prisma';
 import { notFound, redirect } from 'next/navigation';
@@ -78,7 +77,7 @@ async function getUserStats(userId: string) {
                 id: entry.film.id.toString(),
                 title: entry.film.title,
                 poster_path: entry.film.posterPath,
-                release_date: entry.film.releaseDate,
+                release_date: entry.film.releaseDate ? new Date(entry.film.releaseDate).toISOString() : '',
                 vote_average: entry.film.voteAverage,
                 overview: entry.film.overview,
             },
@@ -104,6 +103,7 @@ export default async function ProfilePage() {
             id: user.id,
             email: user.emailAddresses[0].emailAddress,
             name: user.fullName,
+            username: user.username
         }
     });
 

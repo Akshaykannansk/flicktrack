@@ -22,6 +22,7 @@ async function getUserData(userId: string) {
             id: userId,
             email: user.emailAddresses[0].emailAddress,
             name: user.fullName,
+            username: user.username,
         },
         include: {
             favoriteFilms: true,
@@ -29,7 +30,8 @@ async function getUserData(userId: string) {
                 select: {
                     followers: true,
                     following: true,
-                    journalEntries: true
+                    journalEntries: true,
+                    likes: true,
                 }
             }
         }
@@ -38,12 +40,27 @@ async function getUserData(userId: string) {
     const journalCount = dbUser._count.journalEntries;
     const followersCount = dbUser._count.followers;
     const followingCount = dbUser._count.following;
+    const likesCount = dbUser._count.likes;
 
     const favoriteFilmsDetails = await Promise.all(
         dbUser.favoriteFilms.map(film => getFilmDetails(film.id.toString()))
     );
 
     const validFavoriteFilms = favoriteFilmsDetails.filter(Boolean) as FilmType[];
+    
+    const [watchlist, likes] = await Promise.all([
+      prisma.watchlistItem.findMany({
+          where: { userId },
+          select: { filmId: true }
+      }),
+      prisma.likedFilm.findMany({
+          where: { userId },
+          select: { filmId: true }
+      })
+    ]);
+
+    const watchlistIds = new Set(watchlist.map(item => item.filmId));
+    const likedIds = new Set(likes.map(item => item.filmId));
 
     const recentJournalEntries = await prisma.journalEntry.findMany({
         where: { userId },
@@ -72,14 +89,17 @@ async function getUserData(userId: string) {
             journalCount,
             followersCount,
             followingCount,
+            likesCount,
             favoriteFilms: validFavoriteFilms,
+            watchlistIds,
+            likedIds,
             recentJournalEntries: recentJournalEntries.map(entry => ({
                 id: entry.id,
                 film: {
                     id: entry.film.id.toString(),
                     title: entry.film.title,
                     poster_path: entry.film.posterPath,
-                    release_date: entry.film.releaseDate,
+                    release_date: entry.film.releaseDate ? new Date(entry.film.releaseDate).toISOString() : '',
                     vote_average: entry.film.voteAverage,
                     overview: entry.film.overview,
                 },
@@ -113,7 +133,3 @@ export default async function OtherUserProfilePage({ params }: { params: { id: s
     return <ProfilePageContent 
                 user={userData.user} 
                 stats={userData.stats} 
-                isFollowing={userData.isFollowing} 
-                isCurrentUser={userData.isCurrentUser} 
-            />;
-}

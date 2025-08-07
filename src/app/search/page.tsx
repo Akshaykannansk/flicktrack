@@ -1,4 +1,3 @@
-
 import { searchFilms, searchUsers } from '@/lib/tmdb';
 import { FilmCard } from '@/components/film-card';
 import { Search, User, Clapperboard } from 'lucide-react';

@@ -1,3 +1,4 @@
+
 # FlickTrack - Your Personal Film Journal
 
 This is a Next.js application for tracking films you've watched, creating lists, and getting AI-powered recommendations.
@@ -36,7 +37,4 @@ This will build the Docker images for the application, database, and cache, and 
 After the application has started for the first time, you can seed the database with some sample data. Open a new terminal window and run:
 
 ```bash
-docker-compose exec app npm run db:seed
-```
-
-This will populate the database with some sample films, journal entries, and lists.
+docker-compose exec app
