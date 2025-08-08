@@ -13,7 +13,9 @@ This project uses a Supabase-hosted PostgreSQL database with the Prisma ORM for 
 1.  **Create a Supabase Project**: Go to [supabase.com](https://supabase.com), sign in, and create a new project.
 
 2.  **Create `.env` File**: Create a file named `.env` in the root of the project. You will need to get the following keys from your Supabase project dashboard:
-    *   **Database Connection String**: Navigate to **Project Settings > Database**. Under "Connection string," find the **PostgreSQL connection string**. You must add `?pgbouncer=true&connection_limit=1` to the end of the connection string to use Prisma's connection pooling correctly.
+    *   **Database Connection String**: Navigate to **Project Settings > Database**. Under "Connection string," find the **PostgreSQL connection string**. You will use this for two separate variables:
+        *   `DIRECT_DATABASE_URL`: Use the connection string as-is. This is for database migrations.
+        *   `DATABASE_URL`: Use the connection string and add `?pgbouncer=true&connection_limit=1` to the end. This is for the application runtime to use connection pooling.
     *   **Project URL & Anon Key**: Navigate to **Project Settings > API**. Find your Project URL and anon public key.
     *   **TMDB API Key**: You'll also need an API key from The Movie Database (TMDB). You can get one from [https://www.themoviedb.org/settings/api](https://www.themoviedb.org/settings/api).
     *   **JWT Secret**: This is for securing the custom authentication sessions. You can generate a strong secret.
@@ -21,8 +23,11 @@ This project uses a Supabase-hosted PostgreSQL database with the Prisma ORM for 
     Your `.env` file should look like this:
 
     ```env
-    # Get from Supabase Project Settings > Database. Add `?pgbouncer=true&connection_limit=1` to the end.
-    DATABASE_URL="your_supabase_connection_string"
+    # For Prisma Migrate (Direct DB Connection) - DO NOT include "?pgbouncer=true"
+    DIRECT_DATABASE_URL="postgresql://postgres:[YOUR-PASSWORD]@[YOUR-SUBDOMAIN].pooler.supabase.com:5432/postgres"
+
+    # For Prisma Client (Connection Pooling via PgBouncer) - DO include "?pgbouncer=true"
+    DATABASE_URL="postgresql://postgres:[YOUR-PASSWORD]@[YOUR-SUBDOMAIN].pooler.supabase.com:5432/postgres?pgbouncer=true&connection_limit=1"
 
     # Get from Supabase Project Settings > API
     NEXT_PUBLIC_SUPABASE_URL=your_project_url
@@ -35,7 +40,7 @@ This project uses a Supabase-hosted PostgreSQL database with the Prisma ORM for 
     JWT_SECRET=your_super_secret_jwt_key
     ```
 
-3.  **Sync Database Schema**: With your `.env` file configured, run the following command to sync the Prisma schema with your Supabase database. This will create all the necessary tables. **You must run this command any time the `prisma/schema.prisma` file is changed.**
+3.  **Sync Database Schema**: With your `.env` file correctly configured, run the following command to sync the Prisma schema with your Supabase database. This command uses the `DIRECT_DATABASE_URL` to create and update your database tables. **You must run this command any time the `prisma/schema.prisma` file is changed.**
 
     ```bash
     npx prisma db push
