@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import prisma from '@/services/prisma';
+import prisma from '@/lib/prisma';
 
 export async function POST(request: Request) {
   const { email, password, fullName, username } = await request.json();
