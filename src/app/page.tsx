@@ -1,16 +1,17 @@
 
 import { getPopularMovies, getTopRatedMovies, getNowPlayingMovies } from '@/lib/tmdb';
 import { FilmCarouselSection } from '@/components/film-carousel-section';
-import { FollowingFeed, FeedSkeleton } from '@/components/following-feed';
+import { FollowingFeed } from '@/components/following-feed';
 import { Separator } from '@/components/ui/separator';
 import { Users, TrendingUp } from 'lucide-react';
 import React from 'react';
 import { FilmCarouselSkeleton } from '@/components/film-carousel-skeleton';
 import { TrendingReviews } from '@/components/trending-reviews';
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getUserFilmSets } from '@/services/userService';
 import type { Film } from '@/lib/types';
+import type { CookieOptions } from '@supabase/ssr';
 
 async function PopularFilms({ watchlistIds, likedIds }: { watchlistIds: Set<number>, likedIds: Set<number> }) {
   const popularMovies = await getPopularMovies();
@@ -47,7 +48,7 @@ async function NowPlayingFilms({ watchlistIds, likedIds }: { watchlistIds: Set<n
 
 
 export default async function HomePage() {
-  const cookieStore = await cookies();
+  const cookieStore = cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -84,9 +85,7 @@ export default async function HomePage() {
                   <TrendingUp className="w-7 h-7 text-primary/80" />
                   <h2 className="text-3xl font-headline font-bold text-foreground tracking-tight">Trending Reviews</h2>
               </div>
-               <React.Suspense fallback={<FeedSkeleton />}>
-                <TrendingReviews />
-              </React.Suspense>
+              <TrendingReviews />
             </section>
             <Separator />
         </>
@@ -97,9 +96,7 @@ export default async function HomePage() {
                 <Users className="w-7 h-7 text-primary/80" />
                 <h2 className="text-3xl font-headline font-bold text-foreground tracking-tight">Following Activity</h2>
             </div>
-            <React.Suspense fallback={<FeedSkeleton />}>
-              <FollowingFeed />
-            </React.Suspense>
+            <FollowingFeed />
           </section>
           <Separator />
           <section className="space-y-6">
@@ -107,9 +104,7 @@ export default async function HomePage() {
                 <TrendingUp className="w-7 h-7 text-primary/80" />
                 <h2 className="text-3xl font-headline font-bold text-foreground tracking-tight">Trending Reviews</h2>
             </div>
-             <React.Suspense fallback={<FeedSkeleton />}>
-              <TrendingReviews />
-            </React.Suspense>
+             <TrendingReviews />
           </section>
           <Separator />
         </>

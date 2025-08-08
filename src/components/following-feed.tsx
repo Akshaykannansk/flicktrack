@@ -1,4 +1,6 @@
 
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,9 +11,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from './ui/button';
 import { LikeReviewButton } from './like-review-button';
 import { Comments } from './comments';
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
-import { cookies } from 'next/headers';
-import { getFollowingFeedForUser } from '@/services/userService';
+import { useEffect, useState } from 'react';
+import type { User as AuthUser } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/client';
 
 interface FeedEntry {
   id: string;
@@ -53,29 +55,39 @@ export const FeedSkeleton = () => (
     </div>
 )
 
-export async function FollowingFeed() {
-  const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          cookieStore.set({ name, value, ...options });
-        },
-        remove(name: string, options: CookieOptions) {
-          cookieStore.set({ name, value: '', ...options });
-        },
-      },
+export function FollowingFeed() {
+  const [feed, setFeed] = useState<FeedEntry[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  
+  useEffect(() => {
+    const supabase = createClient();
+    const fetchUserAndFeed = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        const authUser = session?.user;
+        setUser(authUser ?? null);
+        
+        if (authUser) {
+            try {
+                const response = await fetch('/api/feed');
+                if (response.ok) {
+                    const data = await response.json();
+                    setFeed(data);
+                } else {
+                    console.error("Failed to fetch feed");
+                }
+            } catch (error) {
+                 console.error("Error fetching feed:", error);
+            }
+        }
+        setIsLoading(false);
     }
-  );
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user;
-
-  const feed = await getFollowingFeedForUser(user?.id ?? null) as unknown as FeedEntry[];
+    fetchUserAndFeed();
+  }, []);
+  
+  if (isLoading) {
+    return <FeedSkeleton />;
+  }
   
   if (feed.length === 0) {
     return (

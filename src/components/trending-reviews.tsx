@@ -1,4 +1,6 @@
 
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
@@ -8,9 +10,10 @@ import type { Film, PublicUser } from '@/lib/types';
 import { CardDescription } from './ui/card';
 import { LikeReviewButton } from './like-review-button';
 import { Comments } from './comments';
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
-import { cookies } from 'next/headers';
-import { getTrendingReviews as fetchTrendingReviews } from '@/services/reviewService';
+import { useEffect, useState } from 'react';
+import type { User as AuthUser } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/client';
+import { FeedSkeleton } from './following-feed';
 
 interface TrendingReviewEntry {
   id: string;
@@ -26,30 +29,38 @@ interface TrendingReviewEntry {
   }
 }
 
-export async function TrendingReviews() {
-  const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          cookieStore.set({ name, value, ...options });
-        },
-        remove(name: string, options: CookieOptions) {
-          cookieStore.set({ name, value: '', ...options });
-        },
-      },
+export function TrendingReviews() {
+  const [reviews, setReviews] = useState<TrendingReviewEntry[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  
+  useEffect(() => {
+    const supabase = createClient();
+    const fetchUserAndReviews = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        const authUser = session?.user;
+        setUser(authUser ?? null);
+        
+        try {
+            const response = await fetch('/api/trending-reviews');
+            if (response.ok) {
+                const data = await response.json();
+                setReviews(data);
+            } else {
+                console.error("Failed to fetch trending reviews");
+            }
+        } catch (error) {
+            console.error("Error fetching trending reviews:", error);
+        }
+        setIsLoading(false);
     }
-  );
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user;
-  
-  const reviews = await fetchTrendingReviews(user?.id) as unknown as TrendingReviewEntry[];
-  
+    fetchUserAndReviews();
+  }, []);
+
+  if (isLoading) {
+    return <FeedSkeleton />;
+  }
+
   if (reviews.length === 0) {
     return (
        <Card className="bg-secondary/30">
