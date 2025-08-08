@@ -115,9 +115,11 @@ export default function Header() {
   };
   
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.push('/');
-  }
+    await fetch('/api/auth/logout', { method: 'POST' });
+    setUser(null);
+    router.push('/login');
+    router.refresh();
+  };
 
   const MobileNav = () => (
     <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>

@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { Film, Loader2 } from 'lucide-react';
-import { createClientComponentClient } from '@supabase/ssr';
+import { createClientComponentClient } from '@/lib/supabase/client';
 
 export default function SignupPage() {
   const [email, setEmail] = useState('');
@@ -25,13 +25,14 @@ export default function SignupPage() {
     e.preventDefault();
     setIsLoading(true);
 
-    const { error } = await supabase.auth.signUp({
+    const { data: { user } , error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
           full_name: fullName,
           username: username,
+          image_url: `https://placehold.co/128x128.png?text=${username.charAt(0).toUpperCase()}`
         },
       },
     });
@@ -43,13 +44,13 @@ export default function SignupPage() {
             description: error.message,
         });
         setIsLoading(false);
-    } else {
-        // Also update the corresponding user in our public users table via API route
-        // This is a workaround because Supabase Edge Functions for DB hooks aren't simple to set up
-        await fetch('/api/auth/signup-db', {
+    } else if (user) {
+        // This call to our own API creates the user in our public.users table.
+        // This is necessary because Supabase auth.users is separate.
+        await fetch('/api/auth/signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, fullName, username })
+          body: JSON.stringify({ email, fullName, username, id: user.id })
         });
 
         toast({

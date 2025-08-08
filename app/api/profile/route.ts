@@ -1,0 +1,45 @@
+
+import { NextResponse } from 'next/server';
+import { z } from 'zod';
+import { createServerComponentClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { updateUserProfile } from '@/services/userService';
+
+const updateProfileSchema = z.object({
+  name: z.string().min(1, 'Name is required.'),
+  username: z.string().min(1, 'Username is required.'),
+  bio: z.string().max(160, 'Bio is too long').optional(),
+});
+
+
+// PUT (update) a user's profile
+export async function PUT(
+  request: Request
+) {
+  const cookieStore = cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user;
+
+  if (!user) {
+    return new NextResponse('Unauthorized', { status: 401 });
+  }
+
+  try {
+    const body = await request.json();
+    const validation = updateProfileSchema.safeParse(body);
+
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error.formErrors }, { status: 400 });
+    }
+
+    const { name, username, bio } = validation.data;
+    
+    const updatedDbUser = await updateUserProfile(user.id, { name, username, bio });
+
+    return NextResponse.json(updatedDbUser);
+  } catch (error) {
+    console.error('Failed to update profile:', error);
+    return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 });
+  }
+}
