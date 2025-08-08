@@ -17,6 +17,12 @@ import { AddToListButton } from './add-to-list-button';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 
+interface FilmCardProps {
+  film: Film;
+  isInWatchlist: boolean;
+  isLiked: boolean;
+}
+
 export function FilmCard({ film, isInWatchlist, isLiked }: FilmCardProps) {
   const posterUrl = film.poster_path ? `${IMAGE_BASE_URL}w500${film.poster_path}` : 'https://placehold.co/400x600.png';
   const year = film.release_date ? new Date(film.release_date).getFullYear() : 'N/A';
