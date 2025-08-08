@@ -7,7 +7,7 @@ import { Users, TrendingUp } from 'lucide-react';
 import React from 'react';
 import { FilmCarouselSkeleton } from '@/components/film-carousel-skeleton';
 import { TrendingReviews } from '@/components/trending-reviews';
-import { createServerComponentClient, type CookieOptions } from '@supabase/ssr';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getUserFilmSets } from '@/services/userService';
 import type { Film } from '@/lib/types';
@@ -48,7 +48,7 @@ async function NowPlayingFilms({ watchlistIds, likedIds }: { watchlistIds: Set<n
 
 export default async function HomePage() {
   const cookieStore = await cookies();
-  const supabase = createServerComponentClient(
+  const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
