@@ -1,17 +1,40 @@
 
 import type { Film, FilmDetails, PaginatedResponse, Video } from './types';
 import { IMAGE_BASE_URL } from './tmdb-isomorphic';
+import redis from './redis';
 
 const API_BASE_URL = 'https://api.themoviedb.org/3';
 const API_KEY = process.env.TMDB_API_KEY;
-
+const CACHE_EXPIRATION_SECONDS = 60 * 60 * 24; // 24 hours
 
 async function fetchFromTMDB<T>(endpoint: string, params: Record<string, string> = {}): Promise<T | null> {
   if (!API_KEY) {
-    // Return null or throw an error if the API key is missing.
     console.error('TMDB_API_KEY is not defined.');
     return null;
   }
+  
+  const queryString = new URLSearchParams(params).toString();
+  const cacheKey = `tmdb:${endpoint}?${queryString}`;
+
+  try {
+      if (!redis.isOpen) {
+        await redis.connect().catch(err => {
+            console.error('Failed to connect to Redis for getFilmDetails:', err);
+        });
+      }
+
+      if (redis.isOpen) {
+        const cachedData = await redis.get(cacheKey);
+        if (cachedData) {
+            console.log(`CACHE HIT for ${cacheKey}`);
+            return JSON.parse(cachedData) as T;
+        }
+      }
+    } catch (error) {
+        console.error("Redis GET error in fetchFromTMDB:", error);
+    }
+    
+  console.log(`CACHE MISS for ${cacheKey}. Fetching from TMDB.`);
 
   const url = new URL(`${API_BASE_URL}/${endpoint}`);
   url.searchParams.append('api_key', API_KEY);
@@ -20,13 +43,27 @@ async function fetchFromTMDB<T>(endpoint: string, params: Record<string, string>
   });
 
   try {
-    const response = await fetch(url.toString()); 
+    const response = await fetch(url.toString(), {
+        next: { revalidate: 3600 } // Revalidate every hour
+    }); 
 
     if (!response.ok) {
       console.error(`Failed to fetch from TMDB endpoint: ${endpoint}`, await response.text());
       return null;
     }
-    return response.json() as T;
+    const data = await response.json() as T;
+
+    try {
+        if (redis.isOpen) {
+            await redis.set(cacheKey, JSON.stringify(data), {
+                EX: CACHE_EXPIRATION_SECONDS
+            });
+        }
+    } catch (error) {
+        console.error("Redis SET error in fetchFromTMDB:", error);
+    }
+
+    return data;
   } catch (error) {
      console.error(`Network error when fetching from TMDB endpoint: ${endpoint}`, error);
      return null;
