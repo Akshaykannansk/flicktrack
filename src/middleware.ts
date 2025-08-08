@@ -18,12 +18,7 @@ export async function middleware(request: NextRequest) {
   
   let userPayload = null;
   if (sessionCookie) {
-    try {
-      userPayload = await decrypt(sessionCookie);
-    } catch(err) {
-      // Invalid token, treat as logged out
-      userPayload = null;
-    }
+    userPayload = await decrypt(sessionCookie);
   }
 
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));

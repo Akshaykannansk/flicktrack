@@ -1,15 +1,15 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import * as React from 'react';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ListPlus, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -19,30 +19,41 @@ interface AddToListButtonProps {
   filmId: number;
 }
 
-export function AddToListButton({ filmId }: AddToListButtonProps) {
-  const [lists, setLists] = useState<FilmListSummary[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+interface AddToListDialogProps {
+    filmId: number;
+    children: React.ReactNode;
+}
+
+function AddToListDialog({ filmId, children }: AddToListDialogProps) {
+  const [open, setOpen] = React.useState(false);
+  const [lists, setLists] = React.useState<FilmListSummary[]>([]);
+  const [isLoading, setIsLoading] = React.useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    // Fetch user's lists when the dropdown is about to open.
-    // This could be optimized to fetch once and cache.
+  React.useEffect(() => {
     async function fetchLists() {
-      try {
-        const response = await fetch('/api/lists');
-        if (!response.ok) {
-          throw new Error('Failed to fetch lists.');
+      if (open) {
+        setIsLoading(true);
+        try {
+          const response = await fetch('/api/lists');
+          if (!response.ok) {
+            throw new Error('Failed to fetch lists.');
+          }
+          const data = await response.json();
+          setLists(data);
+        } catch (error) {
+          console.error(error);
+          toast({
+            variant: 'destructive',
+            title: 'Could not load lists.',
+          });
+        } finally {
+          setIsLoading(false);
         }
-        const data = await response.json();
-        setLists(data);
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setIsLoading(false);
       }
     }
     fetchLists();
-  }, []);
+  }, [open, toast]);
 
   const handleAddToList = async (listId: string) => {
     try {
@@ -62,6 +73,7 @@ export function AddToListButton({ filmId }: AddToListButtonProps) {
         title: 'Film Added',
         description: `Successfully added to "${listName || 'list'}".`,
       });
+      setOpen(false);
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -72,30 +84,46 @@ export function AddToListButton({ filmId }: AddToListButtonProps) {
   };
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="w-32">
-          <ListPlus className="mr-2 h-4 w-4" /> Add to List
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start">
-        <DropdownMenuLabel>Add to a list</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {isLoading ? (
-          <DropdownMenuItem disabled>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Loading...
-          </DropdownMenuItem>
-        ) : lists.length > 0 ? (
-          lists.map((list) => (
-            <DropdownMenuItem key={list.id} onClick={() => handleAddToList(list.id)}>
-              {list.name}
-            </DropdownMenuItem>
-          ))
-        ) : (
-          <DropdownMenuItem disabled>No lists found.</DropdownMenuItem>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Add to a list</DialogTitle>
+          <DialogDescription>Select a list to add this film to.</DialogDescription>
+        </DialogHeader>
+        <div className="max-h-80 overflow-y-auto space-y-2 py-4">
+          {isLoading ? (
+            <div className="flex justify-center items-center">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <span>Loading...</span>
+            </div>
+          ) : lists.length > 0 ? (
+            lists.map((list) => (
+              <Button
+                key={list.id}
+                variant="ghost"
+                className="w-full justify-start"
+                onClick={() => handleAddToList(list.id)}
+              >
+                {list.name}
+              </Button>
+            ))
+          ) : (
+            <p className="text-sm text-muted-foreground text-center">No lists found. You can create one from the "Lists" page.</p>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+
+export function AddToListButton({ filmId }: AddToListButtonProps) {
+  return (
+    <AddToListDialog filmId={filmId}>
+      <Button variant="outline" size="sm" className="w-32">
+        <ListPlus className="mr-2 h-4 w-4" /> Add to List
+      </Button>
+    </AddToListDialog>
   );
 }
