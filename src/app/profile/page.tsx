@@ -35,7 +35,7 @@ async function getUserProfileData(userId: string) {
           }
         },
         favoriteFilms: { 
-            orderBy: { addedAt: 'desc' },
+            orderBy: { addedAt: 'asc' },
             include: { film: true } 
         },
         journalEntries: {

@@ -92,7 +92,8 @@ export async function unlikeFilm(userId: string, filmId: number) {
 export async function getFavoriteFilms(userId: string) {
     return prisma.favoriteFilm.findMany({
       where: { userId },
-      include: { film: true }
+      include: { film: true },
+      orderBy: { addedAt: 'asc' },
     });
 }
 
@@ -108,7 +109,7 @@ export async function updateFavoriteFilms(userId: string, filmIds: number[]) {
 
         if (filmIds.length > 0) {
             await tx.favoriteFilm.createMany({
-                data: filmIds.map(id => ({ userId, filmId: id })),
+                data: filmIds.map(id => ({ userId, filmId: id, addedAt: new Date() })),
             });
         }
     });
