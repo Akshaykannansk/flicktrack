@@ -107,11 +107,11 @@ export async function getUserDataForProfile(userId: string, currentUserId?: stri
             journalEntries: true,
             followers: true,
             following: true,
-            likes: true,
+            likedFilms: true,
             likedLists: true,
           }
         },
-        favoriteFilms: { include: { film: true } },
+        favoriteFilms: { include: { film: true }, orderBy: { addedAt: 'asc' } },
         journalEntries: {
             take: 10,
             orderBy: { logged_date: 'desc' },
@@ -146,7 +146,7 @@ export async function getUserDataForProfile(userId: string, currentUserId?: stri
             journalCount: dbUser._count.journalEntries,
             followersCount: dbUser._count.followers,
             followingCount: dbUser._count.following,
-            likesCount: dbUser._count.likes + dbUser._count.likedLists,
+            likesCount: dbUser._count.likedFilms + dbUser._count.likedLists,
             favoriteFilms: dbUser.favoriteFilms.map(fav => ({ ...fav.film, id: fav.film.id.toString() })) as Film[],
             watchlistIds,
             likedIds,

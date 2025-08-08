@@ -12,7 +12,7 @@ import { FollowButton } from './follow-button';
 import { IMAGE_BASE_URL } from '@/lib/tmdb-isomorphic';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import prisma from '@/lib/prisma';
+import prisma from "@/lib/prisma";
 import type { Film } from '@/lib/types';
 import { getUserFilmSets } from '@/services/userService';
 
@@ -30,7 +30,7 @@ async function getUserProfileData(userId: string) {
             journalEntries: true,
             followers: true,
             following: true,
-            likes: true,
+            likedFilms: true,
             likedLists: true,
           }
         },
@@ -59,7 +59,7 @@ async function getUserProfileData(userId: string) {
             journalCount: dbUser._count.journalEntries,
             followersCount: dbUser._count.followers,
             followingCount: dbUser._count.following,
-            likesCount: dbUser._count.likes + dbUser._count.likedLists,
+            likesCount: dbUser._count.likedFilms + dbUser._count.likedLists,
             favoriteFilms: dbUser.favoriteFilms.map(fav => ({ ...fav.film, id: fav.film.id.toString() })) as FilmType[],
             watchlistIds,
             likedIds,
