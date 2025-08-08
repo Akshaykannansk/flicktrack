@@ -8,6 +8,7 @@ import { getListsForUser, createList } from '@/services/listService';
 const listSchema = z.object({
   name: z.string().min(1, 'List name is required.'),
   description: z.string().optional(),
+  filmIds: z.array(z.number()).optional(),
 });
 
 
@@ -92,9 +93,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: validation.error.formErrors }, { status: 400 });
     }
 
-    const { name, description } = validation.data;
+    const { name, description, filmIds } = validation.data;
     
-    const newList = await createList(user.id, name, description);
+    const newList = await createList(user.id, name, description, filmIds);
 
     return NextResponse.json(newList, { status: 201 });
   } catch (error) {

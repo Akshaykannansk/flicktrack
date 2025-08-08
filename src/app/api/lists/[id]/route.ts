@@ -8,6 +8,7 @@ import { getListById, updateList, deleteList, addFilmToList } from '@/services/l
 const updateListSchema = z.object({
   name: z.string().min(1, 'List name is required.').optional(),
   description: z.string().optional(),
+  filmIds: z.array(z.number()).optional(),
 });
 
 const filmActionSchema = z.object({

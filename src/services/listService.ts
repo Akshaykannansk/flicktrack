@@ -17,9 +17,32 @@ export async function getListsForUser(userId: string) {
     });
 }
 
-export async function createList(userId: string, name: string, description?: string) {
-    return prisma.filmList.create({
-        data: { userId, name, description },
+export async function createList(userId: string, name: string, description?: string, filmIds?: number[]) {
+    return prisma.$transaction(async (tx) => {
+        if (filmIds && filmIds.length > 0) {
+            for (const filmId of filmIds) {
+                await upsertFilm(filmId);
+            }
+        }
+
+        const list = await tx.filmList.create({
+            data: { 
+                userId, 
+                name, 
+                description
+            },
+        });
+
+        if (filmIds && filmIds.length > 0) {
+            await tx.filmsOnList.createMany({
+                data: filmIds.map(filmId => ({
+                    listId: list.id,
+                    filmId: filmId,
+                })),
+            });
+        }
+        
+        return list;
     });
 }
 
@@ -37,10 +60,35 @@ export async function getListById(listId: string) {
     });
 }
 
-export async function updateList(listId: string, userId: string, data: { name?: string; description?: string }) {
-    return prisma.filmList.update({
-        where: { id: listId, userId },
-        data,
+export async function updateList(listId: string, userId: string, data: { name?: string; description?: string, filmIds?: number[] }) {
+     return prisma.$transaction(async (tx) => {
+        const { filmIds, ...listData } = data;
+
+        const list = await tx.filmList.update({
+            where: { id: listId, userId },
+            data: listData,
+        });
+
+        if (filmIds) {
+             for (const filmId of filmIds) {
+                await upsertFilm(filmId);
+            }
+            
+            await tx.filmsOnList.deleteMany({
+                where: { listId: listId },
+            });
+            
+            if (filmIds.length > 0) {
+                await tx.filmsOnList.createMany({
+                    data: filmIds.map(filmId => ({
+                        listId: list.id,
+                        filmId: filmId,
+                    })),
+                });
+            }
+        }
+
+        return list;
     });
 }
 

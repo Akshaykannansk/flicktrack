@@ -191,8 +191,7 @@ export default function ListDetailPage() {
             {isOwner ? (
                 <div className="flex items-center gap-2">
                     <EditListDialog 
-                        listId={list.id} 
-                        initialData={{ name: list.name, description: list.description }}
+                        list={list}
                         onListUpdated={fetchListData}
                     >
                         <Button variant="outline" size="icon">
