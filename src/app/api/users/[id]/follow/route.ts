@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import { createServerComponentClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { followUser, unfollowUser } from '@/services/userService';
+import { followUser, unfollowUser } from '../../../../services/userService';
 
 // POST to follow a user
 export async function POST(

@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import { createServerComponentClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { likeList, unlikeList } from '@/services/listService';
+import { likeList, unlikeList } from '../../../../services/listService';
 
 // POST to like a list
 export async function POST(

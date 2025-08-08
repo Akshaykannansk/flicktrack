@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createServerComponentClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { getJournalEntriesForUser, createJournalEntry } from '@/services/reviewService';
+import { getJournalEntriesForUser, createJournalEntry } from '../../../services/reviewService';
 
 const journalEntrySchema = z.object({
   filmId: z.number(),

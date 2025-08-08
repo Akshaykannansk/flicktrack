@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createServerComponentClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { getJournalEntry, updateJournalEntry, deleteJournalEntry } from '@/services/reviewService';
+import { getJournalEntry, updateJournalEntry, deleteJournalEntry } from '../../../../services/reviewService';
 
 const journalEntryUpdateSchema = z.object({
   rating: z.number().min(0.5).max(5).optional(),
