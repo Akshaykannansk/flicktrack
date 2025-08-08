@@ -14,37 +14,25 @@ import { WatchlistAction } from './watchlist-action';
 import { LikeAction } from './like-action';
 import { cn } from '@/lib/utils';
 import { AddToListButton } from './add-to-list-button';
-
-interface FilmCardProps {
-    film: Film;
-    isInWatchlist?: boolean;
-    isLiked?: boolean;
-}
-
-function SignInGuard({ children }: { children: React.ReactNode }) {
-  const [isSignedIn, setIsSignedIn] = useState(false);
-  
-  useEffect(() => {
-    // A simple client-side way to check for the session cookie
-    const sessionCookie = document.cookie.split('; ').find(row => row.startsWith('session='));
-    setIsSignedIn(!!sessionCookie);
-  }, []);
-
-  if (!isSignedIn) {
-    return (
-      <Link href="/login" className="w-full">
-        {children}
-      </Link>
-    );
-  }
-
-  return <>{children}</>;
-}
-
+import { createClient } from '@/lib/supabase/client';
+import type { User } from '@supabase/supabase-js';
 
 export function FilmCard({ film, isInWatchlist, isLiked }: FilmCardProps) {
   const posterUrl = film.poster_path ? `${IMAGE_BASE_URL}w500${film.poster_path}` : 'https://placehold.co/400x600.png';
   const year = film.release_date ? new Date(film.release_date).getFullYear() : 'N/A';
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setUser(session?.user ?? null);
+    });
+    supabase.auth.getSession().then(({ data: { session }}) => {
+        setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
 
   return (
     <div className="group relative">
@@ -62,26 +50,20 @@ export function FilmCard({ film, isInWatchlist, isLiked }: FilmCardProps) {
                   />
                 </div>
             </Link>
-             <div className="absolute inset-0 bg-black/70 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg">
-                <div className="flex flex-col items-center gap-2">
-                    <SignInGuard>
-                      <LogFilmDialog film={film}>
-                          <Button variant="outline" size="sm" className="w-32">
-                              <BookPlus className="mr-2 h-4 w-4" /> Log
-                          </Button>
-                      </LogFilmDialog>
-                    </SignInGuard>
-                    <SignInGuard>
-                      <WatchlistAction filmId={parseInt(film.id, 10)} initialIsInWatchlist={!!isInWatchlist} />
-                    </SignInGuard>
-                     <SignInGuard>
-                      <LikeAction filmId={parseInt(film.id, 10)} initialIsLiked={!!isLiked} />
-                    </SignInGuard>
-                    <SignInGuard>
-                      <AddToListButton filmId={parseInt(film.id, 10)} />
-                    </SignInGuard>
+            {user && (
+                <div className="absolute inset-0 bg-black/70 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg">
+                    <div className="flex flex-col items-center gap-2">
+                        <LogFilmDialog film={film}>
+                            <Button variant="outline" size="sm" className="w-32">
+                                <BookPlus className="mr-2 h-4 w-4" /> Log
+                            </Button>
+                        </LogFilmDialog>
+                        <WatchlistAction filmId={parseInt(film.id, 10)} initialIsInWatchlist={!!isInWatchlist} />
+                        <LikeAction filmId={parseInt(film.id, 10)} initialIsLiked={!!isLiked} />
+                        <AddToListButton filmId={parseInt(film.id, 10)} />
+                    </div>
                 </div>
-              </div>
+            )}
           </CardContent>
         </Card>
       <div className="mt-2">

@@ -7,6 +7,7 @@ import { format } from 'date-fns';
 import { CalendarIcon, Star } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { useRouter } from 'next/navigation';
 
 import { cn } from '@/lib/utils';
 import type { FilmDetails } from '@/lib/types';
@@ -56,6 +57,7 @@ interface LogFilmDialogProps {
 export function LogFilmDialog({ film, children }: LogFilmDialogProps) {
   const [open, setOpen] = React.useState(false);
   const { toast } = useToast();
+  const router = useRouter();
 
   const form = useForm<LogFilmFormValues>({
     resolver: zodResolver(logFilmSchema),
@@ -91,6 +93,7 @@ export function LogFilmDialog({ film, children }: LogFilmDialogProps) {
         description: `You've successfully logged "${film.title}".`,
       });
       form.reset();
+      router.refresh();
 
     } catch (error) {
        console.error(error);
@@ -230,5 +233,3 @@ function StarRating({
     </div>
   );
 }
-
-    
