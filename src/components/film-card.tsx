@@ -27,11 +27,18 @@ export function FilmCard({ film, isInWatchlist, isLiked }: FilmCardProps) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
       setUser(session?.user ?? null);
     });
-    supabase.auth.getSession().then(({ data: { session }}) => {
-        setUser(session?.user ?? null);
+  
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
     });
-    return () => subscription.unsubscribe();
+  
+    return () => {
+      if (subscription) {
+        subscription.unsubscribe();
+      }
+    };
   }, []);
+  
 
 
   return (
