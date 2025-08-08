@@ -1,6 +1,7 @@
 
 import type { Film, FilmDetails, PaginatedResponse, Video } from './types';
 import { IMAGE_BASE_URL } from './tmdb-isomorphic';
+import fetch from 'node-fetch';
 
 const API_BASE_URL = 'https://api.themoviedb.org/3';
 const API_KEY = process.env.TMDB_API_KEY;
@@ -26,7 +27,7 @@ async function fetchFromTMDB<T>(endpoint: string, params: Record<string, string>
       console.error(`Failed to fetch from TMDB endpoint: ${endpoint}`, await response.text());
       return null;
     }
-    return response.json();
+    return response.json() as T;
   } catch (error) {
      console.error(`Network error when fetching from TMDB endpoint: ${endpoint}`, error);
      return null;

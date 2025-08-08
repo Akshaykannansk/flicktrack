@@ -1,3 +1,4 @@
+
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
@@ -24,11 +25,9 @@ export async function POST(request: Request) {
     
     const { password: _, ...userPayload } = user;
 
-    // Create the session
-    const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    const expires = new Date(Date.now() + 60 * 60 * 1000 * 24); // 24 hours
     const session = await encrypt({ user: userPayload, expires });
 
-    // Save the session in a cookie
     cookies().set('session', session, { expires, httpOnly: true });
 
     return NextResponse.json({ message: 'Login successful' }, { status: 200 });

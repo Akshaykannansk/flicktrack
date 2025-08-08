@@ -31,6 +31,34 @@ interface Suggestions {
     users: PublicUser[];
 }
 
+function parseJwt(token: string) {
+    try {
+        return JSON.parse(atob(token.split('.')[1]));
+    } catch (e) {
+        return null;
+    }
+}
+
+function getSessionFromCookie() {
+    if (typeof window === 'undefined') return null;
+    const cookie = document.cookie.split('; ').find(row => row.startsWith('session='));
+    if (!cookie) return null;
+    
+    const sessionToken = cookie.split('=')[1];
+    if (!sessionToken) return null;
+
+    try {
+        const decoded = parseJwt(sessionToken);
+        if (decoded && decoded.exp * 1000 > Date.now()) {
+            return decoded.user;
+        }
+        return null;
+    } catch (e) {
+        console.error("Failed to parse session cookie", e);
+        return null;
+    }
+}
+
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
@@ -46,17 +74,7 @@ export default function Header() {
 
   React.useEffect(() => {
     setIsClient(true);
-    const sessionCookie = document.cookie.split('; ').find(row => row.startsWith('session='));
-    if (sessionCookie) {
-      try {
-        const session = JSON.parse(atob(sessionCookie.split('.')[1]));
-        setUser(session.user);
-      } catch (e) {
-        setUser(null);
-      }
-    } else {
-        setUser(null);
-    }
+    setUser(getSessionFromCookie());
   }, [pathname]);
 
   React.useEffect(() => {
@@ -70,7 +88,6 @@ export default function Header() {
   }, []);
   
   React.useEffect(() => {
-    // Hide suggestions and close mobile menu when navigating
     setIsSuggestionsVisible(false);
     setIsMobileMenuOpen(false);
     setQuery('');
@@ -94,7 +111,7 @@ export default function Header() {
       } finally {
         setIsLoading(false);
       }
-    }, 300); // 300ms debounce
+    }, 300);
 
     return () => clearTimeout(debounceTimeout);
   }, [query]);
@@ -147,9 +164,7 @@ export default function Header() {
       return (
         <header className="bg-background/80 backdrop-blur-sm sticky top-0 z-50 border-b border-border">
           <div className="container mx-auto px-4">
-            <div className="flex items-center justify-between h-16">
-              {/* Render a skeleton or placeholder */}
-            </div>
+            <div className="flex items-center justify-between h-16" />
           </div>
         </header>
       );
