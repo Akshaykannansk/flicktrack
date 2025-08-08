@@ -16,7 +16,6 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { getSession } from '@/lib/auth';
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -35,7 +34,7 @@ interface Suggestions {
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
-  const [user, setUser] = React.useState<{ id: string, name: string, username: string, imageUrl: string } | null>(null);
+  const [user, setUser] = React.useState<PublicUser | null>(null);
   const [query, setQuery] = React.useState('');
   const [suggestions, setSuggestions] = React.useState<Suggestions>({ films: [], users: [] });
   const [isLoading, setIsLoading] = React.useState(false);
@@ -47,13 +46,17 @@ export default function Header() {
 
   React.useEffect(() => {
     setIsClient(true);
-    async function fetchUserSession() {
-        const session = await getSession({ cookies: document.cookie as any });
-        if(session?.user) {
-            setUser(session.user);
-        }
+    const sessionCookie = document.cookie.split('; ').find(row => row.startsWith('session='));
+    if (sessionCookie) {
+      try {
+        const session = JSON.parse(atob(sessionCookie.split('.')[1]));
+        setUser(session.user);
+      } catch (e) {
+        setUser(null);
+      }
+    } else {
+        setUser(null);
     }
-    fetchUserSession();
   }, [pathname]);
 
   React.useEffect(() => {

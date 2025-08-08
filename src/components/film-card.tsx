@@ -14,18 +14,20 @@ import { WatchlistAction } from './watchlist-action';
 import { LikeAction } from './like-action';
 import { cn } from '@/lib/utils';
 import { AddToListButton } from './add-to-list-button';
-import { getSession } from '@/lib/auth';
 
+interface FilmCardProps {
+    film: Film;
+    isInWatchlist?: boolean;
+    isLiked?: boolean;
+}
 
 function SignInGuard({ children }: { children: React.ReactNode }) {
   const [isSignedIn, setIsSignedIn] = useState(false);
   
   useEffect(() => {
-    async function checkUser() {
-        const session = await getSession({ cookies: document.cookie as any });
-        setIsSignedIn(!!session?.user);
-    };
-    checkUser();
+    // A simple client-side way to check for the session cookie
+    const sessionCookie = document.cookie.split('; ').find(row => row.startsWith('session='));
+    setIsSignedIn(!!sessionCookie);
   }, []);
 
   if (!isSignedIn) {

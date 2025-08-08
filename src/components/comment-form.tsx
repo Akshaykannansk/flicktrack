@@ -8,7 +8,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { CommentWithUser, PublicUser } from '@/lib/types';
-import { getSession } from '@/lib/auth';
 
 interface CommentFormProps {
   journalEntryId: string;
@@ -22,11 +21,16 @@ export function CommentForm({ journalEntryId, onCommentAdded }: CommentFormProps
   const { toast } = useToast();
   
   useEffect(() => {
-    async function getUser() {
-        const session = await getSession({ cookies: document.cookie as any });
-        setUser(session?.user ?? null);
+    const sessionCookie = document.cookie.split('; ').find(row => row.startsWith('session='));
+    if (sessionCookie) {
+      try {
+        const session = JSON.parse(atob(sessionCookie.split('.')[1]));
+        setUser(session.user);
+      } catch (e) {
+        console.error("Failed to parse session cookie", e);
+        setUser(null);
+      }
     }
-    getUser();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {

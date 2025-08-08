@@ -7,7 +7,6 @@ import { MessageSquare, Loader2 } from 'lucide-react';
 import { CommentForm } from './comment-form';
 import { CommentList } from './comment-list';
 import type { CommentWithUser } from '@/lib/types';
-import { getSession } from '@/lib/auth';
 
 interface CommentsProps {
   journalEntryId: string;
@@ -22,11 +21,8 @@ export function Comments({ journalEntryId, initialCommentCount }: CommentsProps)
   const [isSignedIn, setIsSignedIn] = useState(false);
 
   useEffect(() => {
-    async function checkUser() {
-        const session = await getSession({ cookies: document.cookie as any });
-        setIsSignedIn(!!session?.user);
-    };
-    checkUser();
+    const sessionCookie = document.cookie.split('; ').find(row => row.startsWith('session='));
+    setIsSignedIn(!!sessionCookie);
   }, []);
 
 

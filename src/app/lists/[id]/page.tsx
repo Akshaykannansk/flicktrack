@@ -23,7 +23,6 @@ import {
 } from '@/components/ui/alert-dialog';
 import { LikeListButton } from '@/components/like-list-button';
 import { CopyListButton } from '@/components/copy-list-button';
-import { getSession } from '@/lib/auth';
 
 
 interface UserFilmSets {
@@ -43,11 +42,20 @@ export default function ListDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
 
   useEffect(() => {
-    async function getUser() {
-        const session = await getSession({ cookies: document.cookie as any });
-        setUser(session?.user ?? null);
+    // A simple client-side way to get the user from the cookie
+    // In a real app, you might have a dedicated session endpoint or a more robust solution
+    const sessionCookie = document.cookie.split('; ').find(row => row.startsWith('session='));
+    if (sessionCookie) {
+      // This is a simplified parse, not verifying the JWT on the client
+      // The user object is stored in the JWT payload
+      try {
+        const session = JSON.parse(atob(sessionCookie.split('.')[1]));
+        setUser(session.user);
+      } catch (e) {
+        console.error("Failed to parse session cookie", e);
+        setUser(null);
+      }
     }
-    getUser();
   }, []);
 
   const fetchListData = async () => {

@@ -8,7 +8,6 @@ import { Button } from './ui/button';
 import { Trash2, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import { getSession } from '@/lib/auth';
 
 interface CommentListProps {
   comments: CommentWithUser[];
@@ -21,11 +20,16 @@ export function CommentList({ comments, onCommentDeleted }: CommentListProps) {
     const { toast } = useToast();
 
     useEffect(() => {
-        async function getUser() {
-            const session = await getSession({ cookies: document.cookie as any });
-            setUser(session?.user ?? null);
+        const sessionCookie = document.cookie.split('; ').find(row => row.startsWith('session='));
+        if (sessionCookie) {
+          try {
+            const session = JSON.parse(atob(sessionCookie.split('.')[1]));
+            setUser(session.user);
+          } catch (e) {
+            console.error("Failed to parse session cookie", e);
+            setUser(null);
+          }
         }
-        getUser();
     }, []);
 
     const handleDelete = async (commentId: string) => {
