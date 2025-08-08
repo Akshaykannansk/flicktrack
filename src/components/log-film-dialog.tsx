@@ -91,9 +91,6 @@ export function LogFilmDialog({ film, children }: LogFilmDialogProps) {
         description: `You've successfully logged "${film.title}".`,
       });
       form.reset();
-      // Optionally, you could trigger a re-fetch of the journal data here
-      // if you pass down a callback or use a state management library.
-       window.location.reload(); // Simple refresh for now
 
     } catch (error) {
        console.error(error);
