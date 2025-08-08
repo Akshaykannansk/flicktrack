@@ -7,6 +7,9 @@ import { getSession } from '@/lib/auth';
 import type { FilmDetails, PublicUser } from '@/lib/types';
 
 async function getUserData(userId: string) {
+    const session = await getSession();
+    const currentUser = session?.user;
+
     const dbUser = await prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -46,9 +49,6 @@ async function getUserData(userId: string) {
 
     const watchlistIds = new Set(watchlist.map(item => item.filmId));
     const likedIds = new Set(likes.map(item => item.filmId));
-
-    const session = await getSession();
-    const currentUser = session?.user;
 
     let isFollowing = false;
     if (currentUser && currentUser.id !== userId) {
