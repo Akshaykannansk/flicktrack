@@ -3,6 +3,6 @@ import { cookies } from 'next/headers';
 
 export async function POST() {
     // Clear the session cookie
-    cookies().set('session', '', { expires: new Date(0) });
+    (await cookies()).set('session', '', { expires: new Date(0) });
     return NextResponse.json({ message: 'Logout successful' });
 }
