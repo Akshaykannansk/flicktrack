@@ -50,7 +50,7 @@ export default function SignupPage() {
         await fetch('/api/auth/signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, fullName, username, id: user.id })
+          body: JSON.stringify({ email, password, fullName, username, id: user.id })
         });
 
         toast({
