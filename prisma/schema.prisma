@@ -1,9 +1,6 @@
+
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-generator client {
-  provider = "prisma-client-js"
-}
 
 datasource db {
   provider  = "postgresql"
@@ -11,27 +8,33 @@ datasource db {
   directUrl = env("DIRECT_DATABASE_URL")
 }
 
+generator client {
+  provider = "prisma-client-js"
+}
+
 model User {
   id              String         @id @default(cuid())
   name            String?
+  email           String?        @unique
   username        String?        @unique
-  email           String         @unique
   password        String?
   imageUrl        String?
   bio             String?        @db.Text
-  createdAt       DateTime       @default(now()) @map("created_at")
-  updatedAt       DateTime       @updatedAt @map("updated_at")
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
   journalEntries  JournalEntry[]
-  filmLists       FilmList[]
+  lists           FilmList[]
   likedFilms      LikedFilm[]
+  likedLists      LikedList[]
+  reviewLikes     ReviewLike[]
+  comments        Comment[]
+  favoriteFilms   FavoriteFilm[]
+  watchlist       WatchlistItem[]
+  filmsOnList     FilmsOnList[] // Added missing relation
+
+  // For following system
   followers       Follows[]      @relation("Following")
   following       Follows[]      @relation("Follower")
-  favoriteFilms   FavoriteFilm[]
-  likedLists      LikedList[]
-  likedReviews    ReviewLike[]
-  comments        Comment[]
-
-  @@map("users")
 }
 
 model Follows {
@@ -45,21 +48,17 @@ model Follows {
 }
 
 model Film {
-  id            Int             @id
-  title         String
-  overview      String?         @db.Text
-  poster_path   String?
-  release_date  DateTime?
-  vote_average  Float?
-  createdAt     DateTime        @default(now()) @map("created_at")
-  updatedAt     DateTime        @updatedAt @map("updated_at")
-  journalEntry  JournalEntry[]
-  watchlist     WatchlistItem[]
-  lists         FilmsOnList[]
-  likedBy       LikedFilm[]
-  favoritedBy   FavoriteFilm[]
-
-  @@map("films")
+  id              Int              @id
+  title           String
+  overview        String?          @db.Text
+  poster_path     String?
+  release_date    DateTime?
+  vote_average    Float?
+  journalEntries  JournalEntry[]
+  likedBy         LikedFilm[]
+  onWatchlists    WatchlistItem[]
+  onLists         FilmsOnList[]
+  favoritedBy     FavoriteFilm[]
 }
 
 model JournalEntry {
@@ -71,12 +70,20 @@ model JournalEntry {
   rating      Float
   review      String?      @db.Text
   logged_date DateTime
-  createdAt   DateTime     @default(now()) @map("created_at")
-  updatedAt   DateTime     @updatedAt @map("updated_at")
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
   reviewLikes ReviewLike[]
   comments    Comment[]
+}
 
-  @@map("journal_entries")
+model LikedFilm {
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  film      Film     @relation(fields: [filmId], references: [id], onDelete: Cascade)
+  filmId    Int
+  createdAt DateTime @default(now())
+
+  @@id([userId, filmId])
 }
 
 model WatchlistItem {
@@ -84,10 +91,9 @@ model WatchlistItem {
   userId    String
   film      Film     @relation(fields: [filmId], references: [id], onDelete: Cascade)
   filmId    Int
-  addedAt   DateTime @default(now()) @map("added_at")
+  addedAt   DateTime @default(now())
 
   @@id([userId, filmId])
-  @@map("watchlist_items")
 }
 
 model FilmList {
@@ -97,11 +103,9 @@ model FilmList {
   user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId      String
   films       FilmsOnList[]
-  createdAt   DateTime      @default(now()) @map("created_at")
-  updatedAt   DateTime      @updatedAt @map("updated_at")
   likedBy     LikedList[]
-
-  @@map("film_lists")
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 }
 
 model FilmsOnList {
@@ -109,21 +113,11 @@ model FilmsOnList {
   listId    String
   film      Film     @relation(fields: [filmId], references: [id], onDelete: Cascade)
   filmId    Int
-  addedAt   DateTime @default(now()) @map("added_at")
+  addedAt   DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade) // Relation to User
+  userId    String   // Foreign key for User
 
   @@id([listId, filmId])
-  @@map("films_on_list")
-}
-
-model LikedFilm {
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String
-  film      Film     @relation(fields: [filmId], references: [id], onDelete: Cascade)
-  filmId    Int
-  createdAt DateTime @default(now()) @map("created_at")
-
-  @@id([userId, filmId])
-  @@map("liked_films")
 }
 
 model LikedList {
@@ -131,20 +125,9 @@ model LikedList {
   userId    String
   list      FilmList @relation(fields: [listId], references: [id], onDelete: Cascade)
   listId    String
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime @default(now())
 
   @@id([userId, listId])
-  @@map("liked_lists")
-}
-
-model FavoriteFilm {
-  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId String
-  film   Film @relation(fields: [filmId], references: [id], onDelete: Cascade)
-  filmId Int
-
-  @@id([userId, filmId])
-  @@map("favorite_films")
 }
 
 model ReviewLike {
@@ -152,10 +135,9 @@ model ReviewLike {
   userId         String
   journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
   journalEntryId String
-  createdAt      DateTime     @default(now()) @map("created_at")
+  createdAt      DateTime     @default(now())
 
   @@id([userId, journalEntryId])
-  @@map("review_likes")
 }
 
 model Comment {
@@ -165,8 +147,16 @@ model Comment {
   userId         String
   journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
   journalEntryId String
-  createdAt      DateTime     @default(now()) @map("created_at")
-  updatedAt      DateTime     @updatedAt @map("updated_at")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
 
-  @@map("comments")
+model FavoriteFilm {
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  film      Film     @relation(fields: [filmId], references: [id], onDelete: Cascade)
+  filmId    Int
+  createdAt DateTime @default(now())
+
+  @@id([userId, filmId])
 }
