@@ -157,6 +157,7 @@ model FavoriteFilm {
   film      Film     @relation(fields: [filmId], references: [id], onDelete: Cascade)
   filmId    Int
   createdAt DateTime @default(now())
+  addedAt DateTime @default(now())
 
   @@id([userId, filmId])
 }
