@@ -1,20 +1,54 @@
 
 import { getPopularMovies, getTopRatedMovies, getNowPlayingMovies } from '@/lib/tmdb';
 import { FilmCarouselSection } from '@/components/film-carousel-section';
-import { FollowingFeed } from '@/components/following-feed';
+import { FollowingFeed, FeedSkeleton } from '@/components/following-feed';
 import { Separator } from '@/components/ui/separator';
 import { Users, TrendingUp } from 'lucide-react';
 import React from 'react';
 import { FilmCarouselSkeleton } from '@/components/film-carousel-skeleton';
-import { FeedSkeleton } from '@/components/following-feed';
 import { TrendingReviews } from '@/components/trending-reviews';
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createServerComponentClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getUserFilmSets } from '@/services/userService';
+import type { Film } from '@/lib/types';
+
+async function PopularFilms({ watchlistIds, likedIds }: { watchlistIds: Set<number>, likedIds: Set<number> }) {
+  const popularMovies = await getPopularMovies();
+  return <FilmCarouselSection 
+    title="Popular Films" 
+    initialFilms={popularMovies} 
+    category="popular"
+    watchlistIds={watchlistIds} 
+    likedIds={likedIds} 
+  />;
+}
+
+async function TopRatedFilms({ watchlistIds, likedIds }: { watchlistIds: Set<number>, likedIds: Set<number> }) {
+  const topRatedMovies = await getTopRatedMovies();
+  return <FilmCarouselSection 
+    title="Top Rated Films" 
+    initialFilms={topRatedMovies}
+    category="top_rated"
+    watchlistIds={watchlistIds} 
+    likedIds={likedIds} 
+  />;
+}
+
+async function NowPlayingFilms({ watchlistIds, likedIds }: { watchlistIds: Set<number>, likedIds: Set<number> }) {
+  const nowPlayingMovies = await getNowPlayingMovies();
+  return <FilmCarouselSection 
+    title="Now Playing" 
+    initialFilms={nowPlayingMovies}
+    category="now_playing"
+    watchlistIds={watchlistIds} 
+    likedIds={likedIds} 
+  />;
+}
+
 
 export default async function HomePage() {
   const cookieStore = await cookies();
-  const supabase = createServerClient(
+  const supabase = createServerComponentClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -34,19 +68,8 @@ export default async function HomePage() {
   const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
   
-  const [
-    userFilmSets,
-    popularMovies,
-    topRatedMovies,
-    nowPlayingMovies
-  ] = await Promise.all([
-    getUserFilmSets(user?.id ?? null),
-    getPopularMovies(),
-    getTopRatedMovies(),
-    getNowPlayingMovies()
-  ]);
-
-  const { watchlistIds, likedIds } = userFilmSets;
+  // Fetch user-specific data first, as it's quick and needed by all carousels.
+  const { watchlistIds, likedIds } = await getUserFilmSets(user?.id ?? null);
 
   return (
     <div className="space-y-12">
@@ -94,31 +117,15 @@ export default async function HomePage() {
       
       <div className="space-y-12">
         <React.Suspense fallback={<FilmCarouselSkeleton title="Popular Films" />}>
-           <FilmCarouselSection 
-              title="Popular Films" 
-              initialFilms={popularMovies} 
-              category="popular"
-              watchlistIds={watchlistIds} 
-              likedIds={likedIds} 
-            />
+           <PopularFilms watchlistIds={watchlistIds} likedIds={likedIds} />
         </React.Suspense>
+
         <React.Suspense fallback={<FilmCarouselSkeleton title="Top Rated Films" />}>
-          <FilmCarouselSection 
-              title="Top Rated Films" 
-              initialFilms={topRatedMovies}
-              category="top_rated"
-              watchlistIds={watchlistIds} 
-              likedIds={likedIds} 
-            />
+          <TopRatedFilms watchlistIds={watchlistIds} likedIds={likedIds} />
         </React.Suspense>
+
         <React.Suspense fallback={<FilmCarouselSkeleton title="Now Playing" />}>
-          <FilmCarouselSection 
-              title="Now Playing" 
-              initialFilms={nowPlayingMovies}
-              category="now_playing"
-              watchlistIds={watchlistIds} 
-              likedIds={likedIds} 
-            />
+          <NowPlayingFilms watchlistIds={watchlistIds} likedIds={likedIds} />
         </React.Suspense>
       </div>
     </div>
