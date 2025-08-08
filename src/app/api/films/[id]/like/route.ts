@@ -1,22 +1,17 @@
 
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
-import { getSession } from '@/lib/auth';
-
-async function upsertFilm(filmId: number) {
-    await prisma.film.upsert({
-        where: { id: filmId },
-        update: {},
-        create: { id: filmId, title: 'Unknown Film' },
-    });
-}
+import { createServerComponentClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { likeFilm, unlikeFilm } from '@/services/filmService';
 
 // POST to like a film
 export async function POST(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await getSession();
+  const cookieStore = cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
 
   if (!user) {
@@ -29,15 +24,7 @@ export async function POST(
   }
 
   try {
-    await upsertFilm(filmId);
-
-    await prisma.likedFilm.create({
-      data: {
-        userId: user.id,
-        filmId: filmId,
-      },
-    });
-
+    await likeFilm(user.id, filmId);
     return NextResponse.json({ message: 'Successfully liked film.' }, { status: 201 });
   } catch (error: any) {
     if (error.code === 'P2002') { // Prisma unique constraint violation
@@ -53,8 +40,11 @@ export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await getSession();
+  const cookieStore = cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
+
   if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
@@ -65,19 +55,10 @@ export async function DELETE(
   }
   
   try {
-    await prisma.likedFilm.delete({
-      where: {
-        userId_filmId: {
-          userId: user.id,
-          filmId: filmId,
-        },
-      },
-    });
-
+    await unlikeFilm(user.id, filmId);
     return new NextResponse(null, { status: 204 }); // No Content
   } catch (error: any) {
-     // P2025 is Prisma's code for "record not found" on delete
-     if (error.code === 'P2025') {
+     if (error.code === 'P2025') { // Prisma's code for "record not found" on delete
         return new NextResponse(null, { status: 204 });
      }
      console.error('Failed to unlike film:', error);

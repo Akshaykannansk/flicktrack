@@ -1,36 +1,23 @@
 
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
 import { z } from 'zod';
-import { getSession } from '@/lib/auth';
-
-async function upsertFilm(filmId: number) {
-    await prisma.film.upsert({
-        where: { id: filmId },
-        update: {},
-        create: { id: filmId, title: 'Unknown Film' },
-    });
-}
+import { createServerComponentClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { getWatchlist, addToWatchlist, removeFromWatchlist } from '@/services/filmService';
 
 // GET all watchlist items for the user
 export async function GET(request: Request) {
-  const session = await getSession();
+  const cookieStore = cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
+
   if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
   try {
-    const watchlistItems = await prisma.watchlistItem.findMany({
-      where: { userId: user.id },
-      include: {
-        film: true,
-      },
-      orderBy: {
-        addedAt: 'desc',
-      },
-    });
-    
+    const watchlistItems = await getWatchlist(user.id);
     return NextResponse.json(watchlistItems.map(item => ({ film: {...item.film, id: item.film.id.toString() } })));
   } catch (error) {
     console.error('Failed to fetch watchlist:', error);
@@ -44,8 +31,11 @@ const watchlistActionSchema = z.object({
 
 // POST a new film to the watchlist
 export async function POST(request: Request) {
-  const session = await getSession();
+  const cookieStore = cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
+
   if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
@@ -60,14 +50,7 @@ export async function POST(request: Request) {
     
     const { filmId } = validation.data;
     
-    await upsertFilm(filmId);
-
-    const newItem = await prisma.watchlistItem.create({
-      data: {
-        userId: user.id,
-        filmId: filmId,
-      },
-    });
+    const newItem = await addToWatchlist(user.id, filmId);
 
     return NextResponse.json(newItem, { status: 201 });
   } catch (error: any) {
@@ -81,8 +64,11 @@ export async function POST(request: Request) {
 
 // DELETE a film from the watchlist
 export async function DELETE(request: Request) {
-  const session = await getSession();
+  const cookieStore = cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
+
   if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
@@ -97,14 +83,7 @@ export async function DELETE(request: Request) {
     
     const { filmId } = validation.data;
 
-    await prisma.watchlistItem.delete({
-      where: {
-        userId_filmId: {
-          userId: user.id,
-          filmId: filmId,
-        },
-      },
-    });
+    await removeFromWatchlist(user.id, filmId);
 
     return new NextResponse(null, { status: 204 }); // No Content
   } catch (error: any) {

@@ -1,11 +1,14 @@
 
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
-import { getSession } from '@/lib/auth';
+import { createServerComponentClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { getLikedListsWithDetails } from '@/services/listService';
 
 // GET all liked lists for the user with details
 export async function GET(request: Request) {
-  const session = await getSession();
+  const cookieStore = cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
 
   if (!user) {
@@ -13,29 +16,7 @@ export async function GET(request: Request) {
   }
     
   try {
-    const likedLists = await prisma.likedList.findMany({
-      where: { userId: user.id },
-      include: {
-        list: {
-          include: {
-            films: {
-              take: 4,
-              include: {
-                film: {
-                  select: { id: true, poster_path: true }
-                }
-              }
-            },
-            _count: {
-              select: { films: true }
-            }
-          }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+    const likedLists = await getLikedListsWithDetails(user.id);
 
     const responseData = likedLists.map(item => ({
       ...item.list,

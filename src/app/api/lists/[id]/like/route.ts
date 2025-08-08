@@ -1,14 +1,17 @@
 
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
-import { getSession } from '@/lib/auth';
+import { createServerComponentClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { likeList, unlikeList } from '@/services/listService';
 
 // POST to like a list
 export async function POST(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await getSession();
+  const cookieStore = cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
 
   if (!user) {
@@ -18,25 +21,10 @@ export async function POST(
   const listId = params.id;
 
   try {
-    const list = await prisma.filmList.findUnique({
-        where: { id: listId },
-        select: { userId: true },
-    });
-
-    if (!list) {
-        return NextResponse.json({ error: 'List not found' }, { status: 404 });
+    const result = await likeList(user.id, listId);
+    if (!result.success) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
     }
-    if (list.userId === user.id) {
-        return NextResponse.json({ error: 'You cannot like your own list.' }, { status: 400 });
-    }
-
-    await prisma.likedList.create({
-      data: {
-        userId: user.id,
-        listId: listId,
-      },
-    });
-
     return NextResponse.json({ message: 'Successfully liked list.' }, { status: 201 });
   } catch (error: any) {
     if (error.code === 'P2002') { // Prisma unique constraint
@@ -52,8 +40,11 @@ export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await getSession();
+  const cookieStore = cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
+
   if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
@@ -61,15 +52,7 @@ export async function DELETE(
   const listId = params.id;
 
   try {
-    await prisma.likedList.delete({
-      where: {
-        userId_listId: {
-          userId: user.id,
-          listId: listId,
-        },
-      },
-    });
-
+    await unlikeList(user.id, listId);
     return new NextResponse(null, { status: 204 }); // No Content
   } catch (error: any) {
      if (error.code === 'P2025') { // Prisma record not found

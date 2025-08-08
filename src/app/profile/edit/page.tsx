@@ -1,29 +1,27 @@
 
 import { FavoriteFilmsForm } from "@/components/favorite-films-form";
 import { EditProfileForm } from "@/components/edit-profile-form";
-import prisma from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
 import { Film, User } from "lucide-react";
 import { redirect } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
+import { createServerComponentClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { getFavoriteFilms } from "@/services/filmService";
+import { getUserProfile } from "@/services/userService";
 
 async function getInitialFavorites(userId: string) {
-    const favorites = await prisma.favoriteFilm.findMany({
-        where: { userId },
-        include: { film: true },
-    });
+    const favorites = await getFavoriteFilms(userId);
     return favorites.map(item => item.film);
 }
 
 async function getInitialProfile(userId: string) {
-    return prisma.user.findUnique({
-        where: { id: userId },
-        select: { name: true, username: true, bio: true }
-    });
+    return getUserProfile(userId, ['name', 'username', 'bio']);
 }
 
 export default async function EditProfilePage() {
-    const session = await getSession();
+    const cookieStore = cookies();
+    const supabase = createServerComponentClient({ cookies: () => cookieStore });
+    const { data: { session } } = await supabase.auth.getSession();
     const user = session?.user;
 
     if (!user) {

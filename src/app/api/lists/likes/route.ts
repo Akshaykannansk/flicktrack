@@ -1,25 +1,22 @@
 
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
-import { getSession } from '@/lib/auth';
+import { createServerComponentClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { getLikedListsIds } from '@/services/listService';
 
-// GET all liked lists for the user
+// GET all liked list IDs for the user
 export async function GET(request: Request) {
-  const session = await getSession();
+  const cookieStore = cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
+
   if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
     
   try {
-    const likedLists = await prisma.likedList.findMany({
-      where: { userId: user.id },
-      select: { listId: true },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
-    
+    const likedLists = await getLikedListsIds(user.id);
     return NextResponse.json(likedLists);
   } catch (error) {
     console.error('Failed to fetch liked lists:', error);

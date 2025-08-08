@@ -1,9 +1,9 @@
 
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
 import { z } from 'zod';
-import { getSession } from '@/lib/auth';
-
+import { createServerComponentClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { updateUserProfile } from '@/services/userService';
 
 const updateProfileSchema = z.object({
   name: z.string().min(1, 'Name is required.'),
@@ -16,7 +16,9 @@ const updateProfileSchema = z.object({
 export async function PUT(
   request: Request
 ) {
-  const session = await getSession();
+  const cookieStore = cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
 
   if (!user) {
@@ -33,15 +35,7 @@ export async function PUT(
 
     const { name, username, bio } = validation.data;
     
-    // Update in our DB
-    const updatedDbUser = await prisma.user.update({
-      where: { id: user.id },
-      data: {
-          name,
-          username,
-          bio
-      },
-    });
+    const updatedDbUser = await updateUserProfile(user.id, { name, username, bio });
 
     return NextResponse.json(updatedDbUser);
   } catch (error) {

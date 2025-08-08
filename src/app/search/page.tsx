@@ -6,10 +6,11 @@ import type { Film, PublicUser } from '@/lib/types';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Card } from '@/components/ui/card';
-import { getSession } from '@/lib/auth';
-import prisma from '@/lib/prisma';
+import { createServerComponentClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { getUserFilmSets, searchUsers } from '@/services/userService';
 
-export const dynamic = 'force-dynamic'; // Ensure the page is re-rendered for each search
+export const dynamic = 'force-dynamic';
 
 interface SearchPageProps {
     searchParams: {
@@ -17,54 +18,11 @@ interface SearchPageProps {
     };
 }
 
-
-async function getUserFilmSets(userId: string | null) {
-    if (!userId) {
-        return { watchlistIds: new Set<number>(), likedIds: new Set<number>() };
-    }
-
-    const [watchlist, likes] = await Promise.all([
-        prisma.watchlistItem.findMany({ where: { userId }, select: { filmId: true } }),
-        prisma.likedFilm.findMany({ where: { userId }, select: { filmId: true } }),
-    ]);
-
-    const watchlistIds = new Set(watchlist.map(item => item.filmId));
-    const likedIds = new Set(likes.map(item => item.filmId));
-
-    return { watchlistIds, likedIds };
-}
-
-async function searchUsers(query: string): Promise<PublicUser[]> {
-    if (!query) return [];
-
-    try {
-        const users = await prisma.user.findMany({
-            where: {
-                OR: [
-                    { name: { contains: query, mode: 'insensitive' } },
-                    { username: { contains: query, mode: 'insensitive' } },
-                ],
-            },
-            take: 10,
-            select: {
-                id: true,
-                name: true,
-                username: true,
-                imageUrl: true,
-            }
-        });
-
-        return users;
-    } catch (error) {
-        console.error('Failed to search users:', error);
-        return [];
-    }
-}
-
-
 export default async function SearchPage({ searchParams }: SearchPageProps) {
     const query = searchParams.q || '';
-    const session = await getSession();
+    const cookieStore = cookies();
+    const supabase = createServerComponentClient({ cookies: () => cookieStore });
+    const { data: { session } } = await supabase.auth.getSession();
     const user = session?.user;
     
     let films: Film[] = [];

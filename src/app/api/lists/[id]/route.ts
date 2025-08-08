@@ -1,8 +1,9 @@
 
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
-import { getSession } from '@/lib/auth';
+import { createServerComponentClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import { z } from 'zod';
+import { getListById, updateList, deleteList, addFilmToList } from '@/services/listService';
 
 const updateListSchema = z.object({
   name: z.string().min(1, 'List name is required.').optional(),
@@ -13,13 +14,6 @@ const filmActionSchema = z.object({
   filmId: z.number(),
 });
 
-async function upsertFilm(filmId: number) {
-    await prisma.film.upsert({
-        where: { id: filmId },
-        update: {},
-        create: { id: filmId, title: 'Unknown Film' },
-    });
-}
 
 // GET a single list with its films
 export async function GET(
@@ -28,25 +22,7 @@ export async function GET(
 ) {
   try {
     const listId = params.id;
-    const list = await prisma.filmList.findUnique({
-      where: { id: listId },
-      include: {
-        user: {
-            select: { id: true, name: true, username: true }
-        },
-        films: {
-          include: {
-            film: true,
-          },
-          orderBy: {
-            addedAt: 'desc',
-          },
-        },
-        _count: {
-          select: { likedBy: true },
-        },
-      },
-    });
+    const list = await getListById(listId);
 
     if (!list) {
       return NextResponse.json({ error: 'List not found' }, { status: 404 });
@@ -72,8 +48,11 @@ export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await getSession();
+  const cookieStore = cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
+
   if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
@@ -87,10 +66,7 @@ export async function PUT(
       return NextResponse.json({ error: validation.error.formErrors }, { status: 400 });
     }
 
-    const updatedList = await prisma.filmList.update({
-      where: { id: listId, userId: user.id }, // Ensure user owns the list
-      data: validation.data,
-    });
+    const updatedList = await updateList(listId, user.id, validation.data);
 
     return NextResponse.json(updatedList);
   } catch (error) {
@@ -104,23 +80,23 @@ export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-    const session = await getSession();
-    const user = session?.user;
-    if (!user) {
-        return new NextResponse('Unauthorized', { status: 401 });
-    }
-    
-    try {
-        const listId = params.id;
-        await prisma.filmList.delete({
-            where: { id: listId, userId: user.id },
-        });
+  const cookieStore = cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user;
 
-        return new NextResponse(null, { status: 204 }); // No Content
-    } catch (error) {
-        console.error(`Failed to delete list ${params.id}:`, error);
-        return NextResponse.json({ error: 'Failed to delete list' }, { status: 500 });
-    }
+  if (!user) {
+      return new NextResponse('Unauthorized', { status: 401 });
+  }
+    
+  try {
+      const listId = params.id;
+      await deleteList(listId, user.id);
+      return new NextResponse(null, { status: 204 }); // No Content
+  } catch (error) {
+      console.error(`Failed to delete list ${params.id}:`, error);
+      return NextResponse.json({ error: 'Failed to delete list' }, { status: 500 });
+  }
 }
 
 // POST a film to a list
@@ -128,8 +104,11 @@ export async function POST(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await getSession();
+  const cookieStore = cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
+
   if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
@@ -145,14 +124,7 @@ export async function POST(
 
     const { filmId } = validation.data;
     
-    await upsertFilm(filmId);
-
-    const filmOnList = await prisma.filmsOnList.create({
-      data: {
-        listId: listId,
-        filmId: filmId,
-      },
-    });
+    const filmOnList = await addFilmToList(listId, filmId);
 
     return NextResponse.json(filmOnList, { status: 201 });
   } catch (error: any) {

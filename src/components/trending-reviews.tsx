@@ -7,9 +7,10 @@ import { IMAGE_BASE_URL } from '@/lib/tmdb-isomorphic';
 import type { Film, PublicUser } from '@/lib/types';
 import { CardDescription } from './ui/card';
 import { LikeReviewButton } from './like-review-button';
-import prisma from '@/lib/prisma';
 import { Comments } from './comments';
-import { getSession } from '@/lib/auth';
+import { createServerComponentClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { getTrendingReviews as fetchTrendingReviews } from '@/services/reviewService';
 
 interface TrendingReviewEntry {
   id: string;
@@ -25,40 +26,13 @@ interface TrendingReviewEntry {
   }
 }
 
-
-async function getTrendingReviews(userId?: string): Promise<TrendingReviewEntry[]> {
-  try {
-    const reviews = await prisma.journalEntry.findMany({
-        where: {
-            review: { not: null, notIn: [''] }
-        },
-        include: {
-            film: true,
-            user: {
-                select: { id: true, name: true, username: true, imageUrl: true }
-            },
-            reviewLikes: userId ? { where: { userId } } : false,
-            _count: {
-                select: { reviewLikes: true, comments: true }
-            }
-        },
-        orderBy: {
-            createdAt: 'desc',
-        },
-        take: 10,
-    });
-    
-    return reviews as unknown as TrendingReviewEntry[];
-  } catch (error) {
-    console.error('Failed to fetch trending reviews:', error);
-    return [];
-  }
-}
-
 export async function TrendingReviews() {
-  const session = await getSession();
+  const cookieStore = cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
-  const reviews = await getTrendingReviews(user?.id);
+  
+  const reviews = await fetchTrendingReviews(user?.id) as unknown as TrendingReviewEntry[];
   
   if (reviews.length === 0) {
     return (

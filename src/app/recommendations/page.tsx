@@ -8,31 +8,22 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import prisma from '@/lib/prisma';
 import { redirect } from 'next/navigation';
-import { getSession } from '@/lib/auth';
+import { createServerComponentClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { getJournalEntriesForUser } from '@/services/reviewService';
 
 export default async function RecommendationsPage() {
-  const session = await getSession();
+  const cookieStore = cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
+
   if (!user) {
     redirect('/login');
   }
 
-  const journalEntries = await prisma.journalEntry.findMany({
-    where: {
-      userId: user.id,
-    },
-    include: {
-      film: {
-        select: { title: true },
-      },
-    },
-    orderBy: {
-      logged_date: 'desc',
-    },
-    take: 20,
-  });
+  const journalEntries = await getJournalEntriesForUser(user.id, 20, ['film']);
 
   const viewingHistory = journalEntries?.map(entry => ({
     filmTitle: entry.film.title,

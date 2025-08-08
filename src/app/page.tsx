@@ -4,30 +4,13 @@ import { FilmCarouselSection } from '@/components/film-carousel-section';
 import { FollowingFeed } from '@/components/following-feed';
 import { Separator } from '@/components/ui/separator';
 import { Users, TrendingUp } from 'lucide-react';
-import prisma from '@/lib/prisma';
 import React from 'react';
 import { FilmCarouselSkeleton } from '@/components/film-carousel-skeleton';
 import { FeedSkeleton } from '@/components/following-feed';
 import { TrendingReviews } from '@/components/trending-reviews';
 import { createServerComponentClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-
-async function getUserFilmSets(userId: string | null) {
-    if (!userId) {
-        return { watchlistIds: new Set<number>(), likedIds: new Set<number>() };
-    }
-
-    const [watchlist, likes] = await Promise.all([
-        prisma.watchlistItem.findMany({ where: { userId }, select: { filmId: true } }),
-        prisma.likedFilm.findMany({ where: { userId }, select: { filmId: true } }),
-    ]);
-
-    const watchlistIds = new Set(watchlist.map(item => item.filmId));
-    const likedIds = new Set(likes.map(item => item.filmId));
-
-    return { watchlistIds, likedIds };
-}
-
+import { getUserFilmSets } from '@/services/userService';
 
 export default async function HomePage() {
   const cookieStore = cookies();
@@ -35,7 +18,6 @@ export default async function HomePage() {
   const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
   
-  // Pre-fetch the first page of each category and user-specific data in parallel
   const [
     userFilmSets,
     popularMovies,

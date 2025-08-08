@@ -1,8 +1,9 @@
 
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
 import { z } from 'zod';
-import { getSession } from '@/lib/auth';
+import { createServerComponentClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { getJournalEntriesForUser, createJournalEntry } from '@/services/reviewService';
 
 const journalEntrySchema = z.object({
   filmId: z.number(),
@@ -11,20 +12,13 @@ const journalEntrySchema = z.object({
   loggedDate: z.string().datetime(),
 });
 
-async function upsertFilm(filmId: number) {
-    await prisma.film.upsert({
-        where: { id: filmId },
-        update: {},
-        create: { id: filmId, title: 'Unknown Film' },
-    });
-}
-
-
 // GET all journal entries for a user
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const urlUserId = searchParams.get('userId');
-  const session = await getSession();
+  const cookieStore = cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const { data: { session } } = await supabase.auth.getSession();
   const authUser = session?.user;
 
   const targetUserId = urlUserId || authUser?.id;
@@ -38,15 +32,7 @@ export async function GET(request: Request) {
   }
   
   try {
-    const journalEntries = await prisma.journalEntry.findMany({
-      where: { userId: targetUserId },
-      include: {
-        film: true,
-      },
-      orderBy: {
-        logged_date: 'desc',
-      },
-    });
+    const journalEntries = await getJournalEntriesForUser(targetUserId);
 
     const responseData = journalEntries.map(entry => ({
         ...entry,
@@ -66,7 +52,9 @@ export async function GET(request: Request) {
 
 // POST a new journal entry
 export async function POST(request: Request) {
-    const session = await getSession();
+    const cookieStore = cookies();
+    const supabase = createServerComponentClient({ cookies: () => cookieStore });
+    const { data: { session } } = await supabase.auth.getSession();
     const user = session?.user;
 
     if (!user) {
@@ -81,19 +69,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: validation.error.formErrors }, { status: 400 });
     }
     
-    const { filmId, rating, review, loggedDate } = validation.data;
-    
-    await upsertFilm(filmId);
-
-    const newEntry = await prisma.journalEntry.create({
-      data: {
-        userId: user.id,
-        filmId: filmId,
-        rating,
-        review,
-        logged_date: loggedDate,
-      },
-    });
+    const newEntry = await createJournalEntry(user.id, validation.data);
 
     return NextResponse.json(newEntry, { status: 201 });
   } catch (error) {

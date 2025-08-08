@@ -9,10 +9,11 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { LogFilmDialog } from '@/components/log-film-dialog';
 import { WatchlistButton } from '@/components/watchlist-button';
-import prisma from '@/lib/prisma';
 import redis from '@/lib/redis';
-import { getSession } from '@/lib/auth';
+import { createServerComponentClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import type { FilmDetails } from '@/lib/types';
+import { getWatchlistStatusForFilm } from '@/services/filmService';
 
 const CACHE_EXPIRATION_SECONDS = 60 * 60 * 24; // 24 hours
 
@@ -58,30 +59,15 @@ async function getFilmDetails(id: string): Promise<FilmDetails | null> {
 }
 
 
-async function getWatchlistStatus(filmId: number, userId: string | null) {
-  if (!userId) {
-    return false;
-  }
-  
-  const watchlistItem = await prisma.watchlistItem.findUnique({
-    where: {
-      userId_filmId: {
-        userId: userId,
-        filmId: filmId,
-      },
-    },
-  });
-
-  return !!watchlistItem;
-}
-
 export default async function FilmDetailPage({ params }: { params: { id: string } }) {
   const filmId = parseInt(params.id, 10);
   if (isNaN(filmId)) {
     notFound();
   }
   
-  const session = await getSession();
+  const cookieStore = cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const { data: { session } } = await supabase.auth.getSession();
   const authUser = session?.user;
 
   const film = await getFilmDetails(params.id);
@@ -90,7 +76,7 @@ export default async function FilmDetailPage({ params }: { params: { id: string 
     notFound();
   }
 
-  const isAlreadyInWatchlist = await getWatchlistStatus(filmId, authUser?.id ?? null);
+  const isAlreadyInWatchlist = await getWatchlistStatusForFilm(filmId, authUser?.id ?? null);
 
   const posterUrl = film.poster_path ? `${IMAGE_BASE_URL}w500${film.poster_path}` : 'https://placehold.co/400x600.png';
   const year = film.release_date ? new Date(film.release_date).getFullYear() : 'N/A';

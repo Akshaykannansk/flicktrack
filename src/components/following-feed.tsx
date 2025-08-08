@@ -7,10 +7,11 @@ import { IMAGE_BASE_URL } from '@/lib/tmdb-isomorphic';
 import type { Film, PublicUser } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from './ui/button';
-import { getSession } from '@/lib/auth';
-import prisma from '@/lib/prisma';
 import { LikeReviewButton } from './like-review-button';
 import { Comments } from './comments';
+import { createServerComponentClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { getFollowingFeedForUser } from '@/services/userService';
 
 interface FeedEntry {
   id: string;
@@ -52,46 +53,13 @@ export const FeedSkeleton = () => (
     </div>
 )
 
-async function getFeed(userId: string | null): Promise<FeedEntry[]> {
-    if (!userId) {
-        return [];
-    }
-
-    const follows = await prisma.follows.findMany({
-        where: { followerId: userId },
-        select: { followingId: true },
-    });
-
-    const followingIds = follows.map(f => f.followingId);
-
-    if (followingIds.length === 0) {
-      return [];
-    }
-    
-    const feed = await prisma.journalEntry.findMany({
-        where: { userId: { in: followingIds } },
-        include: {
-            film: true,
-            user: {
-                select: { id: true, name: true, username: true, imageUrl: true },
-            },
-            reviewLikes: userId ? { where: { userId } } : false,
-             _count: {
-                select: { reviewLikes: true, comments: true },
-            }
-        },
-        orderBy: { logged_date: 'desc' },
-        take: 20
-    });
-
-    return feed as unknown as FeedEntry[];
-}
-
-
 export async function FollowingFeed() {
-  const session = await getSession();
+  const cookieStore = cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
-  const feed = await getFeed(user?.id ?? null);
+
+  const feed = await getFollowingFeedForUser(user?.id ?? null) as unknown as FeedEntry[];
   
   if (feed.length === 0) {
     return (

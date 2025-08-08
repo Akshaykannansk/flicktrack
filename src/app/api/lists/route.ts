@@ -1,8 +1,9 @@
 
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
 import { z } from 'zod';
-import { getSession } from '@/lib/auth';
+import { createServerComponentClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { getListsForUser, createList } from '@/services/listService';
 
 const listSchema = z.object({
   name: z.string().min(1, 'List name is required.'),
@@ -12,35 +13,17 @@ const listSchema = z.object({
 
 // GET all lists for the user
 export async function GET(request: Request) {
-  const session = await getSession();
+  const cookieStore = cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
+
   if (!user) {
       return new NextResponse('Unauthorized', { status: 401 });
   }
 
   try {
-    const lists = await prisma.filmList.findMany({
-      where: { userId: user.id },
-      include: {
-        films: {
-          take: 4,
-          orderBy: {
-            addedAt: 'desc',
-          },
-          include: {
-            film: {
-              select: { id: true, poster_path: true },
-            },
-          },
-        },
-        _count: {
-          select: { films: true },
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+    const lists = await getListsForUser(user.id);
     
     const responseData = lists.map(list => ({
         ...list,
@@ -62,8 +45,11 @@ export async function GET(request: Request) {
 
 // POST (create) a new list
 export async function POST(request: Request) {
-  const session = await getSession();
+  const cookieStore = cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
+
   if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
@@ -78,13 +64,7 @@ export async function POST(request: Request) {
 
     const { name, description } = validation.data;
     
-    const newList = await prisma.filmList.create({
-      data: {
-        name,
-        description,
-        userId: user.id,
-      },
-    });
+    const newList = await createList(user.id, name, description);
 
     return NextResponse.json(newList, { status: 201 });
   } catch (error) {

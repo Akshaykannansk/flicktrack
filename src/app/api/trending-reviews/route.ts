@@ -1,43 +1,19 @@
 
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
-import { getSession } from '@/lib/auth';
+import { createServerComponentClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { getTrendingReviews } from '@/services/reviewService';
 
 export const revalidate = 60; // Revalidate every 60 seconds
 
 export async function GET() {
-  const session = await getSession();
+  const cookieStore = cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
 
   try {
-    const trendingReviews = await prisma.journalEntry.findMany({
-      where: {
-        review: {
-          not: null,
-          not: '',
-        },
-      },
-      include: {
-        film: true,
-        user: {
-          select: {
-            id: true,
-            name: true,
-            username: true,
-            imageUrl: true,
-          }
-        },
-        _count: {
-          select: { reviewLikes: true, comments: true }
-        },
-        reviewLikes: user ? { where: { userId: user.id } } : false,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      take: 10,
-    });
-    
+    const trendingReviews = await getTrendingReviews(user?.id);
     return NextResponse.json(trendingReviews);
   } catch (error) {
     console.error('Failed to fetch trending reviews:', error);

@@ -16,7 +16,7 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { createClientComponentClient } from '@supabase/ssr';
+import { createClientComponentClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 
 const navLinks = [
@@ -115,8 +115,7 @@ export default function Header() {
   };
   
   const handleSignOut = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    setUser(null);
+    await supabase.auth.signOut();
     router.push('/login');
     router.refresh();
   };
@@ -284,3 +283,5 @@ export default function Header() {
     </header>
   );
 }
+
+    

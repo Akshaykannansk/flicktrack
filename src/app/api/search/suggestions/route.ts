@@ -1,34 +1,7 @@
+
 import { NextResponse } from 'next/server';
 import { searchFilms } from '@/lib/tmdb';
-import type { PublicUser } from '@/lib/types';
-import prisma from '@/lib/prisma';
-
-async function searchUsers(query: string): Promise<PublicUser[]> {
-    if (!query) return [];
-
-    try {
-        const users = await prisma.user.findMany({
-            where: {
-                OR: [
-                    { name: { contains: query, mode: 'insensitive' } },
-                    { username: { contains: query, mode: 'insensitive' } },
-                ],
-            },
-            take: 10,
-            select: {
-                id: true,
-                name: true,
-                username: true,
-                imageUrl: true,
-            }
-        });
-
-        return users;
-    } catch (error) {
-        console.error('Failed to search users:', error);
-        return [];
-    }
-}
+import { searchUsers } from '@/services/userService';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -44,7 +17,6 @@ export async function GET(request: Request) {
       searchUsers(query),
     ]);
     
-    // Limit to 5 suggestions for each for a cleaner UI
     const suggestions = {
         films: films.slice(0, 5),
         users: users.slice(0, 5)

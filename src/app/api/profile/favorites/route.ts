@@ -1,9 +1,9 @@
 
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
-import { getSession } from '@/lib/auth';
+import { createServerComponentClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import { z } from 'zod';
-import { getFilmDetails } from '@/lib/tmdb';
+import { getFavoriteFilms, updateFavoriteFilms } from '@/services/filmService';
 
 const favoriteFilmsSchema = z.object({
   filmIds: z.array(z.number()).max(4, 'You can only have up to 4 favorite films.'),
@@ -11,18 +11,17 @@ const favoriteFilmsSchema = z.object({
 
 // GET user's favorite films
 export async function GET(request: Request) {
-  const session = await getSession();
+  const cookieStore = cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
+
   if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
   try {
-    const favoriteFilms = await prisma.favoriteFilm.findMany({
-      where: { userId: user.id },
-      include: { film: true },
-    });
-
+    const favoriteFilms = await getFavoriteFilms(user.id);
     return NextResponse.json(favoriteFilms.map(fav => fav.film));
   } catch (error) {
     console.error('Failed to fetch favorite films:', error);
@@ -32,8 +31,11 @@ export async function GET(request: Request) {
 
 // POST (update) user's favorite films
 export async function POST(request: Request) {
-  const session = await getSession();
+  const cookieStore = cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
+
   if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
@@ -48,50 +50,7 @@ export async function POST(request: Request) {
 
     const { filmIds } = validation.data;
     
-    // Fetch film details from TMDB and upsert them into our database
-    for (const filmId of filmIds) {
-        const filmDetails = await getFilmDetails(filmId.toString());
-        if (filmDetails) {
-            await prisma.film.upsert({
-                where: { id: filmId },
-                update: {
-                    title: filmDetails.title,
-                    overview: filmDetails.overview,
-                    poster_path: filmDetails.poster_path,
-                    release_date: filmDetails.release_date ? new Date(filmDetails.release_date) : null,
-                    vote_average: filmDetails.vote_average,
-                },
-                create: {
-                    id: filmId,
-                    title: filmDetails.title,
-                    overview: filmDetails.overview,
-                    poster_path: filmDetails.poster_path,
-                    release_date: filmDetails.release_date ? new Date(filmDetails.release_date) : null,
-                    vote_average: filmDetails.vote_average,
-                }
-            });
-        }
-    }
-    
-    await prisma.$transaction(async (tx) => {
-        // Delete all existing favorites for the user
-        await tx.favoriteFilm.deleteMany({
-            where: { userId: user.id },
-        });
-
-        // Add the new favorites
-        if (filmIds.length > 0) {
-            await tx.favoriteFilm.createMany({
-                data: filmIds.map(id => ({ userId: user!.id, filmId: id })),
-            });
-        }
-    });
-
-
-    const favorite_films = await prisma.favoriteFilm.findMany({
-      where: { userId: user.id },
-      include: { film: true },
-    });
+    const favorite_films = await updateFavoriteFilms(user.id, filmIds);
 
     return NextResponse.json(favorite_films.map(fav => fav.film), { status: 200 });
   } catch (error) {

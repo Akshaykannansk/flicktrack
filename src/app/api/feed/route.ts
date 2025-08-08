@@ -1,12 +1,15 @@
 
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
-import { getSession } from '@/lib/auth';
+import { createServerComponentClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { getFollowingFeedForUser } from '@/services/userService';
 
 export const revalidate = 60; // Revalidate every 60 seconds
 
 export async function GET(request: Request) {
-  const session = await getSession();
+  const cookieStore = cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
   
   if (!user) {
@@ -14,40 +17,7 @@ export async function GET(request: Request) {
   }
   
   try {
-    const follows = await prisma.follows.findMany({
-        where: { followerId: user.id },
-        select: { followingId: true }
-    });
-
-    const followingIds = follows.map(f => f.followingId);
-
-    if (followingIds.length === 0) {
-      return NextResponse.json([]);
-    }
-
-    const feedEntries = await prisma.journalEntry.findMany({
-      where: {
-        userId: {
-          in: followingIds,
-        },
-      },
-      include: {
-        film: true,
-        user: {
-          select: {
-            id: true,
-            name: true,
-            username: true,
-            imageUrl: true
-          }
-        },
-      },
-      orderBy: {
-        logged_date: 'desc',
-      },
-      take: 20,
-    });
-    
+    const feedEntries = await getFollowingFeedForUser(user.id);
     return NextResponse.json(feedEntries);
   } catch (error) {
     console.error('Failed to fetch activity feed:', error);

@@ -1,14 +1,17 @@
 
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
-import { getSession } from '@/lib/auth';
+import { createServerComponentClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { followUser, unfollowUser } from '@/services/userService';
 
 // POST to follow a user
 export async function POST(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await getSession();
+  const cookieStore = cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const { data: { session } } = await supabase.auth.getSession();
   const currentUser = session?.user;
 
   if (!currentUser) {
@@ -22,13 +25,7 @@ export async function POST(
   }
   
   try {
-    await prisma.follows.create({
-      data: {
-        followerId: currentUser.id,
-        followingId: userToFollowId,
-      },
-    });
-
+    await followUser(currentUser.id, userToFollowId);
     return NextResponse.json({ message: 'Successfully followed user.' }, { status: 201 });
   } catch (error: any) {
     if (error.code === 'P2002') { // unique constraint
@@ -44,8 +41,11 @@ export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await getSession();
+  const cookieStore = cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const { data: { session } } = await supabase.auth.getSession();
   const currentUser = session?.user;
+
   if (!currentUser) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
@@ -53,15 +53,7 @@ export async function DELETE(
   const userToUnfollowId = params.id;
 
   try {
-    await prisma.follows.delete({
-        where: {
-            followerId_followingId: {
-                followerId: currentUser.id,
-                followingId: userToUnfollowId,
-            }
-        },
-    });
-    
+    await unfollowUser(currentUser.id, userToUnfollowId);
     return new NextResponse(null, { status: 204 }); // No Content
   } catch (error: any) {
      console.error('Failed to unfollow user:', error);

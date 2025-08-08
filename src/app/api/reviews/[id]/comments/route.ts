@@ -1,8 +1,9 @@
 
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
-import { getSession } from '@/lib/auth';
+import { createServerComponentClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import { z } from 'zod';
+import { getCommentsForReview, createComment } from '@/services/reviewService';
 
 // GET all comments for a review
 export async function GET(
@@ -11,15 +12,7 @@ export async function GET(
 ) {
   try {
     const journalEntryId = params.id;
-    const comments = await prisma.comment.findMany({
-      where: { journalEntryId: journalEntryId },
-      include: {
-        user: {
-          select: { id: true, name: true, username: true, imageUrl: true }
-        }
-      },
-      orderBy: { createdAt: 'asc' },
-    });
+    const comments = await getCommentsForReview(journalEntryId);
     
     const responseData = comments.map(comment => ({
         ...comment,
@@ -49,7 +42,9 @@ export async function POST(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await getSession();
+  const cookieStore = cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
 
   if (!user) {
@@ -65,18 +60,7 @@ export async function POST(
       return NextResponse.json({ error: validation.error.formErrors }, { status: 400 });
     }
 
-    const newComment = await prisma.comment.create({
-      data: {
-        content: validation.data.content,
-        userId: user.id,
-        journalEntryId: journalEntryId,
-      },
-      include: {
-        user: {
-          select: { id: true, name: true, username: true, imageUrl: true }
-        }
-      },
-    });
+    const newComment = await createComment(user.id, journalEntryId, validation.data.content);
     
     const responseData = {
         ...newComment,

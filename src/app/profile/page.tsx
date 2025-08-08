@@ -7,102 +7,42 @@ import { Settings, Film as FilmIcon, Star, Heart } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { FilmCard } from '@/components/film-card';
 import type { Film as FilmType, PublicUser } from '@/lib/types';
-import prisma from '@/lib/prisma';
 import { notFound, redirect } from 'next/navigation';
 import { FollowButton } from './follow-button';
 import { IMAGE_BASE_URL } from '@/lib/tmdb-isomorphic';
-import { getSession } from '@/lib/auth';
-
-async function getUserStats(userId: string) {
-    const stats = await prisma.user.findUnique({
-        where: { id: userId },
-        select: {
-            _count: {
-                select: {
-                    journalEntries: true,
-                    followers: true,
-                    following: true,
-                    likes: true, // Liked Films
-                    likedLists: true,
-                },
-            },
-            favoriteFilms: {
-                include: { film: true },
-            },
-            journalEntries: {
-                take: 10,
-                orderBy: { logged_date: 'desc' },
-                include: { film: true }
-            }
-        }
-    });
-
-    if (!stats) {
-        return null;
-    }
-    
-    const [watchlist, likes] = await Promise.all([
-      prisma.watchlistItem.findMany({ where: { userId }, select: { filmId: true } }),
-      prisma.likedFilm.findMany({ where: { userId }, select: { filmId: true } }),
-    ]);
-    
-    const watchlistIds = new Set(watchlist.map(item => item.filmId));
-    const likedIds = new Set(likes.map(item => item.filmId));
-
-    return { 
-        journalCount: stats._count.journalEntries, 
-        followersCount: stats._count.followers, 
-        followingCount: stats._count.following,
-        likesCount: stats._count.likes + stats._count.likedLists, 
-        favoriteFilms: stats.favoriteFilms.map(fav => ({ ...fav.film, id: fav.film.id.toString() })),
-        watchlistIds,
-        likedIds,
-        recentJournalEntries: stats.journalEntries.map(entry => ({
-            id: entry.id,
-            film: {
-                ...entry.film,
-                id: entry.film.id.toString(),
-            },
-            rating: entry.rating,
-            review: entry.review || undefined,
-            loggedDate: entry.logged_date
-        })) || []
-    };
-}
-
+import { createServerComponentClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { getUserDataForProfile, getUserProfile } from '@/services/userService';
 
 export default async function ProfilePage() {
-  const session = await getSession();
+  const cookieStore = cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
 
   if (!user) {
     redirect("/login");
   }
 
-   // Upsert user in DB on their own profile visit
-   const dbUser = await prisma.user.findUnique({
-        where: { id: user.id },
-        select: { bio: true, name: true, username: true, imageUrl: true, id: true }
-    });
+  const dbUser = await getUserProfile(user.id, ['id', 'bio', 'name', 'username', 'imageUrl']);
 
-    if (!dbUser) {
-        // This case might happen if a user was deleted but their session is still valid.
-        redirect('/login');
-    }
+  if (!dbUser) {
+    redirect('/login');
+  }
 
-  const stats = await getUserStats(user.id);
+  const stats = await getUserDataForProfile(user.id);
   
   if (!stats) {
     notFound();
   }
   
-  return <ProfilePageContent user={dbUser} stats={stats} isCurrentUser={true} />;
+  return <ProfilePageContent user={dbUser as PublicUser} stats={stats.stats} isCurrentUser={true} />;
 }
 
 
 interface ProfilePageContentProps {
     user: PublicUser,
-    stats: NonNullable<Awaited<ReturnType<typeof getUserStats>>>,
+    stats: NonNullable<Awaited<ReturnType<typeof getUserDataForProfile>>>['stats'],
     isCurrentUser: boolean,
     isFollowing?: boolean,
 }
