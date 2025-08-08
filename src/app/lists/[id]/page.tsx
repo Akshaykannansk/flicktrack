@@ -189,6 +189,10 @@ export default function ListDetailPage() {
             </div>
             {isOwner ? (
                 <div className="flex items-center gap-2">
+                    <Button variant="outline" size="icon">
+                        <Edit className="h-4 w-4" />
+                        <span className="sr-only">Edit List</span>
+                    </Button>
                      <AlertDialog>
                         <AlertDialogTrigger asChild>
                            <Button variant="outline" size="icon" disabled={isDeleting}>
