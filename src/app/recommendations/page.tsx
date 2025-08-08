@@ -11,10 +11,9 @@ import {
 import prisma from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
-import { cookies } from 'next/headers';
 
 export default async function RecommendationsPage() {
-  const session = await getSession({ cookies: cookies() });
+  const session = await getSession();
   const user = session?.user;
   if (!user) {
     redirect('/login');

@@ -2,7 +2,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
-import { cookies } from 'next/headers';
 import { z } from 'zod';
 
 // GET all comments for a review
@@ -50,7 +49,7 @@ export async function POST(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await getSession({ cookies: cookies() });
+  const session = await getSession();
   const user = session?.user;
 
   if (!user) {

@@ -8,7 +8,6 @@ import type { Film, PublicUser } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from './ui/button';
 import { getSession } from '@/lib/auth';
-import { cookies } from 'next/headers';
 import prisma from '@/lib/prisma';
 import { LikeReviewButton } from './like-review-button';
 import { Comments } from './comments';
@@ -90,7 +89,7 @@ async function getFeed(userId: string | null): Promise<FeedEntry[]> {
 
 
 export async function FollowingFeed() {
-  const session = await getSession({ cookies: cookies() });
+  const session = await getSession();
   const user = session?.user;
   const feed = await getFeed(user?.id ?? null);
   

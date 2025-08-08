@@ -10,7 +10,6 @@ import { LikeReviewButton } from './like-review-button';
 import prisma from '@/lib/prisma';
 import { Comments } from './comments';
 import { getSession } from '@/lib/auth';
-import { cookies } from 'next/headers';
 
 interface TrendingReviewEntry {
   id: string;
@@ -57,7 +56,7 @@ async function getTrendingReviews(userId?: string): Promise<TrendingReviewEntry[
 }
 
 export async function TrendingReviews() {
-  const session = await getSession({ cookies: cookies() });
+  const session = await getSession();
   const user = session?.user;
   const reviews = await getTrendingReviews(user?.id);
   

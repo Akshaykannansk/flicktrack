@@ -2,14 +2,13 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
-import { cookies } from 'next/headers';
 
 // POST to follow a user
 export async function POST(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await getSession({ cookies: cookies() });
+  const session = await getSession();
   const currentUser = session?.user;
 
   if (!currentUser) {
@@ -45,7 +44,7 @@ export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await getSession({ cookies: cookies() });
+  const session = await getSession();
   const currentUser = session?.user;
   if (!currentUser) {
     return new NextResponse('Unauthorized', { status: 401 });

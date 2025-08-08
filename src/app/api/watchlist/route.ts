@@ -3,7 +3,6 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { z } from 'zod';
 import { getSession } from '@/lib/auth';
-import { cookies } from 'next/headers';
 
 async function upsertFilm(filmId: number) {
     await prisma.film.upsert({
@@ -15,7 +14,7 @@ async function upsertFilm(filmId: number) {
 
 // GET all watchlist items for the user
 export async function GET(request: Request) {
-  const session = await getSession({ cookies: cookies() });
+  const session = await getSession();
   const user = session?.user;
   if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });
@@ -45,7 +44,7 @@ const watchlistActionSchema = z.object({
 
 // POST a new film to the watchlist
 export async function POST(request: Request) {
-  const session = await getSession({ cookies: cookies() });
+  const session = await getSession();
   const user = session?.user;
   if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });
@@ -82,7 +81,7 @@ export async function POST(request: Request) {
 
 // DELETE a film from the watchlist
 export async function DELETE(request: Request) {
-  const session = await getSession({ cookies: cookies() });
+  const session = await getSession();
   const user = session?.user;
   if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });

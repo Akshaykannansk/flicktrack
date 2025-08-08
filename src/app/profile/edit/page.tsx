@@ -3,7 +3,6 @@ import { FavoriteFilmsForm } from "@/components/favorite-films-form";
 import { EditProfileForm } from "@/components/edit-profile-form";
 import prisma from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
-import { cookies } from "next/headers";
 import { Film, User } from "lucide-react";
 import { redirect } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
@@ -24,7 +23,7 @@ async function getInitialProfile(userId: string) {
 }
 
 export default async function EditProfilePage() {
-    const session = await getSession({ cookies: cookies() });
+    const session = await getSession();
     const user = session?.user;
 
     if (!user) {

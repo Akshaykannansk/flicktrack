@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { z } from 'zod';
 import { getSession } from '@/lib/auth';
-import { cookies } from 'next/headers';
 
 const journalEntryUpdateSchema = z.object({
   rating: z.number().min(0.5).max(5).optional(),
@@ -37,7 +36,7 @@ export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await getSession({ cookies: cookies() });
+  const session = await getSession();
   const user = session?.user;
 
   if (!user) {
@@ -69,7 +68,7 @@ export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await getSession({ cookies: cookies() });
+  const session = await getSession();
   const user = session?.user;
 
   if (!user) {

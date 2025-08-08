@@ -12,7 +12,6 @@ import { WatchlistButton } from '@/components/watchlist-button';
 import prisma from '@/lib/prisma';
 import redis from '@/lib/redis';
 import { getSession } from '@/lib/auth';
-import { cookies } from 'next/headers';
 import type { FilmDetails } from '@/lib/types';
 
 const CACHE_EXPIRATION_SECONDS = 60 * 60 * 24; // 24 hours
@@ -82,7 +81,7 @@ export default async function FilmDetailPage({ params }: { params: { id: string 
     notFound();
   }
   
-  const session = await getSession({ cookies: cookies() });
+  const session = await getSession();
   const authUser = session?.user;
 
   const film = await getFilmDetails(params.id);

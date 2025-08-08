@@ -10,7 +10,6 @@ import { FilmCarouselSkeleton } from '@/components/film-carousel-skeleton';
 import { FeedSkeleton } from '@/components/following-feed';
 import { TrendingReviews } from '@/components/trending-reviews';
 import { getSession } from '@/lib/auth';
-import { cookies } from 'next/headers';
 
 async function getUserFilmSets(userId: string | null) {
     if (!userId) {
@@ -30,7 +29,7 @@ async function getUserFilmSets(userId: string | null) {
 
 
 export default async function HomePage() {
-  const session = await getSession({ cookies: cookies() });
+  const session = await getSession();
   const user = session?.user;
   
   // Pre-fetch the first page of each category and user-specific data in parallel

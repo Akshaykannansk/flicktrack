@@ -2,7 +2,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
-import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { getFilmDetails } from '@/lib/tmdb';
 
@@ -12,7 +11,7 @@ const favoriteFilmsSchema = z.object({
 
 // GET user's favorite films
 export async function GET(request: Request) {
-  const session = await getSession({ cookies: cookies() });
+  const session = await getSession();
   const user = session?.user;
   if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });
@@ -33,7 +32,7 @@ export async function GET(request: Request) {
 
 // POST (update) user's favorite films
 export async function POST(request: Request) {
-  const session = await getSession({ cookies: cookies() });
+  const session = await getSession();
   const user = session?.user;
   if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });

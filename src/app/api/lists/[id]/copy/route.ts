@@ -2,14 +2,13 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
-import { cookies } from 'next/headers';
 
 // POST to copy a list
 export async function POST(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await getSession({ cookies: cookies() });
+  const session = await getSession();
   const newOwner = session?.user;
 
   if (!newOwner) {

@@ -4,7 +4,6 @@ import prisma from '@/lib/prisma';
 import { notFound, redirect } from 'next/navigation';
 import type { Film as FilmType } from '@/lib/types';
 import { getSession } from '@/lib/auth';
-import { cookies } from 'next/headers';
 import type { FilmDetails, PublicUser } from '@/lib/types';
 
 async function getUserData(userId: string) {
@@ -48,7 +47,7 @@ async function getUserData(userId: string) {
     const watchlistIds = new Set(watchlist.map(item => item.filmId));
     const likedIds = new Set(likes.map(item => item.filmId));
 
-    const session = await getSession({ cookies: cookies() });
+    const session = await getSession();
     const currentUser = session?.user;
 
     let isFollowing = false;
@@ -93,7 +92,7 @@ async function getUserData(userId: string) {
 
 
 export default async function OtherUserProfilePage({ params }: { params: { id: string } }) {
-    const session = await getSession({ cookies: cookies() });
+    const session = await getSession();
     const currentUser = session?.user;
 
     if (!currentUser) {

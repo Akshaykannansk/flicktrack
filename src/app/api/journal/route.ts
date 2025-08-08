@@ -3,7 +3,6 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { z } from 'zod';
 import { getSession } from '@/lib/auth';
-import { cookies } from 'next/headers';
 
 const journalEntrySchema = z.object({
   filmId: z.number(),
@@ -25,7 +24,7 @@ async function upsertFilm(filmId: number) {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const urlUserId = searchParams.get('userId');
-  const session = await getSession({ cookies: cookies() });
+  const session = await getSession();
   const authUser = session?.user;
 
   const targetUserId = urlUserId || authUser?.id;
@@ -67,7 +66,7 @@ export async function GET(request: Request) {
 
 // POST a new journal entry
 export async function POST(request: Request) {
-    const session = await getSession({ cookies: cookies() });
+    const session = await getSession();
     const user = session?.user;
 
     if (!user) {

@@ -3,7 +3,6 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { z } from 'zod';
 import { getSession } from '@/lib/auth';
-import { cookies } from 'next/headers';
 
 
 const updateProfileSchema = z.object({
@@ -17,7 +16,7 @@ const updateProfileSchema = z.object({
 export async function PUT(
   request: Request
 ) {
-  const session = await getSession({ cookies: cookies() });
+  const session = await getSession();
   const user = session?.user;
 
   if (!user) {

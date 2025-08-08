@@ -2,12 +2,11 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
-import { cookies } from 'next/headers';
 
 export const revalidate = 60; // Revalidate every 60 seconds
 
 export async function GET() {
-  const session = await getSession({ cookies: cookies() });
+  const session = await getSession();
   const user = session?.user;
 
   try {

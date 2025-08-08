@@ -12,7 +12,6 @@ import { notFound, redirect } from 'next/navigation';
 import { FollowButton } from './follow-button';
 import { IMAGE_BASE_URL } from '@/lib/tmdb-isomorphic';
 import { getSession } from '@/lib/auth';
-import { cookies } from 'next/headers';
 
 async function getUserStats(userId: string) {
     const stats = await prisma.user.findUnique({
@@ -73,7 +72,7 @@ async function getUserStats(userId: string) {
 
 
 export default async function ProfilePage() {
-  const session = await getSession({ cookies: cookies() });
+  const session = await getSession();
   const user = session?.user;
 
   if (!user) {

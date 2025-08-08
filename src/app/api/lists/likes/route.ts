@@ -2,11 +2,10 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
-import { cookies } from 'next/headers';
 
 // GET all liked lists for the user
 export async function GET(request: Request) {
-  const session = await getSession({ cookies: cookies() });
+  const session = await getSession();
   const user = session?.user;
   if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });
