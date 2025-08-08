@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { notFound, useRouter } from 'next/navigation';
+import { notFound, useRouter, useParams } from 'next/navigation';
 import { FilmCard } from '@/components/film-card';
 import { Button } from '@/components/ui/button';
 import { List, Loader2, Trash2, Edit } from 'lucide-react';
@@ -31,7 +31,9 @@ interface UserFilmSets {
     likedListIds: Set<string>;
 }
 
-export default function ListDetailPage({ params }: { params: { id: string } }) {
+export default function ListDetailPage() {
+  const params = useParams();
+  const listId = params.id as string;
   const [list, setList] = useState<FilmListType | null>(null);
   const [userFilmSets, setUserFilmSets] = useState<UserFilmSets>({ watchlistIds: new Set(), likedIds: new Set(), likedListIds: new Set() });
   const [isLoading, setIsLoading] = useState(true);
@@ -59,12 +61,12 @@ export default function ListDetailPage({ params }: { params: { id: string } }) {
   }, []);
 
   const fetchListData = async () => {
-    if (!params.id) return;
+    if (!listId) return;
     setIsLoading(true);
 
     try {
         // Fetch list details
-        const listResponse = await fetch(`/api/lists/${params.id}`);
+        const listResponse = await fetch(`/api/lists/${listId}`);
         if (listResponse.status === 404) {
             notFound();
             return;
@@ -112,12 +114,12 @@ export default function ListDetailPage({ params }: { params: { id: string } }) {
   
   useEffect(() => {
     fetchListData();
-  }, [params.id, user]);
+  }, [listId, user]);
   
   const handleDeleteList = async () => {
     setIsDeleting(true);
     try {
-        const response = await fetch(`/api/lists/${params.id}`, { method: 'DELETE' });
+        const response = await fetch(`/api/lists/${listId}`, { method: 'DELETE' });
         if (!response.ok) {
             throw new Error('Failed to delete the list.');
         }
