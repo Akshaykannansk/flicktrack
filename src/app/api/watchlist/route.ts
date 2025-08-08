@@ -1,14 +1,18 @@
 
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createServerComponentClient } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getWatchlist, addToWatchlist, removeFromWatchlist } from '@/services/filmService';
 
 // GET all watchlist items for the user
 export async function GET(request: Request) {
   const cookieStore = cookies();
-  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { get: (name) => cookieStore.get(name)?.value } }
+  );
   const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
 
@@ -32,7 +36,11 @@ const watchlistActionSchema = z.object({
 // POST a new film to the watchlist
 export async function POST(request: Request) {
   const cookieStore = cookies();
-  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { get: (name) => cookieStore.get(name)?.value } }
+  );
   const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
 
@@ -65,7 +73,11 @@ export async function POST(request: Request) {
 // DELETE a film from the watchlist
 export async function DELETE(request: Request) {
   const cookieStore = cookies();
-  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { get: (name) => cookieStore.get(name)?.value } }
+  );
   const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
 

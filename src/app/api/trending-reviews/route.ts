@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { createServerComponentClient } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getTrendingReviews } from '@/services/reviewService';
 
@@ -8,7 +8,11 @@ export const revalidate = 60; // Revalidate every 60 seconds
 
 export async function GET() {
   const cookieStore = cookies();
-  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { get: (name) => cookieStore.get(name)?.value } }
+  );
   const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
 

@@ -8,13 +8,17 @@ import React from 'react';
 import { FilmCarouselSkeleton } from '@/components/film-carousel-skeleton';
 import { FeedSkeleton } from '@/components/following-feed';
 import { TrendingReviews } from '@/components/trending-reviews';
-import { createServerComponentClient } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getUserFilmSets } from '@/services/userService';
 
 export default async function HomePage() {
   const cookieStore = cookies();
-  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { get: (name) => cookieStore.get(name)?.value } }
+  );
   const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
   

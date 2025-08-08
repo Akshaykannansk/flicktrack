@@ -1,13 +1,17 @@
 
 import { NextResponse } from 'next/server';
-import { createServerComponentClient } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getLikedListsWithDetails } from '@/services/listService';
 
 // GET all liked lists for the user with details
 export async function GET(request: Request) {
   const cookieStore = cookies();
-  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { get: (name) => cookieStore.get(name)?.value } }
+  );
   const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
 

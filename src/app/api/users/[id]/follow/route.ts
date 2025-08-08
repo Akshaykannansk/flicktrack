@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { createServerComponentClient } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { followUser, unfollowUser } from '@/services/userService';
 
@@ -10,7 +10,11 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   const cookieStore = cookies();
-  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { get: (name) => cookieStore.get(name)?.value } }
+  );
   const { data: { session } } = await supabase.auth.getSession();
   const currentUser = session?.user;
 
@@ -42,7 +46,11 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   const cookieStore = cookies();
-  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { get: (name) => cookieStore.get(name)?.value } }
+  );
   const { data: { session } } = await supabase.auth.getSession();
   const currentUser = session?.user;
 

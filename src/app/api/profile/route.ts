@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createServerComponentClient } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { updateUserProfile } from '@/services/userService';
 
@@ -17,7 +17,11 @@ export async function PUT(
   request: Request
 ) {
   const cookieStore = cookies();
-  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { get: (name) => cookieStore.get(name)?.value } }
+  );
   const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
 

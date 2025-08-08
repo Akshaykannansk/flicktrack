@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createServerComponentClient } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getJournalEntriesForUser, createJournalEntry } from '@/services/reviewService';
 
@@ -17,7 +17,11 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const urlUserId = searchParams.get('userId');
   const cookieStore = cookies();
-  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { get: (name) => cookieStore.get(name)?.value } }
+  );
   const { data: { session } } = await supabase.auth.getSession();
   const authUser = session?.user;
 
@@ -53,7 +57,11 @@ export async function GET(request: Request) {
 // POST a new journal entry
 export async function POST(request: Request) {
     const cookieStore = cookies();
-    const supabase = createServerComponentClient({ cookies: () => cookieStore });
+    const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        { cookies: { get: (name) => cookieStore.get(name)?.value } }
+    );
     const { data: { session } } = await supabase.auth.getSession();
     const user = session?.user;
 

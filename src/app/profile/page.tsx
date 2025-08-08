@@ -10,13 +10,17 @@ import type { Film as FilmType, PublicUser } from '@/lib/types';
 import { notFound, redirect } from 'next/navigation';
 import { FollowButton } from './follow-button';
 import { IMAGE_BASE_URL } from '@/lib/tmdb-isomorphic';
-import { createServerComponentClient } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getUserDataForProfile, getUserProfile } from '@/services/userService';
 
 export default async function ProfilePage() {
   const cookieStore = cookies();
-  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { get: (name) => cookieStore.get(name)?.value } }
+  );
   const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
 
