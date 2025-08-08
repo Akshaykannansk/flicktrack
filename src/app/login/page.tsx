@@ -13,11 +13,13 @@ import { Film } from 'lucide-react';
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -29,8 +31,9 @@ export default function LoginPage() {
             title: 'Login Successful',
             description: "Welcome back!",
         });
+        // Crucially, refresh the page to update server-side session data before navigating
+        router.refresh();
         router.push('/');
-        router.refresh(); // Refresh to update session state in header etc.
     } else {
         const data = await res.json();
         toast({
@@ -38,6 +41,7 @@ export default function LoginPage() {
             title: 'Login Failed',
             description: data.error || 'An unknown error occurred.',
         });
+        setIsLoading(false);
     }
   };
 
@@ -59,6 +63,7 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               placeholder="you@example.com"
+              disabled={isLoading}
             />
           </div>
           <div>
@@ -70,9 +75,12 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               placeholder="••••••••"
+              disabled={isLoading}
             />
           </div>
-          <Button type="submit" className="w-full">Sign In</Button>
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? 'Signing In...' : 'Sign In'}
+          </Button>
         </form>
          <p className="text-center text-sm text-muted-foreground">
             Don't have an account?{' '}

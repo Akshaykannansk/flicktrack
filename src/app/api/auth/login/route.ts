@@ -25,12 +25,14 @@ export async function POST(request: Request) {
     
     const { password: _, ...userPayload } = user;
 
-    const expires = new Date(Date.now() + 60 * 60 * 1000 * 24); // 24 hours
+    // The session expires in 24 hours
+    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
     const session = await encrypt({ user: userPayload, expires });
 
-    cookies().set('session', session, { expires, httpOnly: true });
+    // Set the session cookie
+    cookies().set('session', session, { expires, httpOnly: false }); // httpOnly is false to allow client-side access for now
 
-    return NextResponse.json({ message: 'Login successful' }, { status: 200 });
+    return NextResponse.json({ message: 'Login successful' });
 
   } catch (error) {
     console.error('Login error:', error);
