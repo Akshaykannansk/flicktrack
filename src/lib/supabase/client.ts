@@ -11,9 +11,3 @@ export function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 }
-
-
-// The new recommended way for client components
-import { createClientComponentClient as _createClientComponentClient } from '@supabase/ssr';
-
-export const createClientComponentClient = _createClientComponentClient;

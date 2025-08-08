@@ -16,7 +16,7 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { createClientComponentClient } from '@/lib/supabase/client';
+import { createClientComponentClient } from '@supabase/ssr';
 import type { User } from '@supabase/supabase-js';
 
 const navLinks = [

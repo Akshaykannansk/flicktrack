@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { Film, Loader2 } from 'lucide-react';
-import { createClientComponentClient } from '@/lib/supabase/client';
+import { createClientComponentClient } from '@supabase/ssr';
 
 export default function SignupPage() {
   const [email, setEmail] = useState('');
