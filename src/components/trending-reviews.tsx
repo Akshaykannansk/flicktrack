@@ -8,7 +8,7 @@ import type { Film, PublicUser } from '@/lib/types';
 import { CardDescription } from './ui/card';
 import { LikeReviewButton } from './like-review-button';
 import { Comments } from './comments';
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getTrendingReviews as fetchTrendingReviews } from '@/services/reviewService';
 
@@ -31,7 +31,18 @@ export async function TrendingReviews() {
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { get: (name) => cookieStore.get(name)?.value } }
+    { cookies: { 
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        },
+        async set(name: string, value: string, options: CookieOptions) {
+          await cookieStore.set({ name, value, ...options })
+        },
+        async remove(name: string, options: CookieOptions) {
+          await cookieStore.set({ name, value: '', ...options })
+        },
+      } 
+    }
   );
   const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;

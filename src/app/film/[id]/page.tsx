@@ -10,7 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { LogFilmDialog } from '@/components/log-film-dialog';
 import { WatchlistButton } from '@/components/watchlist-button';
 import redis from '@/lib/redis';
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import type { FilmDetails } from '@/lib/types';
 import { getWatchlistStatusForFilm } from '@/services/filmService';
@@ -69,7 +69,18 @@ export default async function FilmDetailPage({ params }: { params: { id: string 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { get: (name) => cookieStore.get(name)?.value } }
+    { cookies: { 
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        },
+        async set(name: string, value: string, options: CookieOptions) {
+          await cookieStore.set({ name, value, ...options })
+        },
+        async remove(name: string, options: CookieOptions) {
+          await cookieStore.set({ name, value: '', ...options })
+        },
+      } 
+    }
   );
   const { data: { session } } = await supabase.auth.getSession();
   const authUser = session?.user;
