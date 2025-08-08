@@ -111,7 +111,7 @@ export async function getUserDataForProfile(userId: string, currentUserId?: stri
             likedLists: true,
           }
         },
-        favoriteFilms: { include: { film: true }, orderBy: { addedAt: 'asc' } },
+        favoriteFilms: { include: { film: true } },
         journalEntries: {
             take: 10,
             orderBy: { logged_date: 'desc' },

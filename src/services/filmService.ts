@@ -92,8 +92,7 @@ export async function unlikeFilm(userId: string, filmId: number) {
 export async function getFavoriteFilms(userId: string) {
     return prisma.favoriteFilm.findMany({
       where: { userId },
-      include: { film: true },
-      orderBy: { addedAt: 'asc' },
+      include: { film: true }
     });
 }
 

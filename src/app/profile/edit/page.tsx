@@ -4,7 +4,7 @@ import { EditProfileForm } from "@/components/edit-profile-form";
 import { Film, User } from "lucide-react";
 import { redirect } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createServerComponentClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import prisma from "@/lib/prisma";
 import type { Film as FilmType } from "@/lib/types";
@@ -17,8 +17,7 @@ async function getEditProfileData(userId: string) {
             username: true,
             bio: true,
             favoriteFilms: {
-                include: { film: true },
-                orderBy: { addedAt: 'asc' }
+                include: { film: true }
             }
         }
     });
@@ -44,24 +43,20 @@ async function getEditProfileData(userId: string) {
 
 
 export default async function EditProfilePage() {
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-          cookies: {
-            get(name: string) {
-              return cookieStore.get(name)?.value;
-            },
-            set(name: string, value: string, options: CookieOptions) {
-              cookieStore.set({ name, value, ...options });
-            },
-            remove(name: string, options: CookieOptions) {
-              cookieStore.set({ name, value: '', ...options });
-            },
-          },
-        }
-    );
+    const cookieStore =await cookies();
+    const supabase = createServerComponentClient({
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          cookieStore.set({ name, value, ...options })
+        },
+        remove(name: string, options: CookieOptions) {
+          cookieStore.set({ name, value: '', ...options })
+        },
+      },
+    });
     const { data: { session } } = await supabase.auth.getSession();
     const user = session?.user;
 

@@ -10,11 +10,11 @@ import type { Film as FilmType, PublicUser } from '@/lib/types';
 import { notFound, redirect } from 'next/navigation';
 import { FollowButton } from './follow-button';
 import { IMAGE_BASE_URL } from '@/lib/tmdb-isomorphic';
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createServerComponentClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import prisma from "@/lib/prisma";
 import type { Film } from '@/lib/types';
-import { getUserFilmSets } from '@/services/userService';
+import { getUserFilmSets, getUserDataForProfile } from '@/services/userService';
 
 async function getUserProfileData(userId: string) {
     const dbUser = await prisma.user.findUnique({
@@ -34,7 +34,7 @@ async function getUserProfileData(userId: string) {
             likedLists: true,
           }
         },
-        favoriteFilms: { include: { film: true }, orderBy: { addedAt: 'asc' } },
+        favoriteFilms: { include: { film: true } },
         journalEntries: {
             take: 10,
             orderBy: { logged_date: 'desc' },
@@ -76,24 +76,20 @@ async function getUserProfileData(userId: string) {
 
 
 export default async function ProfilePage() {
-  const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          cookieStore.set({ name, value, ...options })
-        },
-        remove(name: string, options: CookieOptions) {
-          cookieStore.set({ name, value: '', ...options })
-        },
+  const cookieStore =await cookies();
+  const supabase = createServerComponentClient({
+    cookies: {
+      get(name: string) {
+        return cookieStore.get(name)?.value
       },
-    }
-  );
+      set(name: string, value: string, options: CookieOptions) {
+        cookieStore.set({ name, value, ...options })
+      },
+      remove(name: string, options: CookieOptions) {
+        cookieStore.set({ name, value: '', ...options })
+      },
+    },
+  });
   const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
 
