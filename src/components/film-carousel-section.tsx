@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -119,3 +120,4 @@ export function FilmCarouselSection({ title, initialFilms, category, watchlistId
         </section>
     );
 }
+

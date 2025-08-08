@@ -5,47 +5,12 @@ import { FollowingFeed } from '@/components/following-feed';
 import { Separator } from '@/components/ui/separator';
 import { Users, TrendingUp } from 'lucide-react';
 import React from 'react';
-import { FilmCarouselSkeleton } from '@/components/film-carousel-skeleton';
 import { TrendingReviews } from '@/components/trending-reviews';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getUserFilmSets } from '@/services/userService';
-import type { Film } from '@/lib/types';
 import type { CookieOptions } from '@supabase/ssr';
-
-async function PopularFilms({ watchlistIds, likedIds }: { watchlistIds: Set<number>, likedIds: Set<number> }) {
-  const popularMovies = await getPopularMovies();
-  return <FilmCarouselSection 
-    title="Popular Films" 
-    initialFilms={popularMovies} 
-    category="popular"
-    watchlistIds={watchlistIds} 
-    likedIds={likedIds} 
-  />;
-}
-
-async function TopRatedFilms({ watchlistIds, likedIds }: { watchlistIds: Set<number>, likedIds: Set<number> }) {
-  const topRatedMovies = await getTopRatedMovies();
-  return <FilmCarouselSection 
-    title="Top Rated Films" 
-    initialFilms={topRatedMovies}
-    category="top_rated"
-    watchlistIds={watchlistIds} 
-    likedIds={likedIds} 
-  />;
-}
-
-async function NowPlayingFilms({ watchlistIds, likedIds }: { watchlistIds: Set<number>, likedIds: Set<number> }) {
-  const nowPlayingMovies = await getNowPlayingMovies();
-  return <FilmCarouselSection 
-    title="Now Playing" 
-    initialFilms={nowPlayingMovies}
-    category="now_playing"
-    watchlistIds={watchlistIds} 
-    likedIds={likedIds} 
-  />;
-}
-
+import { LazyCarouselSection } from '@/components/LazyCarouselSection';
 
 export default async function HomePage() {
   const cookieStore = await cookies();
@@ -111,17 +76,35 @@ export default async function HomePage() {
       )}
       
       <div className="space-y-12">
-        <React.Suspense fallback={<FilmCarouselSkeleton title="Popular Films" />}>
-           <PopularFilms watchlistIds={watchlistIds} likedIds={likedIds} />
-        </React.Suspense>
+        <LazyCarouselSection title="Popular Films">
+          <FilmCarouselSection
+            title="Popular Films"
+            initialFilms={await getPopularMovies()}
+            category="popular"
+            watchlistIds={watchlistIds}
+            likedIds={likedIds}
+          />
+        </LazyCarouselSection>
 
-        <React.Suspense fallback={<FilmCarouselSkeleton title="Top Rated Films" />}>
-          <TopRatedFilms watchlistIds={watchlistIds} likedIds={likedIds} />
-        </React.Suspense>
+        <LazyCarouselSection title="Top Rated Films">
+          <FilmCarouselSection
+            title="Top Rated Films"
+            initialFilms={await getTopRatedMovies()}
+            category="top_rated"
+            watchlistIds={watchlistIds}
+            likedIds={likedIds}
+          />
+        </LazyCarouselSection>
 
-        <React.Suspense fallback={<FilmCarouselSkeleton title="Now Playing" />}>
-          <NowPlayingFilms watchlistIds={watchlistIds} likedIds={likedIds} />
-        </React.Suspense>
+        <LazyCarouselSection title="Now Playing">
+          <FilmCarouselSection
+            title="Now Playing"
+            initialFilms={await getNowPlayingMovies()}
+            category="now_playing"
+            watchlistIds={watchlistIds}
+            likedIds={likedIds}
+          />
+        </LazyCarouselSection>
       </div>
     </div>
   )
