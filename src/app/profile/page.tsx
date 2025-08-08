@@ -10,27 +10,16 @@ import type { Film as FilmType, PublicUser } from '@/lib/types';
 import { notFound, redirect } from 'next/navigation';
 import { FollowButton } from './follow-button';
 import { IMAGE_BASE_URL } from '@/lib/tmdb-isomorphic';
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { getUserDataForProfile, getUserProfile } from '@/services/userService';
+import { getUserDataForProfile } from '@/services/userService';
 
 export default async function ProfilePage() {
   const cookieStore =await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { 
-        get(name: string) {
-          return cookieStore.get(name)?.value
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          cookieStore.set({ name, value, ...options })
-        },
-        remove(name: string, options: CookieOptions) {
-          cookieStore.set({ name, value: '', ...options })
-        },
-      } 
-    }
+    { cookies: () => cookieStore }
   );
   const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
@@ -39,19 +28,13 @@ export default async function ProfilePage() {
     redirect("/login");
   }
 
-  const dbUser = await getUserProfile(user.id, ['id', 'bio', 'name', 'username', 'imageUrl']);
-
-  if (!dbUser) {
-    redirect('/login');
-  }
-
-  const stats = await getUserDataForProfile(user.id);
+  const userData = await getUserDataForProfile(user.id, user.id);
   
-  if (!stats) {
+  if (!userData) {
     notFound();
   }
   
-  return <ProfilePageContent user={dbUser as PublicUser} stats={stats.stats} isCurrentUser={true} />;
+  return <ProfilePageContent user={userData.user as PublicUser} stats={userData.stats} isCurrentUser={true} />;
 }
 
 
