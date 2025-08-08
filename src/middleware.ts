@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { getSession } from '@/lib/auth';
+import { decrypt } from '@/lib/auth';
 
 const protectedRoutes = [
     '/profile', 
@@ -14,15 +14,20 @@ const publicRoutes = ['/login', '/signup'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const session = await getSession();
+  const sessionCookie = request.cookies.get('session');
   
+  let userPayload = null;
+  if (sessionCookie) {
+    userPayload = await decrypt(sessionCookie.value);
+  }
+
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
 
-  if (isProtectedRoute && !session?.user) {
+  if (isProtectedRoute && !userPayload) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
   
-  if (publicRoutes.includes(pathname) && session?.user) {
+  if (publicRoutes.includes(pathname) && userPayload) {
     return NextResponse.redirect(new URL('/profile', request.url));
   }
 
