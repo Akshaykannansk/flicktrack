@@ -1,13 +1,17 @@
 
 import type { Film, FilmDetails, PaginatedResponse, Video } from './types';
 import { IMAGE_BASE_URL } from './tmdb-isomorphic';
-import redis from './redis';
+import redis from '@/lib/redis';
 
 const API_BASE_URL = 'https://api.themoviedb.org/3';
 const API_KEY = process.env.TMDB_API_KEY;
 const CACHE_EXPIRATION_SECONDS = 60 * 60 * 24; // 24 hours
 
-async function fetchFromTMDB<T>(endpoint: string, params: Record<string, string> = {}): Promise<T | null> {
+async function fetchFromTMDB<T>(
+  endpoint: string,
+  params: Record<string, string> = {},
+  options: { revalidate?: number } = {}
+): Promise<T | null> {
   if (!API_KEY) {
     console.error('TMDB_API_KEY is not defined.');
     return null;
@@ -44,7 +48,7 @@ async function fetchFromTMDB<T>(endpoint: string, params: Record<string, string>
 
   try {
     const response = await fetch(url.toString(), {
-        next: { revalidate: 3600 } // Revalidate every hour
+        next: { revalidate: options.revalidate ?? 3600 } // Revalidate every hour
     }); 
 
     if (!response.ok) {
@@ -83,17 +87,17 @@ function transformFilmData(tmdbFilm: any): Film {
 
 
 export async function getPopularMovies(page = 1, limit = 8): Promise<Film[] | null> {
-  const data = await fetchFromTMDB<PaginatedResponse<any>>('movie/popular', { page: page.toString() });
+  const data = await fetchFromTMDB<PaginatedResponse<any>>('movie/popular', { page: page.toString() }, { revalidate: 600 });
   return data?.results.slice(0, limit).map(transformFilmData) || null;
 }
 
 export async function getTopRatedMovies(page = 1, limit = 8): Promise<Film[] | null> {
-  const data = await fetchFromTMDB<PaginatedResponse<any>>('movie/top_rated', { page: page.toString() });
+  const data = await fetchFromTMDB<PaginatedResponse<any>>('movie/top_rated', { page: page.toString() }, { revalidate: 600 });
   return data?.results.slice(0, limit).map(transformFilmData) || null;
 }
 
 export async function getNowPlayingMovies(page = 1, limit = 8): Promise<Film[] | null> {
-  const data = await fetchFromTMDB<PaginatedResponse<any>>('movie/now_playing', { page: page.toString() });
+  const data = await fetchFromTMDB<PaginatedResponse<any>>('movie/now_playing', { page: page.toString() }, { revalidate: 600 });
   return data?.results.slice(0, limit).map(transformFilmData) || null;
 }
 
