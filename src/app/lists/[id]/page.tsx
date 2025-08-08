@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { LikeListButton } from '@/components/like-list-button';
 import { CopyListButton } from '@/components/copy-list-button';
+import { EditListDialog } from '@/components/edit-list-dialog';
 
 
 interface UserFilmSets {
@@ -189,10 +190,16 @@ export default function ListDetailPage() {
             </div>
             {isOwner ? (
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" size="icon">
-                        <Edit className="h-4 w-4" />
-                        <span className="sr-only">Edit List</span>
-                    </Button>
+                    <EditListDialog 
+                        listId={list.id} 
+                        initialData={{ name: list.name, description: list.description }}
+                        onListUpdated={fetchListData}
+                    >
+                        <Button variant="outline" size="icon">
+                            <Edit className="h-4 w-4" />
+                            <span className="sr-only">Edit List</span>
+                        </Button>
+                    </EditListDialog>
                      <AlertDialog>
                         <AlertDialogTrigger asChild>
                            <Button variant="outline" size="icon" disabled={isDeleting}>
