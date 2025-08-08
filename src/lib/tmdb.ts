@@ -82,19 +82,19 @@ function transformFilmData(tmdbFilm: any): Film {
 }
 
 
-export async function getPopularMovies(page = 1): Promise<Film[] | null> {
+export async function getPopularMovies(page = 1, limit = 8): Promise<Film[] | null> {
   const data = await fetchFromTMDB<PaginatedResponse<any>>('movie/popular', { page: page.toString() });
-  return data?.results.map(transformFilmData) || null;
+  return data?.results.slice(0, limit).map(transformFilmData) || null;
 }
 
-export async function getTopRatedMovies(page = 1): Promise<Film[] | null> {
+export async function getTopRatedMovies(page = 1, limit = 8): Promise<Film[] | null> {
   const data = await fetchFromTMDB<PaginatedResponse<any>>('movie/top_rated', { page: page.toString() });
-  return data?.results.map(transformFilmData) || null;
+  return data?.results.slice(0, limit).map(transformFilmData) || null;
 }
 
-export async function getNowPlayingMovies(page = 1): Promise<Film[] | null> {
+export async function getNowPlayingMovies(page = 1, limit = 8): Promise<Film[] | null> {
   const data = await fetchFromTMDB<PaginatedResponse<any>>('movie/now_playing', { page: page.toString() });
-  return data?.results.map(transformFilmData) || null;
+  return data?.results.slice(0, limit).map(transformFilmData) || null;
 }
 
 export async function getFilmDetails(id: string): Promise<FilmDetails | null> {
