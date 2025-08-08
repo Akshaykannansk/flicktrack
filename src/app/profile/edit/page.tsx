@@ -18,7 +18,7 @@ async function getEditProfileData(userId: string) {
             bio: true,
             favoriteFilms: {
                 include: { film: true },
-                orderBy: { createdAt: 'asc' }
+                orderBy: { addedAt: 'asc' }
             }
         }
     });

@@ -93,7 +93,7 @@ export async function getFavoriteFilms(userId: string) {
     return prisma.favoriteFilm.findMany({
       where: { userId },
       include: { film: true },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { addedAt: 'asc' },
     });
 }
 
