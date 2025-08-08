@@ -17,39 +17,39 @@ export async function middleware(request: NextRequest) {
         get(name: string) {
           return request.cookies.get(name)?.value
         },
-        set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({
+        async set(name: string, value: string, options: CookieOptions) {
+          await Promise.resolve(request.cookies.set({
             name,
             value,
             ...options,
-          })
+          }))
           response = NextResponse.next({
             request: {
               headers: request.headers,
             },
           })
-          response.cookies.set({
+          await Promise.resolve(response.cookies.set({
             name,
             value,
             ...options,
-          })
+          }))
         },
-        remove(name: string, options: CookieOptions) {
-          request.cookies.set({
+        async remove(name: string, options: CookieOptions) {
+          await Promise.resolve(request.cookies.set({
             name,
             value: '',
             ...options,
-          })
+          }))
           response = NextResponse.next({
             request: {
               headers: request.headers,
             },
           })
-          response.cookies.set({
+          await Promise.resolve(response.cookies.set({
             name,
             value: '',
             ...options,
-          })
+          }))
         },
       },
     }

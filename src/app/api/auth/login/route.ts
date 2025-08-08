@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
 export async function POST(request: Request) {
@@ -9,7 +9,18 @@ export async function POST(request: Request) {
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { get: (name) => cookieStore.get(name)?.value } }
+    { cookies: { 
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        },
+        async set(name: string, value: string, options: CookieOptions) {
+          await cookieStore.set({ name, value, ...options })
+        },
+        async remove(name: string, options: CookieOptions) {
+          await cookieStore.set({ name, value: '', ...options })
+        },
+      } 
+    }
   );
 
   const { data, error } = await supabase.auth.signInWithPassword({
@@ -21,6 +32,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message }, { status: error.status });
   }
 
-  // The session is automatically saved in the cookie by the Supabase client.
   return NextResponse.json({ data });
 }
