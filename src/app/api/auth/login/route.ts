@@ -5,7 +5,7 @@ import { cookies } from 'next/headers';
 
 export async function POST(request: Request) {
   const { email, password } = await request.json();
-  const cookieStore =await cookies();
+  const cookieStore = cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

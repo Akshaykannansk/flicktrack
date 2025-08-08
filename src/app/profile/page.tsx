@@ -10,7 +10,7 @@ import type { Film as FilmType, PublicUser } from '@/lib/types';
 import { notFound, redirect } from 'next/navigation';
 import { FollowButton } from './follow-button';
 import { IMAGE_BASE_URL } from '@/lib/tmdb-isomorphic';
-import { createServerComponentClient, type CookieOptions } from '@supabase/ssr';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import prisma from "@/lib/prisma";
 import type { Film } from '@/lib/types';
@@ -34,7 +34,10 @@ async function getUserProfileData(userId: string) {
             likedLists: true,
           }
         },
-        favoriteFilms: { include: { film: true } },
+        favoriteFilms: { 
+            orderBy: { addedAt: 'desc' },
+            include: { film: true } 
+        },
         journalEntries: {
             take: 10,
             orderBy: { logged_date: 'desc' },
@@ -76,8 +79,11 @@ async function getUserProfileData(userId: string) {
 
 
 export default async function ProfilePage() {
-  const cookieStore =await cookies();
-  const supabase = createServerComponentClient({
+  const cookieStore = cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
     cookies: {
       get(name: string) {
         return cookieStore.get(name)?.value

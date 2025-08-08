@@ -11,7 +11,7 @@ const favoriteFilmsSchema = z.object({
 
 // GET user's favorite films
 export async function GET(request: Request) {
-  const cookieStore =await cookies();
+  const cookieStore = cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -46,7 +46,7 @@ export async function GET(request: Request) {
 
 // POST (update) user's favorite films
 export async function POST(request: Request) {
-  const cookieStore =await cookies();
+  const cookieStore = cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

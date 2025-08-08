@@ -14,7 +14,7 @@ import { cookies } from 'next/headers';
 import { getJournalEntriesForUser } from '@/services/reviewService';
 
 export default async function RecommendationsPage() {
-  const cookieStore = await cookies();
+  const cookieStore = cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

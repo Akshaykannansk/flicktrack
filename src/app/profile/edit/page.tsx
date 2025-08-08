@@ -4,7 +4,7 @@ import { EditProfileForm } from "@/components/edit-profile-form";
 import { Film, User } from "lucide-react";
 import { redirect } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
-import { createServerComponentClient, type CookieOptions } from '@supabase/ssr';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import prisma from "@/lib/prisma";
 import type { Film as FilmType } from "@/lib/types";
@@ -17,6 +17,7 @@ async function getEditProfileData(userId: string) {
             username: true,
             bio: true,
             favoriteFilms: {
+                orderBy: { addedAt: 'desc' },
                 include: { film: true }
             }
         }
@@ -43,8 +44,8 @@ async function getEditProfileData(userId: string) {
 
 
 export default async function EditProfilePage() {
-    const cookieStore =await cookies();
-    const supabase = createServerComponentClient({
+    const cookieStore = cookies();
+    const supabase = createServerClient({
       cookies: {
         get(name: string) {
           return cookieStore.get(name)?.value

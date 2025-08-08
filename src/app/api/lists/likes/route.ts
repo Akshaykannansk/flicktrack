@@ -6,7 +6,7 @@ import { getLikedListsIds } from '@/services/listService';
 
 // GET all liked list IDs for the user
 export async function GET(request: Request) {
-  const cookieStore =await cookies();
+  const cookieStore = cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
