@@ -1,3 +1,2 @@
-
-// This file is intentionally left blank.
-// The application no longer uses a server-side Supabase client for authentication.
+// This file is no longer used and can be deleted.
+// The application now uses a custom JWT-based authentication flow.

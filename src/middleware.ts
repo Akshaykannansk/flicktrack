@@ -1,3 +1,4 @@
+
 import { NextResponse, type NextRequest } from 'next/server';
 import { decrypt } from '@/lib/auth';
 
@@ -7,7 +8,8 @@ const protectedRoutes = [
     '/lists', 
     '/watchlist', 
     '/likes', 
-    '/recommendations'
+    '/recommendations',
+    '/profile/edit'
 ];
 
 const publicRoutes = ['/login', '/signup'];
@@ -15,26 +17,28 @@ const publicRoutes = ['/login', '/signup'];
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const sessionCookie = request.cookies.get('session')?.value;
-  
-  let userPayload = null;
-  if (sessionCookie) {
-    userPayload = await decrypt(sessionCookie);
-  }
 
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
+  const isPublicRoute = publicRoutes.includes(pathname);
 
-  if (isProtectedRoute && !userPayload) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url);
+  if (!sessionCookie && isProtectedRoute) {
+    return NextResponse.redirect(new URL('/login', request.url));
   }
   
-  if (publicRoutes.includes(pathname) && userPayload) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/profile'
-    return NextResponse.redirect(url);
-  }
+  if (sessionCookie) {
+    const session = await decrypt(sessionCookie);
+    if (!session && isProtectedRoute) {
+        // Invalid session, clear cookie and redirect
+        const response = NextResponse.redirect(new URL('/login', request.url));
+        response.cookies.set('session', '', { expires: new Date(0) });
+        return response;
+    }
 
+    if (session && isPublicRoute) {
+        return NextResponse.redirect(new URL('/profile', request.url));
+    }
+  }
+  
   return NextResponse.next();
 }
 

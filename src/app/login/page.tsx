@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import { Film } from 'lucide-react';
+import { Film, Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -31,7 +31,7 @@ export default function LoginPage() {
             title: 'Login Successful',
             description: "Welcome back!",
         });
-        // Crucially, refresh the page to update server-side session data before navigating
+        // Refresh the page to update server-side session data before navigating
         router.refresh();
         router.push('/');
     } else {
@@ -79,7 +79,7 @@ export default function LoginPage() {
             />
           </div>
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? 'Signing In...' : 'Sign In'}
+            {isLoading ? <Loader2 className="animate-spin" /> : 'Sign In'}
           </Button>
         </form>
          <p className="text-center text-sm text-muted-foreground">

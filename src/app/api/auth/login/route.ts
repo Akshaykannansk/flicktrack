@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     const session = await encrypt({ user: userPayload, expires });
 
     // Set the session cookie
-    (await cookies()).set('session', session, { expires, httpOnly: false }); 
+    (await cookies()).set('session', session, { expires, httpOnly: true }); 
 
     return NextResponse.json({ message: 'Login successful' });
 
