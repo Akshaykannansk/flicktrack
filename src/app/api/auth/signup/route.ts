@@ -5,7 +5,7 @@ import { cookies } from 'next/headers';
 import prisma from '@/lib/prisma';
 
 export async function POST(request: Request) {
-  const { email, password, fullName, username, id } from await request.json();
+  const { email, password, fullName, username, id } = await request.json();
   
   if (!id) {
     // This part of the logic runs *after* Supabase has already created the user.
