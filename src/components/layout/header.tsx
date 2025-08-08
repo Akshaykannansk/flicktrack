@@ -16,7 +16,7 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { createClientComponentClient } from '@supabase/ssr';
+import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 
 const navLinks = [
@@ -45,7 +45,7 @@ export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const searchContainerRef = React.useRef<HTMLDivElement>(null);
   
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
 
   React.useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -283,5 +283,3 @@ export default function Header() {
     </header>
   );
 }
-
-    

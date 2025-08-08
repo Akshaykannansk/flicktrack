@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { Film, Loader2 } from 'lucide-react';
-import { createClientComponentClient } from '@supabase/ssr';
+import { createClient } from '@/lib/supabase/client';
 
 export default function SignupPage() {
   const [email, setEmail] = useState('');
@@ -19,7 +19,7 @@ export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();

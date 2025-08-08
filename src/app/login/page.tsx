@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { Film, Loader2 } from 'lucide-react';
-import { createClientComponentClient } from '@supabase/ssr';
+import { createClient } from '@/lib/supabase/client';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -17,7 +17,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
