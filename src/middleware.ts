@@ -14,21 +14,30 @@ const publicRoutes = ['/login', '/signup'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const sessionCookie = request.cookies.get('session');
+  const sessionCookie = request.cookies.get('session')?.value;
   
   let userPayload = null;
   if (sessionCookie) {
-    userPayload = await decrypt(sessionCookie.value);
+    try {
+      userPayload = await decrypt(sessionCookie);
+    } catch(err) {
+      // Invalid token, treat as logged out
+      userPayload = null;
+    }
   }
 
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
 
   if (isProtectedRoute && !userPayload) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    return NextResponse.redirect(url);
   }
   
   if (publicRoutes.includes(pathname) && userPayload) {
-    return NextResponse.redirect(new URL('/profile', request.url));
+    const url = request.nextUrl.clone()
+    url.pathname = '/profile'
+    return NextResponse.redirect(url);
   }
 
   return NextResponse.next();
