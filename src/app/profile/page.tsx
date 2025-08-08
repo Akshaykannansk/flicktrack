@@ -3,7 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Settings, Film as FilmIcon, Star, Heart } from 'lucide-react';
+import { Settings, Film as FilmIcon, Star } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { FilmCard } from '@/components/film-card';
 import type { Film as FilmType, PublicUser } from '@/lib/types';
@@ -12,23 +12,84 @@ import { FollowButton } from './follow-button';
 import { IMAGE_BASE_URL } from '@/lib/tmdb-isomorphic';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { getUserDataForProfile } from '@/services/userService';
+import prisma from '@/lib/prisma';
+import type { Film } from '@/lib/types';
+import { getUserFilmSets } from '@/services/userService';
+
+async function getUserProfileData(userId: string) {
+    const dbUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+          id: true,
+          name: true,
+          username: true,
+          imageUrl: true,
+          bio: true,
+        _count: {
+          select: {
+            journalEntries: true,
+            followers: true,
+            following: true,
+            likes: true,
+            likedLists: true,
+          }
+        },
+        favoriteFilms: { include: { film: true }, orderBy: { createdAt: 'asc' } },
+        journalEntries: {
+            take: 10,
+            orderBy: { logged_date: 'desc' },
+            include: { film: true }
+        }
+      }
+    });
+
+    if (!dbUser) return null;
+
+     const { watchlistIds, likedIds } = await getUserFilmSets(userId);
+
+    return {
+        user: {
+            id: dbUser.id,
+            name: dbUser.name,
+            username: dbUser.username,
+            imageUrl: dbUser.imageUrl,
+            bio: dbUser.bio,
+        },
+        stats: {
+            journalCount: dbUser._count.journalEntries,
+            followersCount: dbUser._count.followers,
+            followingCount: dbUser._count.following,
+            likesCount: dbUser._count.likes + dbUser._count.likedLists,
+            favoriteFilms: dbUser.favoriteFilms.map(fav => ({ ...fav.film, id: fav.film.id.toString() })) as FilmType[],
+            watchlistIds,
+            likedIds,
+            recentJournalEntries: dbUser.journalEntries.map(entry => ({
+                id: entry.id,
+                film: { ...entry.film, id: entry.film.id.toString() },
+                rating: entry.rating,
+                review: entry.review || undefined,
+                loggedDate: entry.logged_date.toISOString()
+            })) || []
+        }
+    }
+}
+
 
 export default async function ProfilePage() {
-  const cookieStore = await cookies();
+  const cookieStore = cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         get(name: string) {
-          return cookieStore.get(name)?.value;
+          return cookieStore.get(name)?.value
         },
         set(name: string, value: string, options: CookieOptions) {
-          cookieStore.set({ name, value, ...options });
+          cookieStore.set({ name, value, ...options })
         },
         remove(name: string, options: CookieOptions) {
-          cookieStore.set({ name, value: '', ...options });
+          cookieStore.set({ name, value: '', ...options })
         },
       },
     }
@@ -40,7 +101,7 @@ export default async function ProfilePage() {
     redirect("/login");
   }
 
-  const userData = await getUserDataForProfile(user.id, user.id);
+  const userData = await getUserProfileData(user.id);
   
   if (!userData) {
     notFound();
@@ -52,7 +113,22 @@ export default async function ProfilePage() {
 
 interface ProfilePageContentProps {
     user: PublicUser,
-    stats: NonNullable<Awaited<ReturnType<typeof getUserDataForProfile>>>['stats'],
+    stats: {
+        journalCount: number;
+        followersCount: number;
+        followingCount: number;
+        likesCount: number;
+        favoriteFilms: FilmType[];
+        recentJournalEntries: {
+            id: string;
+            film: Film;
+            rating: number;
+            review?: string | undefined;
+            loggedDate: string;
+        }[];
+        watchlistIds: Set<number>;
+        likedIds: Set<number>;
+    },
     isCurrentUser: boolean,
     isFollowing?: boolean,
 }

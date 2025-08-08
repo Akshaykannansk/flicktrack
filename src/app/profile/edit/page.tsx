@@ -6,20 +6,45 @@ import { redirect } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { getFavoriteFilms } from "@/services/filmService";
-import { getUserProfile } from "@/services/userService";
+import prisma from "@/lib/prisma";
+import type { Film as FilmType } from "@/lib/types";
 
-async function getInitialFavorites(userId: string) {
-    const favorites = await getFavoriteFilms(userId);
-    return favorites.map(item => item.film);
+async function getEditProfileData(userId: string) {
+    const userProfile = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+            name: true,
+            username: true,
+            bio: true,
+            favoriteFilms: {
+                include: { film: true },
+                orderBy: { createdAt: 'asc' }
+            }
+        }
+    });
+
+    if (!userProfile) {
+        return { profile: null, initialFavorites: [] };
+    }
+
+    const initialFavorites = userProfile.favoriteFilms.map(fav => ({
+        ...fav.film,
+        id: fav.film.id.toString(),
+        release_date: fav.film.release_date?.toISOString() ?? null,
+    })) as FilmType[];
+
+    const profile = {
+        name: userProfile.name ?? '',
+        username: userProfile.username ?? '',
+        bio: userProfile.bio ?? ''
+    }
+
+    return { profile, initialFavorites };
 }
 
-async function getInitialProfile(userId: string) {
-    return getUserProfile(userId, ['name', 'username', 'bio']);
-}
 
 export default async function EditProfilePage() {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -44,18 +69,11 @@ export default async function EditProfilePage() {
         redirect("/login");
     }
 
-    const [initialFavorites, profile] = await Promise.all([
-        getInitialFavorites(user.id),
-        getInitialProfile(user.id)
-    ]);
+    const { profile, initialFavorites } = await getEditProfileData(user.id);
     
-    const typedFavorites = initialFavorites.map(f => ({
-        ...f,
-        id: f.id.toString(),
-        poster_path: f.poster_path,
-        release_date: f.release_date?.toISOString() ?? null,
-        vote_average: f.vote_average
-    }))
+    if (!profile) {
+        return <div>Could not load profile data.</div>
+    }
 
     return (
         <div className="space-y-12 max-w-2xl mx-auto">
@@ -67,13 +85,7 @@ export default async function EditProfilePage() {
                 <p className="text-muted-foreground mt-2">
                     Update your public profile information.
                 </p>
-                <EditProfileForm 
-                    initialData={{
-                        name: profile?.name ?? '',
-                        username: profile?.username ?? '',
-                        bio: profile?.bio ?? ''
-                    }} 
-                />
+                <EditProfileForm initialData={profile} />
             </div>
             
             <Separator />
@@ -86,7 +98,7 @@ export default async function EditProfilePage() {
                 <p className="text-muted-foreground mt-2">
                     Select your top 4 favorite films to display on your profile. Start typing to search for a film.
                 </p>
-                <FavoriteFilmsForm initialFavorites={typedFavorites} />
+                <FavoriteFilmsForm initialFavorites={initialFavorites} />
             </div>
         </div>
     )
