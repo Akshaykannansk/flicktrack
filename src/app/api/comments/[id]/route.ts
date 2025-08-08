@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import { createServerComponentClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { deleteComment, getCommentById } from '../../../../services/reviewService';
+import { deleteComment, getCommentById } from '@/services/reviewService';
 
 // DELETE a comment
 export async function DELETE(

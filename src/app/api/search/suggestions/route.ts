@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
-import { searchFilms } from '../../../../lib/tmdb';
-import { searchUsers } from '../../../../services/userService';
+import { searchFilms } from '@/lib/tmdb';
+import { searchUsers } from '@/services/userService';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);

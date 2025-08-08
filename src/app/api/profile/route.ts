@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createServerComponentClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { updateUserProfile } from '../../../services/userService';
+import { updateUserProfile } from '@/services/userService';
 
 const updateProfileSchema = z.object({
   name: z.string().min(1, 'Name is required.'),

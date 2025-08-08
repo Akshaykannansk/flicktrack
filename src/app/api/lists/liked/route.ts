@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import { createServerComponentClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { getLikedListsWithDetails } from '../../../services/listService';
+import { getLikedListsWithDetails } from '@/services/listService';
 
 // GET all liked lists for the user with details
 export async function GET(request: Request) {

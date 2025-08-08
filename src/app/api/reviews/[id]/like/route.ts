@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import { createServerComponentClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { likeReview, unlikeReview } from '../../../../services/reviewService';
+import { likeReview, unlikeReview } from '@/services/reviewService';
 
 // POST to like a review
 export async function POST(

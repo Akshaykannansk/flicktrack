@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { createServerComponentClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
-import { getFavoriteFilms, updateFavoriteFilms } from '../../../../services/filmService';
+import { getFavoriteFilms, updateFavoriteFilms } from '@/services/filmService';
 
 const favoriteFilmsSchema = z.object({
   filmIds: z.array(z.number()).max(4, 'You can only have up to 4 favorite films.'),

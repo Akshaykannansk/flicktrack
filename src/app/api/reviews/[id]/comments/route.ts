@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { createServerComponentClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
-import { getCommentsForReview, createComment } from '../../../../services/reviewService';
+import { getCommentsForReview, createComment } from '@/services/reviewService';
 
 // GET all comments for a review
 export async function GET(

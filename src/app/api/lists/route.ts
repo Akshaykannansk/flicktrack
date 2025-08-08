@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createServerComponentClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { getListsForUser, createList } from '../../../services/listService';
+import { getListsForUser, createList } from '@/services/listService';
 
 const listSchema = z.object({
   name: z.string().min(1, 'List name is required.'),

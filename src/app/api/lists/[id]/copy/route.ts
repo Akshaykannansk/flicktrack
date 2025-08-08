@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import { createServerComponentClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { copyList } from '../../../../services/listService';
+import { copyList } from '@/services/listService';
 
 // POST to copy a list
 export async function POST(

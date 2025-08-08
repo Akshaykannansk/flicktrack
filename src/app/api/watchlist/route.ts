@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createServerComponentClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { getWatchlist, addToWatchlist, removeFromWatchlist } from '../../../services/filmService';
+import { getWatchlist, addToWatchlist, removeFromWatchlist } from '@/services/filmService';
 
 // GET all watchlist items for the user
 export async function GET(request: Request) {

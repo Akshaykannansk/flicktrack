@@ -1,7 +1,6 @@
 
 import type { Film, FilmDetails, PaginatedResponse, Video } from './types';
 import { IMAGE_BASE_URL } from './tmdb-isomorphic';
-import fetch from 'node-fetch';
 
 const API_BASE_URL = 'https://api.themoviedb.org/3';
 const API_KEY = process.env.TMDB_API_KEY;

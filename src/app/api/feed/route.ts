@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import { createServerComponentClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { getFollowingFeedForUser } from '../../../services/userService';
+import { getFollowingFeedForUser } from '@/services/userService';
 
 export const revalidate = 60; // Revalidate every 60 seconds
 
