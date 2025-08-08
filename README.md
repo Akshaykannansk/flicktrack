@@ -35,7 +35,7 @@ This project uses a Supabase-hosted PostgreSQL database with the Prisma ORM for 
     JWT_SECRET=your_super_secret_jwt_key
     ```
 
-3.  **Sync Database Schema**: With your `.env` file configured, run the following command to sync the Prisma schema with your Supabase database. This will create all the necessary tables.
+3.  **Sync Database Schema**: With your `.env` file configured, run the following command to sync the Prisma schema with your Supabase database. This will create all the necessary tables. **You must run this command any time the `prisma/schema.prisma` file is changed.**
 
     ```bash
     npx prisma db push
