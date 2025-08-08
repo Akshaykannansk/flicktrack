@@ -7,7 +7,7 @@ import { getWatchlist, addToWatchlist, removeFromWatchlist } from '@/services/fi
 
 // GET all watchlist items for the user
 export async function GET(request: Request) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -46,7 +46,7 @@ const watchlistActionSchema = z.object({
 
 // POST a new film to the watchlist
 export async function POST(request: Request) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -94,7 +94,7 @@ export async function POST(request: Request) {
 
 // DELETE a film from the watchlist
 export async function DELETE(request: Request) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

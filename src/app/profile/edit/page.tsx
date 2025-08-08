@@ -44,7 +44,7 @@ async function getEditProfileData(userId: string) {
 
 
 export default async function EditProfilePage() {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const supabase = createServerClient({
       cookies: {
         get(name: string) {
