@@ -6,7 +6,8 @@ import type { Film, PublicUser } from '@/lib/types';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Card } from '@/components/ui/card';
-import { createClient } from '@/lib/supabase/server';
+import { getSession } from '@/lib/auth';
+import { cookies } from 'next/headers';
 import prisma from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic'; // Ensure the page is re-rendered for each search
@@ -64,8 +65,8 @@ async function searchUsers(query: string): Promise<PublicUser[]> {
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
     const query = searchParams.q || '';
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const session = await getSession({ cookies: cookies() });
+    const user = session?.user;
     
     let films: Film[] = [];
     let users: PublicUser[] = [];

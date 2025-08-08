@@ -10,11 +10,12 @@ import {
 } from '@/components/ui/card';
 import prisma from '@/lib/prisma';
 import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
+import { getSession } from '@/lib/auth';
+import { cookies } from 'next/headers';
 
 export default async function RecommendationsPage() {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const session = await getSession({ cookies: cookies() });
+  const user = session?.user;
   if (!user) {
     redirect('/login');
   }

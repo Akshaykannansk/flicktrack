@@ -1,15 +1,16 @@
 
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { createClient } from '@/lib/supabase/server';
+import { getSession } from '@/lib/auth';
+import { cookies } from 'next/headers';
 
 // POST to like a review
 export async function POST(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const session = await getSession({ cookies: cookies() });
+  const user = session?.user;
 
   if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });
@@ -53,8 +54,8 @@ export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const session = await getSession({ cookies: cookies() });
+  const user = session?.user;
   if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });
   }

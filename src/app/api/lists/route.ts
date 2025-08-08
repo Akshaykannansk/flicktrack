@@ -2,7 +2,8 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { z } from 'zod';
-import { createClient } from '@/lib/supabase/server';
+import { getSession } from '@/lib/auth';
+import { cookies } from 'next/headers';
 
 const listSchema = z.object({
   name: z.string().min(1, 'List name is required.'),
@@ -12,8 +13,8 @@ const listSchema = z.object({
 
 // GET all lists for the user
 export async function GET(request: Request) {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const session = await getSession({ cookies: cookies() });
+  const user = session?.user;
   if (!user) {
       return new NextResponse('Unauthorized', { status: 401 });
   }
@@ -62,8 +63,8 @@ export async function GET(request: Request) {
 
 // POST (create) a new list
 export async function POST(request: Request) {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const session = await getSession({ cookies: cookies() });
+  const user = session?.user;
   if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });
   }

@@ -1,9 +1,3 @@
 
-import { createBrowserClient } from '@supabase/ssr'
-
-export function createClient() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-}
+// This file is intentionally left blank.
+// The application no longer uses a client-side Supabase client for authentication.

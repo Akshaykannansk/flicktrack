@@ -9,7 +9,8 @@ import { CardDescription } from './ui/card';
 import { LikeReviewButton } from './like-review-button';
 import prisma from '@/lib/prisma';
 import { Comments } from './comments';
-import { createClient } from '@/lib/supabase/server';
+import { getSession } from '@/lib/auth';
+import { cookies } from 'next/headers';
 
 interface TrendingReviewEntry {
   id: string;
@@ -56,8 +57,8 @@ async function getTrendingReviews(userId?: string): Promise<TrendingReviewEntry[
 }
 
 export async function TrendingReviews() {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const session = await getSession({ cookies: cookies() });
+  const user = session?.user;
   const reviews = await getTrendingReviews(user?.id);
   
   if (reviews.length === 0) {

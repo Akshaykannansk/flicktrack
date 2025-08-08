@@ -7,7 +7,8 @@ import { IMAGE_BASE_URL } from '@/lib/tmdb-isomorphic';
 import type { Film, PublicUser } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from './ui/button';
-import { createClient } from '@/lib/supabase/server';
+import { getSession } from '@/lib/auth';
+import { cookies } from 'next/headers';
 import prisma from '@/lib/prisma';
 import { LikeReviewButton } from './like-review-button';
 import { Comments } from './comments';
@@ -89,8 +90,8 @@ async function getFeed(userId: string | null): Promise<FeedEntry[]> {
 
 
 export async function FollowingFeed() {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const session = await getSession({ cookies: cookies() });
+  const user = session?.user;
   const feed = await getFeed(user?.id ?? null);
   
   if (feed.length === 0) {
