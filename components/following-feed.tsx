@@ -54,7 +54,7 @@ export const FeedSkeleton = () => (
 )
 
 export async function FollowingFeed() {
-  const cookieStore = cookies();
+  const cookieStore =await cookies();
   const supabase = createServerComponentClient({ cookies: () => cookieStore });
   const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
