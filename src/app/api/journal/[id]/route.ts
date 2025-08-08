@@ -43,11 +43,11 @@ export async function PUT(
         get(name: string) {
           return cookieStore.get(name)?.value
         },
-        async set(name: string, value: string, options: CookieOptions) {
-          await cookieStore.set({ name, value, ...options })
+        set(name: string, value: string, options: CookieOptions) {
+          cookieStore.set({ name, value, ...options })
         },
-        async remove(name: string, options: CookieOptions) {
-          await cookieStore.set({ name, value: '', ...options })
+        remove(name: string, options: CookieOptions) {
+          cookieStore.set({ name, value: '', ...options })
         },
       } 
     }
@@ -89,11 +89,11 @@ export async function DELETE(
         get(name: string) {
           return cookieStore.get(name)?.value
         },
-        async set(name: string, value: string, options: CookieOptions) {
-          await cookieStore.set({ name, value, ...options })
+        set(name: string, value: string, options: CookieOptions) {
+          cookieStore.set({ name, value, ...options })
         },
-        async remove(name: string, options: CookieOptions) {
-          await cookieStore.set({ name, value: '', ...options })
+        remove(name: string, options: CookieOptions) {
+          cookieStore.set({ name, value: '', ...options })
         },
       } 
     }
