@@ -9,7 +9,8 @@ import React from 'react';
 import { FilmCarouselSkeleton } from '@/components/film-carousel-skeleton';
 import { FeedSkeleton } from '@/components/following-feed';
 import { TrendingReviews } from '@/components/trending-reviews';
-import { getSession } from '@/lib/auth';
+import { createServerComponentClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
 async function getUserFilmSets(userId: string | null) {
     if (!userId) {
@@ -29,7 +30,9 @@ async function getUserFilmSets(userId: string | null) {
 
 
 export default async function HomePage() {
-  const session = await getSession();
+  const cookieStore = cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
   
   // Pre-fetch the first page of each category and user-specific data in parallel

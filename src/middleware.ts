@@ -1,8 +1,64 @@
 
-import { NextResponse, type NextRequest } from 'next/server';
-import { decrypt } from '@/lib/auth';
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
 
-const protectedRoutes = [
+export async function middleware(request: NextRequest) {
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  })
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          request.cookies.set({
+            name,
+            value,
+            ...options,
+          })
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          })
+          response.cookies.set({
+            name,
+            value,
+            ...options,
+          })
+        },
+        remove(name: string, options: CookieOptions) {
+          request.cookies.set({
+            name,
+            value: '',
+            ...options,
+          })
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          })
+          response.cookies.set({
+            name,
+            value: '',
+            ...options,
+          })
+        },
+      },
+    }
+  )
+  
+  const { data: { session } } = await supabase.auth.getSession();
+  const { pathname } = request.nextUrl;
+  
+  const protectedRoutes = [
     '/profile', 
     '/journal', 
     '/lists', 
@@ -10,36 +66,21 @@ const protectedRoutes = [
     '/likes', 
     '/recommendations',
     '/profile/edit'
-];
-
-const publicRoutes = ['/login', '/signup'];
-
-export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-  const sessionCookie = request.cookies.get('session')?.value;
+  ];
+  const publicRoutes = ['/login', '/signup'];
 
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
   const isPublicRoute = publicRoutes.includes(pathname);
 
-  if (!sessionCookie && isProtectedRoute) {
+  if (!session && isProtectedRoute) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
   
-  if (sessionCookie) {
-    const session = await decrypt(sessionCookie);
-    if (!session && isProtectedRoute) {
-        // Invalid session, clear cookie and redirect
-        const response = NextResponse.redirect(new URL('/login', request.url));
-        response.cookies.set('session', '', { expires: new Date(0) });
-        return response;
-    }
-
-    if (session && isPublicRoute) {
-        return NextResponse.redirect(new URL('/profile', request.url));
-    }
+  if (session && isPublicRoute) {
+    return NextResponse.redirect(new URL('/', request.url));
   }
-  
-  return NextResponse.next();
+
+  return response
 }
 
 export const config = {

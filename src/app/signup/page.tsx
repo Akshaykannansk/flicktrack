@@ -8,37 +8,55 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import { Film } from 'lucide-react';
+import { Film, Loader2 } from 'lucide-react';
+import { createClientComponentClient } from '@supabase/ssr';
 
 export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const supabase = createClientComponentClient();
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, fullName, username }),
+    setIsLoading(true);
+
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+          username: username,
+        },
+      },
     });
 
-    if (res.ok) {
-        toast({
-            title: 'Sign Up Successful',
-            description: "You can now log in with your credentials.",
-        });
-        router.push('/login');
-    } else {
-        const data = await res.json();
+    if (error) {
         toast({
             variant: 'destructive',
             title: 'Sign Up Failed',
-            description: data.error || 'An unknown error occurred.',
+            description: error.message,
         });
+        setIsLoading(false);
+    } else {
+        // Also update the corresponding user in our public users table via API route
+        // This is a workaround because Supabase Edge Functions for DB hooks aren't simple to set up
+        await fetch('/api/auth/signup-db', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, fullName, username })
+        });
+
+        toast({
+            title: 'Sign Up Successful',
+            description: "Check your email to confirm your account, then you can log in.",
+        });
+        router.push('/login');
     }
   };
 
@@ -60,6 +78,7 @@ export default function SignupPage() {
                 onChange={(e) => setFullName(e.target.value)}
                 required
                 placeholder="John Doe"
+                disabled={isLoading}
                 />
             </div>
              <div>
@@ -71,6 +90,7 @@ export default function SignupPage() {
                 onChange={(e) => setUsername(e.target.value)}
                 required
                 placeholder="johndoe"
+                disabled={isLoading}
                 />
             </div>
             <div>
@@ -82,6 +102,7 @@ export default function SignupPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 placeholder="you@example.com"
+                disabled={isLoading}
                 />
             </div>
             <div>
@@ -93,9 +114,13 @@ export default function SignupPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 placeholder="••••••••"
+                minLength={6}
+                disabled={isLoading}
                 />
             </div>
-            <Button type="submit" className="w-full">Create Account</Button>
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? <Loader2 className="animate-spin" /> : 'Create Account'}
+            </Button>
             </form>
              <p className="text-center text-sm text-muted-foreground">
                 Already have an account?{' '}

@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { Film, Loader2 } from 'lucide-react';
+import { createClientComponentClient } from '@supabase/ssr';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -16,32 +17,33 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const supabase = createClientComponentClient();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+    
+    const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
     });
 
-    if (res.ok) {
+    if (error) {
+        toast({
+            variant: 'destructive',
+            title: 'Login Failed',
+            description: error.message,
+        });
+        setIsLoading(false);
+    } else {
         toast({
             title: 'Login Successful',
             description: "Welcome back!",
         });
-        // Refresh the page to update server-side session data before navigating
+        // The onAuthStateChange listener in the header will handle the redirect.
+        // We just need to refresh the router to make sure server components get the new session.
         router.refresh();
         router.push('/');
-    } else {
-        const data = await res.json();
-        toast({
-            variant: 'destructive',
-            title: 'Login Failed',
-            description: data.error || 'An unknown error occurred.',
-        });
-        setIsLoading(false);
     }
   };
 

@@ -16,6 +16,8 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { createClientComponentClient } from '@supabase/ssr';
+import type { User } from '@supabase/supabase-js';
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -31,38 +33,11 @@ interface Suggestions {
     users: PublicUser[];
 }
 
-function parseJwt(token: string) {
-    try {
-        return JSON.parse(atob(token.split('.')[1]));
-    } catch (e) {
-        return null;
-    }
-}
-
-function getSessionFromCookie() {
-    if (typeof window === 'undefined') return null;
-    const cookie = document.cookie.split('; ').find(row => row.startsWith('session='));
-    if (!cookie) return null;
-    
-    const sessionToken = cookie.split('=')[1];
-    if (!sessionToken) return null;
-
-    try {
-        const decoded = parseJwt(sessionToken);
-        if (decoded && decoded.exp * 1000 > Date.now()) {
-            return decoded.user;
-        }
-        return null;
-    } catch (e) {
-        console.error("Failed to parse session cookie", e);
-        return null;
-    }
-}
 
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
-  const [user, setUser] = React.useState<PublicUser | null>(null);
+  const [user, setUser] = React.useState<User | null>(null);
   const [query, setQuery] = React.useState('');
   const [suggestions, setSuggestions] = React.useState<Suggestions>({ films: [], users: [] });
   const [isLoading, setIsLoading] = React.useState(false);
@@ -70,13 +45,28 @@ export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const searchContainerRef = React.useRef<HTMLDivElement>(null);
   
-  const [isClient, setIsClient] = React.useState(false);
+  const supabase = createClientComponentClient();
 
   React.useEffect(() => {
-    setIsClient(true);
-    setUser(getSessionFromCookie());
-  }, [pathname]);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        setUser(session?.user ?? null);
+        // Refresh the page on sign in/out to trigger server component rerenders
+        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+            router.refresh();
+        }
+    });
+    
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session }}) => {
+        setUser(session?.user ?? null);
+    });
 
+    return () => {
+        subscription.unsubscribe();
+    };
+  }, [supabase.auth, router]);
+  
+  
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
         if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
@@ -125,10 +115,8 @@ export default function Header() {
   };
   
   const handleSignOut = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    setUser(null);
+    await supabase.auth.signOut();
     router.push('/');
-    router.refresh();
   }
 
   const MobileNav = () => (
@@ -159,17 +147,6 @@ export default function Header() {
         </SheetContent>
     </Sheet>
   );
-
-  if (!isClient) {
-      return (
-        <header className="bg-background/80 backdrop-blur-sm sticky top-0 z-50 border-b border-border">
-          <div className="container mx-auto px-4">
-            <div className="flex items-center justify-between h-16" />
-          </div>
-        </header>
-      );
-  }
-
 
   return (
     <header className="bg-background/80 backdrop-blur-sm sticky top-0 z-50 border-b border-border">
@@ -283,7 +260,7 @@ export default function Header() {
                 <>
                 <Link href="/profile">
                   <Image 
-                    src={user.imageUrl || 'https://placehold.co/32x32.png'} 
+                    src={user.user_metadata.image_url || user.user_metadata.avatar_url || 'https://placehold.co/32x32.png'} 
                     alt={'User profile'}
                     width={32}
                     height={32}
