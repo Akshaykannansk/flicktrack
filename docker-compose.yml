@@ -1,6 +1,7 @@
 
 services:
   app:
+    container_name: flicktrack-app
     build:
       context: .
       dockerfile: Dockerfile
@@ -26,6 +27,7 @@ services:
       - .env
 
   cache:
+    container_name: flicktrack-cache
     image: redis:7
     restart: always
     ports:
