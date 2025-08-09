@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -7,6 +6,7 @@ import { MessageSquare, Loader2 } from 'lucide-react';
 import { CommentForm } from './comment-form';
 import { CommentList } from './comment-list';
 import type { CommentWithUser } from '@/lib/types';
+import { createClient } from '@/lib/supabase/client';
 
 interface CommentsProps {
   journalEntryId: string;
@@ -21,8 +21,12 @@ export function Comments({ journalEntryId, initialCommentCount }: CommentsProps)
   const [isSignedIn, setIsSignedIn] = useState(false);
 
   useEffect(() => {
-    const sessionCookie = document.cookie.split('; ').find(row => row.startsWith('session='));
-    setIsSignedIn(!!sessionCookie);
+    const supabase = createClient();
+    const checkSession = async () => {
+        const { data } = await supabase.auth.getSession();
+        setIsSignedIn(!!data.session);
+    }
+    checkSession();
   }, []);
 
 

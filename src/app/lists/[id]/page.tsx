@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -24,6 +23,8 @@ import {
 import { LikeListButton } from '@/components/like-list-button';
 import { CopyListButton } from '@/components/copy-list-button';
 import { EditListDialog } from '@/components/edit-list-dialog';
+import { createClient } from '@/lib/supabase/client';
+import type { User } from '@supabase/supabase-js';
 
 
 interface UserFilmSets {
@@ -40,25 +41,17 @@ export default function ListDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [user, setUser] = useState<PublicUser | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const { toast } = useToast();
   const router = useRouter();
 
   useEffect(() => {
-    // A simple client-side way to get the user from the cookie
-    // In a real app, you might have a dedicated session endpoint or a more robust solution
-    const sessionCookie = document.cookie.split('; ').find(row => row.startsWith('session='));
-    if (sessionCookie) {
-      // This is a simplified parse, not verifying the JWT on the client
-      // The user object is stored in the JWT payload
-      try {
-        const session = JSON.parse(atob(sessionCookie.split('.')[1]));
-        setUser(session.user);
-      } catch (e) {
-        console.error("Failed to parse session cookie", e);
-        setUser(null);
-      }
+    const supabase = createClient();
+    const getUser = async () => {
+        const { data } = await supabase.auth.getUser();
+        setUser(data.user);
     }
+    getUser();
   }, []);
 
   const fetchListData = async () => {

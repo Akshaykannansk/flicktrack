@@ -37,8 +37,7 @@ export function TrendingReviews() {
   useEffect(() => {
     const supabase = createClient();
     const fetchUserAndReviews = async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        const authUser = session?.user;
+        const { data: { user: authUser } } = await supabase.auth.getUser();
         setUser(authUser ?? null);
         
         try {

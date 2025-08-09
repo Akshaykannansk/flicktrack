@@ -1,13 +1,14 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { CommentWithUser, PublicUser } from '@/lib/types';
+import type { CommentWithUser } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from './ui/button';
 import { Trash2, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import { createClient } from '@/lib/supabase/client';
+import type { User } from '@supabase/supabase-js';
 
 interface CommentListProps {
   comments: CommentWithUser[];
@@ -15,21 +16,17 @@ interface CommentListProps {
 }
 
 export function CommentList({ comments, onCommentDeleted }: CommentListProps) {
-    const [user, setUser] = useState<PublicUser | null>(null);
+    const [user, setUser] = useState<User | null>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const { toast } = useToast();
 
     useEffect(() => {
-        const sessionCookie = document.cookie.split('; ').find(row => row.startsWith('session='));
-        if (sessionCookie) {
-          try {
-            const session = JSON.parse(atob(sessionCookie.split('.')[1]));
-            setUser(session.user);
-          } catch (e) {
-            console.error("Failed to parse session cookie", e);
-            setUser(null);
-          }
+        const supabase = createClient();
+        const getUser = async () => {
+            const { data } = await supabase.auth.getUser();
+            setUser(data.user);
         }
+        getUser();
     }, []);
 
     const handleDelete = async (commentId: string) => {

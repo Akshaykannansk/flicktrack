@@ -63,8 +63,7 @@ export function FollowingFeed() {
   useEffect(() => {
     const supabase = createClient();
     const fetchUserAndFeed = async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        const authUser = session?.user;
+        const { data: { user: authUser } } = await supabase.auth.getUser();
         setUser(authUser ?? null);
         
         if (authUser) {
