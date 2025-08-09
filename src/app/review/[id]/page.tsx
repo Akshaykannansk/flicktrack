@@ -138,7 +138,7 @@ export default function ReviewPage() {
                 <h1 className="text-3xl font-headline font-bold">{review.film.title}</h1>
             </Link>
              <p className="text-lg text-muted-foreground mt-1">
-                A film by {review.film.release_date?.substring(0,4)}
+                {review.film.release_date?.substring(0,4)}
             </p>
             <div className="flex items-center gap-4 mt-4 text-sm">
                 <Link href={`/profile/${review.user.id}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
@@ -160,7 +160,7 @@ export default function ReviewPage() {
       </div>
       
        {review.review && (
-        <blockquote className="text-2xl text-foreground/90 leading-relaxed">
+        <blockquote className="text-xl text-foreground/90 leading-relaxed">
             <p>{review.review}</p>
         </blockquote>
       )}

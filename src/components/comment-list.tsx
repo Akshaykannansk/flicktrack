@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -95,7 +96,7 @@ export function CommentList({ comments, onCommentDeleted }: CommentListProps) {
                      </Button>
                  )}
             </div>
-            <p className="text-sm text-primary-foreground/90">{comment.content}</p>
+            <p className="text-sm text-foreground/90">{comment.content}</p>
           </div>
         </div>
       ))}
