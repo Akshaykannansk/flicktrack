@@ -102,13 +102,11 @@ export async function getNowPlayingMovies(page = 1, limit = 8): Promise<Film[] |
 }
 
 export async function getFilmDetails(id: string): Promise<FilmDetails | null> {
-    const data = await fetchFromTMDB<any>(`movie/${id}`, { append_to_response: 'credits,videos' });
+    const data = await fetchFromTMDB<any>(`movie/${id}`, { append_to_response: 'credits' });
     
     if (!data) {
         return null;
     }
-
-    const mainTrailer = data.videos?.results?.find((v: Video) => v.site === 'YouTube' && v.type === 'Trailer');
     
     const filmDetails: FilmDetails = {
         id: data.id.toString(),
@@ -120,9 +118,7 @@ export async function getFilmDetails(id: string): Promise<FilmDetails | null> {
         vote_average: data.vote_average,
         genres: data.genres || [],
         runtime: data.runtime,
-        cast: data.credits?.cast?.slice(0, 10) || [],
         director: data.credits?.crew?.find((person: any) => person.job === 'Director'),
-        trailer: mainTrailer || null,
     };
     
     return filmDetails;

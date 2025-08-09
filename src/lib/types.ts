@@ -57,9 +57,7 @@ export interface FilmDetails {
   vote_average: number;
   genres: Genre[];
   runtime: number;
-  cast: CastMember[];
   director?: CrewMember;
-  trailer: Video | null;
 }
 
 interface FilmOnList {
