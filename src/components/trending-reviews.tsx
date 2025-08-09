@@ -66,31 +66,31 @@ export async function TrendingReviews() {
       {reviews.map((entry) => {
           const posterUrl = entry.film.poster_path ? `${IMAGE_BASE_URL}w500${entry.film.poster_path}` : 'https://placehold.co/400x600.png';
           return (
-             <Link key={entry.id} href={`/review/${entry.id}`} className="block hover:bg-secondary/80 transition-colors rounded-lg">
-                <Card className="bg-secondary/50 border-0 overflow-hidden">
-                    <CardHeader>
-                        <div className="flex items-center gap-3">
-                            <Link href={`/profile/${entry.user.id}`}>
-                                <Image src={entry.user.imageUrl || 'https://placehold.co/40x40.png'} alt={entry.user.name || 'avatar'} width={40} height={40} className="rounded-full" />
-                            </Link>
-                            <div>
-                                <p className="text-sm font-semibold text-foreground">
-                                    <Link href={`/profile/${entry.user.id}`} className="hover:text-primary transition-colors">{entry.user.name}</Link>
-                                </p>
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                    <div className="flex items-center">
-                                        {[...Array(Math.floor(entry.rating))].map((_, i) => <Star key={`full-${i}`} className="w-3 h-3 text-accent fill-accent" />)}
-                                        {entry.rating % 1 !== 0 && <Star key='half' className="w-3 h-3 text-accent fill-accent" style={{ clipPath: 'inset(0 50% 0 0)' }} />}
-                                        {[...Array(5-Math.ceil(entry.rating))].map((_, i) => <Star key={`empty-${i}`} className="w-3 h-3 text-accent" />)}
-                                    </div>
-                                    <span>•</span>
-                                    <p>
-                                        Reviewed on {new Date(entry.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
-                                    </p>
+            <Card key={entry.id} className="bg-secondary/50 border-0 overflow-hidden hover:bg-secondary/80 transition-colors">
+                <CardHeader>
+                    <div className="flex items-center gap-3">
+                        <Link href={`/profile/${entry.user.id}`}>
+                            <Image src={entry.user.imageUrl || 'https://placehold.co/40x40.png'} alt={entry.user.name || 'avatar'} width={40} height={40} className="rounded-full" />
+                        </Link>
+                        <div>
+                            <p className="text-sm font-semibold text-foreground">
+                                <Link href={`/profile/${entry.user.id}`} className="hover:text-primary transition-colors">{entry.user.name}</Link>
+                            </p>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <div className="flex items-center">
+                                    {[...Array(Math.floor(entry.rating))].map((_, i) => <Star key={`full-${i}`} className="w-3 h-3 text-accent fill-accent" />)}
+                                    {entry.rating % 1 !== 0 && <Star key='half' className="w-3 h-3 text-accent fill-accent" style={{ clipPath: 'inset(0 50% 0 0)' }} />}
+                                    {[...Array(5-Math.ceil(entry.rating))].map((_, i) => <Star key={`empty-${i}`} className="w-3 h-3 text-accent" />)}
                                 </div>
+                                <span>•</span>
+                                <p>
+                                    Reviewed on {new Date(entry.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+                                </p>
                             </div>
                         </div>
-                    </CardHeader>
+                    </div>
+                </CardHeader>
+                <Link href={`/review/${entry.id}`} className="block">
                     <CardContent className="space-y-4">
                         {entry.review && (
                             <blockquote className="text-lg text-foreground/90">
@@ -99,7 +99,6 @@ export async function TrendingReviews() {
                         )}
                         <div className="flex gap-4 items-center pt-2">
                             <div className="w-16 flex-shrink-0">
-                                <Link href={`/film/${entry.film.id}`}>
                                 <Image
                                 src={posterUrl}
                                 alt={`Poster for ${entry.film.title}`}
@@ -108,42 +107,39 @@ export async function TrendingReviews() {
                                 className="rounded-md object-cover w-full aspect-[2/3]"
                                 data-ai-hint={`${entry.film.title} poster`}
                                 />
-                                </Link>
                             </div>
                             <div className="flex-1">
-                                <Link href={`/film/${entry.film.id}`} className="hover:text-primary transition-colors">
-                                    <h3 className="font-headline text-lg font-semibold">{entry.film.title}</h3>
-                                </Link>
+                                <h3 className="font-headline text-lg font-semibold">{entry.film.title}</h3>
                                 <p className="text-sm text-muted-foreground">{entry.film.release_date ? String(entry.film.release_date).substring(0,4) : 'N/A'}</p>
                             </div>
                         </div>
                     </CardContent>
-                    {user && (
-                    <CardFooter>
-                            <div className="flex items-center gap-2">
-                                {entry.user.id !== user.id && (
-                                    <LikeReviewButton 
-                                        journalEntryId={entry.id}
-                                        initialIsLiked={!!entry.reviewLikes.length}
-                                        initialLikeCount={entry._count.reviewLikes}
-                                    />
-                                )}
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-muted-foreground hover:text-primary"
-                                    asChild
-                                >
-                                    <Link href={`/review/${entry.id}`}>
-                                        <MessageSquare className="mr-2 h-4 w-4" />
-                                        {entry._count.comments}
-                                     </Link>
-                                </Button>
-                            </div>
-                    </CardFooter>
-                    )}
-                </Card>
-             </Link>
+                </Link>
+                {user && (
+                <CardFooter>
+                        <div className="flex items-center gap-2">
+                            {entry.user.id !== user.id && (
+                                <LikeReviewButton 
+                                    journalEntryId={entry.id}
+                                    initialIsLiked={!!entry.reviewLikes.length}
+                                    initialLikeCount={entry._count.reviewLikes}
+                                />
+                            )}
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-muted-foreground hover:text-primary"
+                                asChild
+                            >
+                                <Link href={`/review/${entry.id}`}>
+                                    <MessageSquare className="mr-2 h-4 w-4" />
+                                    {entry._count.comments}
+                                 </Link>
+                            </Button>
+                        </div>
+                </CardFooter>
+                )}
+            </Card>
           )
       })}
     </div>
