@@ -35,6 +35,7 @@ model User {
   // For following system
   followers       Follows[]      @relation("Following")
   following       Follows[]      @relation("Follower")
+    socialLinks     Json?
 }
 
 model Follows {

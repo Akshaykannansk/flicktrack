@@ -3,7 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Settings, Film as FilmIcon, Star } from 'lucide-react';
+import { Settings, Film as FilmIcon, Star, Twitter, Instagram, Facebook } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { FilmCard } from '@/components/film-card';
 import type { Film as FilmType, PublicUser } from '@/lib/types';
@@ -25,6 +25,7 @@ async function getUserProfileData(userId: string) {
           username: true,
           imageUrl: true,
           bio: true,
+          socialLinks: true,
         _count: {
           select: {
             journalEntries: true,
@@ -57,6 +58,7 @@ async function getUserProfileData(userId: string) {
             username: dbUser.username,
             imageUrl: dbUser.imageUrl,
             bio: dbUser.bio,
+            socialLinks: dbUser.socialLinks,
         },
         stats: {
             journalCount: dbUser._count.journalEntries,
@@ -138,6 +140,8 @@ interface ProfilePageContentProps {
 export function ProfilePageContent({ user, stats, isCurrentUser, isFollowing }: ProfilePageContentProps) {
     const { journalCount, followersCount, followingCount, likesCount, favoriteFilms, recentJournalEntries, watchlistIds, likedIds } = stats;
 
+    const socials = user.socialLinks as { twitter?: string, instagram?: string, facebook?: string } ?? {};
+
     return (
         <div className="space-y-8">
             <div className="flex flex-col md:flex-row items-center gap-6">
@@ -163,7 +167,7 @@ export function ProfilePageContent({ user, stats, isCurrentUser, isFollowing }: 
                         <strong className="text-foreground font-semibold">{likesCount}</strong> Likes
                     </Link>
                 </div>
-                <div className="flex justify-center md:justify-start flex-wrap gap-2 mt-4">
+                <div className="flex justify-center md:justify-start items-center flex-wrap gap-2 mt-4">
                     {isCurrentUser ? (
                         <>
                             <Button variant="outline" asChild>
@@ -176,6 +180,11 @@ export function ProfilePageContent({ user, stats, isCurrentUser, isFollowing }: 
                     ) : (
                        <FollowButton userId={user.id} initialIsFollowing={isFollowing!} />
                     )}
+                    <div className="flex gap-1">
+                        {socials.twitter && <Button asChild variant="ghost" size="icon"><Link href={socials.twitter} target="_blank"><Twitter /></Link></Button>}
+                        {socials.instagram && <Button asChild variant="ghost" size="icon"><Link href={socials.instagram} target="_blank"><Instagram /></Link></Button>}
+                        {socials.facebook && <Button asChild variant="ghost" size="icon"><Link href={socials.facebook} target="_blank"><Facebook /></Link></Button>}
+                    </div>
                 </div>
                 </div>
             </div>

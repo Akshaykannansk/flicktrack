@@ -16,6 +16,8 @@ async function getEditProfileData(userId: string) {
             name: true,
             username: true,
             bio: true,
+            imageUrl: true,
+            socialLinks: true,
             favoriteFilms: {
                 orderBy: { addedAt: 'asc' },
                 include: { film: true }
@@ -36,7 +38,9 @@ async function getEditProfileData(userId: string) {
     const profile = {
         name: userProfile.name ?? '',
         username: userProfile.username ?? '',
-        bio: userProfile.bio ?? ''
+        bio: userProfile.bio ?? '',
+        imageUrl: userProfile.imageUrl ?? '',
+        socialLinks: userProfile.socialLinks as { twitter?: string, instagram?: string, facebook?: string } ?? {},
     }
 
     return { profile, initialFavorites };

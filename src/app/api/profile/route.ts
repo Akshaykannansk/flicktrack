@@ -1,4 +1,6 @@
 
+'use server';
+
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
@@ -9,6 +11,12 @@ const updateProfileSchema = z.object({
   name: z.string().min(1, 'Name is required.'),
   username: z.string().min(1, 'Username is required.'),
   bio: z.string().max(160, 'Bio is too long').optional(),
+  imageUrl: z.string().url().optional().or(z.literal('')),
+  socialLinks: z.object({
+      twitter: z.string().url().optional().or(z.literal('')),
+      instagram: z.string().url().optional().or(z.literal('')),
+      facebook: z.string().url().optional().or(z.literal('')),
+  }).optional(),
 });
 
 
@@ -48,9 +56,9 @@ export async function PUT(
       return NextResponse.json({ error: validation.error.formErrors }, { status: 400 });
     }
 
-    const { name, username, bio } = validation.data;
+    const { name, username, bio, imageUrl, socialLinks } = validation.data;
     
-    const updatedDbUser = await updateUserProfile(user.id, { name, username, bio });
+    const updatedDbUser = await updateUserProfile(user.id, { name, username, bio, imageUrl, socialLinks });
 
     return NextResponse.json(updatedDbUser);
   } catch (error) {

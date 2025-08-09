@@ -1,6 +1,7 @@
 
 import prisma from "@/lib/prisma";
 import type { Film } from "@/lib/types";
+import { Prisma } from "@prisma/client";
 
 export async function getUserProfile<T extends (keyof (typeof prisma.user.fields))[]>(userId: string, fields: T) {
     const select = fields.reduce((obj, field) => ({ ...obj, [field]: true }), {});
@@ -10,7 +11,7 @@ export async function getUserProfile<T extends (keyof (typeof prisma.user.fields
     });
 }
 
-export async function updateUserProfile(userId: string, data: { name: string, username: string, bio?: string }) {
+export async function updateUserProfile(userId: string, data: { name: string, username: string, bio?: string | null, imageUrl?: string | null, socialLinks?: Prisma.JsonValue }) {
     return prisma.user.update({
         where: { id: userId },
         data,
@@ -102,6 +103,7 @@ export async function getUserDataForProfile(userId: string, currentUserId?: stri
           username: true,
           imageUrl: true,
           bio: true,
+          socialLinks: true,
         _count: {
           select: {
             journalEntries: true,
@@ -141,6 +143,7 @@ export async function getUserDataForProfile(userId: string, currentUserId?: stri
             username: dbUser.username,
             imageUrl: dbUser.imageUrl,
             bio: dbUser.bio,
+            socialLinks: dbUser.socialLinks,
         },
         stats: {
             journalCount: dbUser._count.journalEntries,
@@ -155,7 +158,7 @@ export async function getUserDataForProfile(userId: string, currentUserId?: stri
                 film: { ...entry.film, id: entry.film.id.toString() },
                 rating: entry.rating,
                 review: entry.review || undefined,
-                loggedDate: entry.logged_date
+                loggedDate: entry.logged_date.toISOString()
             })) || []
         },
         isFollowing,

@@ -1,5 +1,7 @@
 
 
+import { Prisma } from '@prisma/client';
+
 export interface PaginatedResponse<T> {
   page: number;
   results: T[];
@@ -115,6 +117,7 @@ export interface PublicUser {
     username: string | null;
     imageUrl: string | null;
     bio?: string | null;
+    socialLinks?: Prisma.JsonValue;
 }
 
 export interface SearchResults {

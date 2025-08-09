@@ -23,6 +23,12 @@ const profileSchema = z.object({
   name: z.string().min(1, 'Name is required.'),
   username: z.string().min(1, 'Username is required.'),
   bio: z.string().max(160, 'Bio must be 160 characters or less.').optional(),
+  imageUrl: z.string().url('Please enter a valid URL.').optional().or(z.literal('')),
+  socialLinks: z.object({
+      twitter: z.string().url().optional().or(z.literal('')),
+      instagram: z.string().url().optional().or(z.literal('')),
+      facebook: z.string().url().optional().or(z.literal('')),
+  }).optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -37,7 +43,14 @@ export function EditProfileForm({ initialData }: EditProfileFormProps) {
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
-    defaultValues: initialData,
+    defaultValues: {
+        ...initialData,
+        socialLinks: {
+            twitter: initialData.socialLinks?.twitter || '',
+            instagram: initialData.socialLinks?.instagram || '',
+            facebook: initialData.socialLinks?.facebook || '',
+        }
+    },
   });
 
   async function onSubmit(data: ProfileFormValues) {
@@ -106,6 +119,58 @@ export function EditProfileForm({ initialData }: EditProfileFormProps) {
                     className="resize-y"
                     {...field}
                     />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+        <FormField
+            control={form.control}
+            name="imageUrl"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Profile Picture URL</FormLabel>
+                <FormControl>
+                    <Input placeholder="https://..." {...field} />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+        <FormField
+            control={form.control}
+            name="socialLinks.twitter"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Twitter URL</FormLabel>
+                <FormControl>
+                    <Input placeholder="https://twitter.com/username" {...field} />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+        <FormField
+            control={form.control}
+            name="socialLinks.instagram"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Instagram URL</FormLabel>
+                <FormControl>
+                    <Input placeholder="https://instagram.com/username" {...field} />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+        <FormField
+            control={form.control}
+            name="socialLinks.facebook"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Facebook URL</FormLabel>
+                <FormControl>
+                    <Input placeholder="https://facebook.com/username" {...field} />
                 </FormControl>
                 <FormMessage />
                 </FormItem>
