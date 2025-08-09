@@ -16,6 +16,9 @@ import type { FilmDetails } from '@/lib/types';
 import { getWatchlistStatusForFilm } from '@/services/filmService';
 import { Suspense } from 'react';
 import { CastList, CastListSkeleton } from '@/components/film-cast';
+import { RatingsDistributionChart } from '@/components/ratings-distribution-chart';
+import { getRatingsDistribution, getRecentReviewsForFilm } from '@/services/reviewService';
+import { FilmReviewsList } from '@/components/film-reviews-list';
 
 const CACHE_EXPIRATION_SECONDS = 60 * 60 * 24; // 24 hours
 
@@ -88,20 +91,25 @@ export default async function FilmDetailPage({ params }: { params: { id: string 
   const { data: { session } } = await supabase.auth.getSession();
   const authUser = session?.user;
 
-  const film = await getFilmDetails(id);
+  const filmId = parseInt(id, 10);
+  const [film, isAlreadyInWatchlist, ratingsDistribution, recentReviews] = await Promise.all([
+    getFilmDetails(id),
+    getWatchlistStatusForFilm(id, authUser?.id ?? null),
+    getRatingsDistribution(filmId),
+    getRecentReviewsForFilm(filmId, authUser?.id),
+  ]);
+
 
   if (!film) {
     notFound();
   }
-
-  const isAlreadyInWatchlist = await getWatchlistStatusForFilm(id, authUser?.id ?? null);
 
   const posterUrl = film.poster_path ? `${IMAGE_BASE_URL}w500${film.poster_path}` : 'https://placehold.co/400x600.png';
   const year = film.release_date ? new Date(film.release_date).getFullYear() : 'N/A';
   const rating = film.vote_average ? film.vote_average / 2 : 0;
 
   return (
-    <div>
+    <div className="space-y-12">
       <div className="flex flex-col md:flex-row gap-8 lg:gap-12">
         <div className="w-full md:w-1/3 lg:w-1/4 flex-shrink-0">
           <div className="aspect-[2/3] relative rounded-lg overflow-hidden shadow-lg shadow-primary/10">
@@ -150,14 +158,22 @@ export default async function FilmDetailPage({ params }: { params: { id: string 
             <h2 className="text-2xl font-headline font-semibold">Plot Summary</h2>
             <p className="mt-2 text-muted-foreground leading-relaxed max-w-prose">{film.overview || 'No summary available.'}</p>
           </div>
-           <div>
-            <h2 className="text-2xl font-headline font-semibold">Cast</h2>
-            <Suspense fallback={<CastListSkeleton />}>
-                <CastList filmId={id} />
-            </Suspense>
-          </div>
         </div>
       </div>
+        <div>
+            <h2 className="text-2xl font-headline font-semibold">Ratings</h2>
+             <RatingsDistributionChart distribution={ratingsDistribution} />
+        </div>
+        <div>
+            <h2 className="text-2xl font-headline font-semibold">Recent Reviews</h2>
+            <FilmReviewsList reviews={recentReviews} currentUserId={authUser?.id} />
+        </div>
+        <div>
+          <h2 className="text-2xl font-headline font-semibold">Cast</h2>
+          <Suspense fallback={<CastListSkeleton />}>
+              <CastList filmId={id} />
+          </Suspense>
+        </div>
     </div>
   );
 }

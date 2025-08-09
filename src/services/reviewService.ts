@@ -40,6 +40,10 @@ export async function getJournalEntryWithDetails(id: string) {
         include: { 
             film: true,
             user: { select: { id: true, name: true, username: true, imageUrl: true } },
+            reviewLikes: true,
+            _count: {
+                select: { reviewLikes: true, comments: true }
+            }
         },
     });
 }
@@ -59,7 +63,7 @@ export async function deleteJournalEntry(id: string, userId: string) {
 }
 
 export async function getTrendingReviews(userId?: string) {
-    return prisma.journalEntry.findMany({
+    const reviews = await prisma.journalEntry.findMany({
         where: {
             review: { not: null, notIn: [''] }
         },
@@ -69,10 +73,18 @@ export async function getTrendingReviews(userId?: string) {
             reviewLikes: userId ? { where: { userId } } : false,
             _count: { select: { reviewLikes: true, comments: true } }
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { reviewLikes: { _count: 'desc' } },
         take: 10,
     });
+
+    // Sort by a combination of likes and recency
+    return reviews.sort((a, b) => {
+        const scoreA = a._count.reviewLikes * 2 + (new Date(a.createdAt).getTime() / (1000 * 60 * 60 * 24));
+        const scoreB = b._count.reviewLikes * 2 + (new Date(b.createdAt).getTime() / (1000 * 60 * 60 * 24));
+        return scoreB - scoreA;
+    });
 }
+
 
 export async function likeReview(userId: string, journalEntryId: string) {
     const journalEntry = await prisma.journalEntry.findUnique({
@@ -129,4 +141,50 @@ export async function deleteComment(id: string) {
     return prisma.comment.delete({
         where: { id },
     });
+}
+
+// FILM-SPECIFIC COMMUNITY DATA
+export async function getRatingsDistribution(filmId: number) {
+  const ratings = await prisma.journalEntry.groupBy({
+    by: ['rating'],
+    where: { filmId },
+    _count: {
+      rating: true,
+    },
+  });
+
+  // Convert to a map for easier lookup and ensure all ratings are present
+  const distributionMap = new Map<number, number>();
+  for (let i = 0.5; i <= 5; i += 0.5) {
+      distributionMap.set(i, 0);
+  }
+
+  ratings.forEach(item => {
+    distributionMap.set(item.rating, item._count.rating);
+  });
+  
+  // Convert map to array of objects for the chart
+  return Array.from(distributionMap.entries()).map(([rating, count]) => ({
+    name: `${rating} Stars`,
+    rating: rating,
+    count: count,
+  }));
+}
+
+export async function getRecentReviewsForFilm(filmId: number, currentUserId?: string) {
+    return prisma.journalEntry.findMany({
+        where: {
+            filmId,
+            review: { not: null, notIn: [''] },
+        },
+        include: {
+            user: { select: { id: true, name: true, username: true, imageUrl: true } },
+            reviewLikes: currentUserId ? { where: { userId: currentUserId } } : false,
+            _count: { select: { reviewLikes: true, comments: true } }
+        },
+        orderBy: {
+            logged_date: 'desc'
+        },
+        take: 10,
+    })
 }
