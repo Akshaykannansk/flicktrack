@@ -36,7 +36,18 @@ export async function upsertFilm(filmId: number) {
 export async function getWatchlist(userId: string) {
     return prisma.watchlistItem.findMany({
         where: { userId },
-        include: { film: true },
+        include: { 
+            film: {
+                select: {
+                    id: true,
+                    title: true,
+                    poster_path: true,
+                    release_date: true,
+                    vote_average: true,
+                    overview: true,
+                }
+            } 
+        },
         orderBy: { addedAt: 'desc' },
     });
 }
