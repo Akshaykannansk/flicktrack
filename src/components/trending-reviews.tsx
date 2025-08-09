@@ -114,7 +114,7 @@ export async function TrendingReviews() {
                                 <Link href={`/film/${entry.film.id}`} className="hover:text-primary transition-colors">
                                     <h3 className="font-headline text-lg font-semibold">{entry.film.title}</h3>
                                 </Link>
-                                <p className="text-sm text-muted-foreground">{entry.film.release_date?.substring(0,4)}</p>
+                                <p className="text-sm text-muted-foreground">{entry.film.release_date ? String(entry.film.release_date).substring(0,4) : 'N/A'}</p>
                             </div>
                         </div>
                     </CardContent>
