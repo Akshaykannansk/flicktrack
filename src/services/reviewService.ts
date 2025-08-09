@@ -34,6 +34,17 @@ export async function getJournalEntry(id: string) {
     });
 }
 
+export async function getJournalEntryWithDetails(id: string) {
+    return prisma.journalEntry.findUnique({
+        where: { id },
+        include: { 
+            film: true,
+            user: { select: { id: true, name: true, username: true, imageUrl: true } },
+        },
+    });
+}
+
+
 export async function updateJournalEntry(id: string, userId: string, data: { rating?: number, review?: string, loggedDate?: string }) {
     return prisma.journalEntry.update({
         where: { id, userId },

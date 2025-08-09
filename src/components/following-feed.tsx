@@ -1,5 +1,4 @@
 
-'use client';
 
 import Image from 'next/image';
 import Link from 'next/link';
@@ -10,10 +9,9 @@ import type { Film, PublicUser } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from './ui/button';
 import { LikeReviewButton } from './like-review-button';
-import { Comments } from './comments';
-import { useEffect, useState } from 'react';
-import type { User as AuthUser } from '@supabase/supabase-js';
-import { createClient } from '@/lib/supabase/client';
+import { createServerComponentClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { getFollowingFeedForUser } from '@/services/userService';
 
 interface FeedEntry {
   id: string;
@@ -55,38 +53,13 @@ export const FeedSkeleton = () => (
     </div>
 )
 
-export function FollowingFeed() {
-  const [feed, setFeed] = useState<FeedEntry[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [user, setUser] = useState<AuthUser | null>(null);
-  
-  useEffect(() => {
-    const supabase = createClient();
-    const fetchUserAndFeed = async () => {
-        const { data: { user: authUser } } = await supabase.auth.getUser();
-        setUser(authUser ?? null);
-        
-        if (authUser) {
-            try {
-                const response = await fetch('/api/feed');
-                if (response.ok) {
-                    const data = await response.json();
-                    setFeed(data);
-                } else {
-                    console.error("Failed to fetch feed");
-                }
-            } catch (error) {
-                 console.error("Error fetching feed:", error);
-            }
-        }
-        setIsLoading(false);
-    }
-    fetchUserAndFeed();
-  }, []);
-  
-  if (isLoading) {
-    return <FeedSkeleton />;
-  }
+export async function FollowingFeed() {
+  const cookieStore =await cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user;
+
+  const feed = await getFollowingFeedForUser(user?.id ?? null) as unknown as FeedEntry[];
   
   if (feed.length === 0) {
     return (
@@ -107,6 +80,7 @@ export function FollowingFeed() {
     <div className="space-y-6">
       {feed.map((entry) => {
           const posterUrl = entry.film.poster_path ? `${IMAGE_BASE_URL}w500${entry.film.poster_path}` : 'https://placehold.co/400x600.png';
+          const ReviewLink = entry.review ? Link : 'div';
           return (
             <Card key={entry.id} className="bg-secondary/50 border-0 overflow-hidden">
                 <CardHeader>
@@ -125,51 +99,56 @@ export function FollowingFeed() {
                          </div>
                     </div>
                 </CardHeader>
-                <CardContent className="flex gap-4">
-                     <div className="w-24 flex-shrink-0">
-                       <Link href={`/film/${entry.film.id}`}>
-                        <Image
-                          src={posterUrl}
-                          alt={`Poster for ${entry.film.title}`}
-                          width={200}
-                          height={300}
-                          className="rounded-md object-cover w-full aspect-[2/3]"
-                          data-ai-hint={`${entry.film.title} poster`}
-                        />
-                        </Link>
-                    </div>
-                    <div className="flex-1">
-                        <Link href={`/film/${entry.film.id}`} className="hover:text-primary transition-colors">
-                            <h3 className="font-headline text-xl font-semibold">{entry.film.title}</h3>
-                        </Link>
-                        <div className="flex items-center my-2">
-                            {[...Array(Math.floor(entry.rating))].map((_, i) => <Star key={`full-${i}`} className="w-4 h-4 text-accent fill-accent" />)}
-                            {entry.rating % 1 !== 0 && <Star key='half' className="w-4 h-4 text-accent fill-accent" style={{ clipPath: 'inset(0 50% 0 0)' }} />}
-                            {[...Array(5-Math.ceil(entry.rating))].map((_, i) => <Star key={`empty-${i}`} className="w-4 h-4 text-accent" />)}
-                        </div>
-                        {entry.review && (
-                             <blockquote className="mt-2 pl-4 border-l-2 border-border italic text-muted-foreground text-sm flex items-start gap-2">
-                                <MessageSquare className="w-4 h-4 mt-0.5 shrink-0" />
-                                <p>"{entry.review}"</p>
-                             </blockquote>
-                        )}
-                    </div>
-                </CardContent>
-                 {entry.review && user && (
-                   <CardFooter className="flex-col items-start gap-4">
-                        <div className="flex items-center gap-2">
-                            {entry.user.id !== user.id && (
-                                <LikeReviewButton 
-                                    journalEntryId={entry.id}
-                                    initialIsLiked={!!entry.reviewLikes.length}
-                                    initialLikeCount={entry._count.reviewLikes}
-                                />
-                            )}
-                             <Comments 
-                                journalEntryId={entry.id}
-                                initialCommentCount={entry._count.comments}
+                 <ReviewLink href={`/review/${entry.id}`} className="block hover:bg-secondary/80 transition-colors">
+                    <CardContent className="flex gap-4">
+                        <div className="w-24 flex-shrink-0">
+                        <Link href={`/film/${entry.film.id}`}>
+                            <Image
+                            src={posterUrl}
+                            alt={`Poster for ${entry.film.title}`}
+                            width={200}
+                            height={300}
+                            className="rounded-md object-cover w-full aspect-[2/3]"
+                            data-ai-hint={`${entry.film.title} poster`}
                             />
+                            </Link>
                         </div>
+                        <div className="flex-1">
+                            <Link href={`/film/${entry.film.id}`} className="hover:text-primary transition-colors">
+                                <h3 className="font-headline text-xl font-semibold">{entry.film.title}</h3>
+                            </Link>
+                            <div className="flex items-center my-2">
+                                {[...Array(Math.floor(entry.rating))].map((_, i) => <Star key={`full-${i}`} className="w-4 h-4 text-accent fill-accent" />)}
+                                {entry.rating % 1 !== 0 && <Star key='half' className="w-4 h-4 text-accent fill-accent" style={{ clipPath: 'inset(0 50% 0 0)' }} />}
+                                {[...Array(5-Math.ceil(entry.rating))].map((_, i) => <Star key={`empty-${i}`} className="w-4 h-4 text-accent" />)}
+                            </div>
+                            {entry.review && (
+                                <blockquote className="mt-2 pl-4 border-l-2 border-border italic text-muted-foreground text-sm">
+                                    <p>{entry.review}</p>
+                                </blockquote>
+                            )}
+                        </div>
+                    </CardContent>
+                 </ReviewLink>
+                 {entry.review && user && (
+                   <CardFooter className="flex items-center gap-2 pt-4">
+                        {entry.user.id !== user.id && (
+                            <LikeReviewButton 
+                                journalEntryId={entry.id}
+                                initialIsLiked={!!entry.reviewLikes.length}
+                                initialLikeCount={entry._count.reviewLikes}
+                            />
+                        )}
+                        <Link href={`/review/${entry.id}`}>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-muted-foreground hover:text-primary"
+                            >
+                                <MessageSquare className="mr-2 h-4 w-4" />
+                                {entry._count.comments}
+                            </Button>
+                        </Link>
                    </CardFooter>
                 )}
             </Card>
