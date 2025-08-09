@@ -60,7 +60,8 @@ async function getFilmDetails(id: string): Promise<FilmDetails | null> {
 
 
 export default async function FilmDetailPage({ params }: { params: { id: string } }) {
-  const filmId = parseInt(params.id, 10);
+  const { id } = params;
+  const filmId = parseInt(id, 10);
   if (isNaN(filmId)) {
     notFound();
   }
@@ -86,7 +87,7 @@ export default async function FilmDetailPage({ params }: { params: { id: string 
   const { data: { session } } = await supabase.auth.getSession();
   const authUser = session?.user;
 
-  const film = await getFilmDetails(params.id);
+  const film = await getFilmDetails(id);
 
   if (!film) {
     notFound();
