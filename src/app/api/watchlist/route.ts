@@ -33,7 +33,8 @@ export async function GET(request: Request) {
 
   try {
     const watchlistItems = await getWatchlist(user.id);
-    return NextResponse.json(watchlistItems.map(item => ({ film: {...item.film, id: item.film.id.toString() } })));
+    const responseData = watchlistItems.map(item => ({ film: {...item.film, id: item.film.id.toString() } }));
+    return NextResponse.json(responseData);
   } catch (error) {
     console.error('Failed to fetch watchlist:', error);
     return NextResponse.json({ error: 'Failed to fetch watchlist' }, { status: 500 });

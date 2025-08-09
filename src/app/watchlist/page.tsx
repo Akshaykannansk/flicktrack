@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -7,9 +8,10 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Film as FilmType } from '@/lib/types';
+import { Prisma } from '@prisma/client';
 
-interface WatchlistItem {
-  film: FilmType;
+type WatchlistItem = {
+  film: FilmType & { id: string }
 }
 
 interface UserFilmSets {
