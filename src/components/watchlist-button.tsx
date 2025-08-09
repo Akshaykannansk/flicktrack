@@ -7,7 +7,7 @@ import { Bookmark, Check, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface WatchlistButtonProps {
-  filmId: number;
+  filmId: string;
   initialIsInWatchlist: boolean;
 }
 
@@ -20,13 +20,23 @@ export function WatchlistButton({ filmId, initialIsInWatchlist }: WatchlistButto
     setIsLoading(true);
     const method = isInWatchlist ? 'DELETE' : 'POST';
     
+    const numericFilmId = parseInt(filmId, 10);
+    if (isNaN(numericFilmId)) {
+        toast({
+            variant: 'destructive',
+            title: 'Invalid Film ID',
+        });
+        setIsLoading(false);
+        return;
+    }
+    
     try {
       const response = await fetch('/api/watchlist', {
         method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ filmId }),
+        body: JSON.stringify({ filmId: numericFilmId }),
       });
 
       if (!response.ok) {

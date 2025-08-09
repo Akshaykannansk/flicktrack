@@ -63,9 +63,8 @@ async function getFilmDetails(id: string): Promise<FilmDetails | null> {
 
 export default async function FilmDetailPage({ params }: { params: { id: string } }) {
   const { id } = params;
-  const filmId = parseInt(id, 10);
-  if (isNaN(filmId)) {
-    notFound();
+  if (!id || isNaN(parseInt(id, 10))) {
+      notFound();
   }
   
   const cookieStore = await cookies();
@@ -95,7 +94,7 @@ export default async function FilmDetailPage({ params }: { params: { id: string 
     notFound();
   }
 
-  const isAlreadyInWatchlist = await getWatchlistStatusForFilm(filmId, authUser?.id ?? null);
+  const isAlreadyInWatchlist = await getWatchlistStatusForFilm(id, authUser?.id ?? null);
 
   const posterUrl = film.poster_path ? `${IMAGE_BASE_URL}w500${film.poster_path}` : 'https://placehold.co/400x600.png';
   const year = film.release_date ? new Date(film.release_date).getFullYear() : 'N/A';
@@ -144,7 +143,7 @@ export default async function FilmDetailPage({ params }: { params: { id: string 
                   <PlusCircle className="mr-2 h-5 w-5" /> Log Film
               </Button>
             </LogFilmDialog>
-            <WatchlistButton filmId={filmId} initialIsInWatchlist={isAlreadyInWatchlist} />
+            <WatchlistButton filmId={id} initialIsInWatchlist={isAlreadyInWatchlist} />
           </div>
           <Separator className="my-6 !mt-8" />
           <div>

@@ -54,10 +54,13 @@ export async function removeFromWatchlist(userId: string, filmId: number) {
     });
 }
 
-export async function getWatchlistStatusForFilm(filmId: number, userId: string | null) {
+export async function getWatchlistStatusForFilm(filmIdStr: string, userId: string | null) {
   if (!userId) {
     return false;
   }
+  const filmId = parseInt(filmIdStr, 10);
+  if (isNaN(filmId)) return false;
+
   const item = await prisma.watchlistItem.findUnique({
     where: { userId_filmId: { userId, filmId } },
   });
