@@ -8,7 +8,7 @@ import { IMAGE_BASE_URL } from '@/lib/tmdb-isomorphic';
 import type { Film, PublicUser } from '@/lib/types';
 import { CardDescription } from './ui/card';
 import { LikeReviewButton } from './like-review-button';
-import { createServerComponentClient } from '@supabase/ssr';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getTrendingReviews as fetchTrendingReviews } from '@/services/reviewService';
 import { FeedSkeleton } from './following-feed';
@@ -30,7 +30,22 @@ interface TrendingReviewEntry {
 
 export async function TrendingReviews() {
   const cookieStore =await cookies();
-  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+    cookies: {
+      get(name: string) {
+        return cookieStore.get(name)?.value
+      },
+      set(name: string, value: string, options: CookieOptions) {
+        cookieStore.set({ name, value, ...options })
+      },
+      remove(name: string, options: CookieOptions) {
+        cookieStore.set({ name, value: '', ...options })
+      },
+    },
+  });  
   const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
   

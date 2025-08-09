@@ -9,7 +9,7 @@ import type { Film, PublicUser } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from './ui/button';
 import { LikeReviewButton } from './like-review-button';
-import { createServerComponentClient } from '@supabase/ssr';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getFollowingFeedForUser } from '@/services/userService';
 
@@ -55,8 +55,23 @@ export const FeedSkeleton = () => (
 
 export async function FollowingFeed() {
   const cookieStore =await cookies();
-  const supabase = createServerComponentClient({ cookies: () => cookieStore });
-  const { data: { session } } = await supabase.auth.getSession();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+    cookies: {
+      get(name: string) {
+        return cookieStore.get(name)?.value
+      },
+      set(name: string, value: string, options: CookieOptions) {
+        cookieStore.set({ name, value, ...options })
+      },
+      remove(name: string, options: CookieOptions) {
+        cookieStore.set({ name, value: '', ...options })
+      },
+    },
+  });
+const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
 
   const feed = await getFollowingFeedForUser(user?.id ?? null) as unknown as FeedEntry[];
