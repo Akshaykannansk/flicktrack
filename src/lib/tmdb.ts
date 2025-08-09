@@ -1,5 +1,5 @@
 
-import type { Film, FilmDetails, PaginatedResponse, Video } from './types';
+import type { Film, FilmDetails, PaginatedResponse, Video, CastMember } from './types';
 import { IMAGE_BASE_URL } from './tmdb-isomorphic';
 import redis from '@/lib/redis';
 
@@ -126,6 +126,11 @@ export async function getFilmDetails(id: string): Promise<FilmDetails | null> {
     };
     
     return filmDetails;
+}
+
+export async function getFilmCredits(id: string): Promise<CastMember[] | null> {
+    const data = await fetchFromTMDB<{cast: CastMember[]}>(`movie/${id}/credits`);
+    return data?.cast.slice(0, 10) || null;
 }
 
 export async function searchFilms(query: string): Promise<Film[]> {

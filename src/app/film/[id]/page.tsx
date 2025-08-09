@@ -3,7 +3,7 @@ import { getFilmDetails as getFilmDetailsFromTMDB } from '@/lib/tmdb';
 import { IMAGE_BASE_URL } from '@/lib/tmdb-isomorphic';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
-import { Star, PlusCircle, Film as FilmIcon } from 'lucide-react';
+import { Star, PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -14,6 +14,8 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import type { FilmDetails } from '@/lib/types';
 import { getWatchlistStatusForFilm } from '@/services/filmService';
+import { Suspense } from 'react';
+import { CastList, CastListSkeleton } from '@/components/film-cast';
 
 const CACHE_EXPIRATION_SECONDS = 60 * 60 * 24; // 24 hours
 
@@ -151,31 +153,9 @@ export default async function FilmDetailPage({ params }: { params: { id: string 
           </div>
            <div>
             <h2 className="text-2xl font-headline font-semibold">Cast</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-2">
-              {film.cast.map((actor) => (
-                <div key={actor.id} className="flex items-center gap-3">
-                  <div className="relative w-12 h-12 rounded-full overflow-hidden bg-secondary flex-shrink-0">
-                    {actor.profile_path ? (
-                       <Image
-                          src={`${IMAGE_BASE_URL}w185${actor.profile_path}`}
-                          alt={actor.name}
-                          fill
-                          className="object-cover"
-                          sizes="48px"
-                        />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                        <FilmIcon className="w-6 h-6" />
-                      </div>
-                    )}
-                  </div>
-                   <div>
-                    <p className="font-semibold text-sm">{actor.name}</p>
-                    <p className="text-xs text-muted-foreground">{actor.character}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <Suspense fallback={<CastListSkeleton />}>
+                <CastList filmId={id} />
+            </Suspense>
           </div>
         </div>
       </div>
