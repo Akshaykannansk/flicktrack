@@ -86,23 +86,23 @@ function transformFilmData(tmdbFilm: any): Film {
 }
 
 
-export async function getPopularMovies(page = 1, limit = 8): Promise<Film[] | null> {
+export async function getPopularMovies(page = 1, limit = 20): Promise<Film[] | null> {
   const data = await fetchFromTMDB<PaginatedResponse<any>>('movie/popular', { page: page.toString() }, { revalidate: 600 });
   return data?.results.slice(0, limit).map(transformFilmData) || null;
 }
 
-export async function getTopRatedMovies(page = 1, limit = 8): Promise<Film[] | null> {
+export async function getTopRatedMovies(page = 1, limit = 20): Promise<Film[] | null> {
   const data = await fetchFromTMDB<PaginatedResponse<any>>('movie/top_rated', { page: page.toString() }, { revalidate: 600 });
   return data?.results.slice(0, limit).map(transformFilmData) || null;
 }
 
-export async function getNowPlayingMovies(page = 1, limit = 8): Promise<Film[] | null> {
+export async function getNowPlayingMovies(page = 1, limit = 20): Promise<Film[] | null> {
   const data = await fetchFromTMDB<PaginatedResponse<any>>('movie/now_playing', { page: page.toString() }, { revalidate: 600 });
   return data?.results.slice(0, limit).map(transformFilmData) || null;
 }
 
 export async function getFilmDetails(id: string): Promise<FilmDetails | null> {
-    const data = await fetchFromTMDB<any>(`movie/${id}`, { append_to_response: 'credits' });
+    const data = await fetchFromTMDB<any>(`movie/${id}`);
     
     if (!data) {
         return null;
@@ -129,8 +129,8 @@ export async function getFilmCredits(id: string): Promise<CastMember[] | null> {
     return data?.cast.slice(0, 10) || null;
 }
 
-export async function searchFilms(query: string): Promise<Film[]> {
+export async function searchFilms(query: string, page = 1, limit = 20): Promise<Film[]> {
   if (!query) return [];
-  const data = await fetchFromTMDB<PaginatedResponse<any>>('search/movie', { query });
-  return data?.results.map(transformFilmData) || [];
+  const data = await fetchFromTMDB<PaginatedResponse<any>>('search/movie', { query, page: page.toString() });
+  return data?.results.slice(0, limit).map(transformFilmData) || [];
 }

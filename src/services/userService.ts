@@ -18,7 +18,7 @@ export async function updateUserProfile(userId: string, data: { name: string, us
     });
 }
 
-export async function searchUsers(query: string) {
+export async function searchUsers(query: string, limit = 20) {
     if (!query) return [];
     return prisma.user.findMany({
         where: {
@@ -27,7 +27,7 @@ export async function searchUsers(query: string) {
                 { username: { contains: query, mode: 'insensitive' } },
             ],
         },
-        take: 10,
+        take: limit,
         select: {
             id: true,
             name: true,
