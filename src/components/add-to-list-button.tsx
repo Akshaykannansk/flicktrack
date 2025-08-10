@@ -28,6 +28,7 @@ function AddToListDialog({ filmId, children }: AddToListDialogProps) {
   const [open, setOpen] = React.useState(false);
   const [lists, setLists] = React.useState<FilmListSummary[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
+  const [isAdding, setIsAdding] = React.useState<string | null>(null);
   const { toast } = useToast();
 
   React.useEffect(() => {
@@ -56,6 +57,7 @@ function AddToListDialog({ filmId, children }: AddToListDialogProps) {
   }, [open, toast]);
 
   const handleAddToList = async (listId: string) => {
+    setIsAdding(listId);
     try {
       const response = await fetch(`/api/lists/${listId}`, {
         method: 'POST',
@@ -80,6 +82,8 @@ function AddToListDialog({ filmId, children }: AddToListDialogProps) {
         title: 'Uh oh! Something went wrong.',
         description: error.message,
       });
+    } finally {
+        setIsAdding(null);
     }
   };
 
@@ -104,7 +108,9 @@ function AddToListDialog({ filmId, children }: AddToListDialogProps) {
                 variant="ghost"
                 className="w-full justify-start"
                 onClick={() => handleAddToList(list.id)}
+                disabled={!!isAdding}
               >
+                {isAdding === list.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {list.name}
               </Button>
             ))

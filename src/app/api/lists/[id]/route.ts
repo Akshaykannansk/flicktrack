@@ -170,7 +170,7 @@ export async function POST(
 
     const { filmId } = validation.data;
     
-    const filmOnList = await addFilmToList(listId, filmId);
+    const filmOnList = await addFilmToList(listId, filmId, user.id);
 
     return NextResponse.json(filmOnList, { status: 201 });
   } catch (error: any) {

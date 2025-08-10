@@ -38,6 +38,7 @@ export async function createList(userId: string, name: string, description?: str
                 data: filmIds.map(filmId => ({
                     listId: list.id,
                     filmId: filmId,
+                    userId: userId, // Add the userId here
                 })),
             });
         }
@@ -89,6 +90,7 @@ export async function updateList(listId: string, userId: string, data: { name?: 
                     data: filmIds.map(filmId => ({
                         listId: list.id,
                         filmId: filmId,
+                        userId: userId, // Add the userId here
                     })),
                 });
             }
@@ -105,12 +107,13 @@ export async function deleteList(listId: string, userId: string) {
     });
 }
 
-export async function addFilmToList(listId: string, filmId: number) {
+export async function addFilmToList(listId: string, filmId: number, userId: string) {
     await upsertFilm(filmId);
     return prisma.filmsOnList.create({
         data: {
             list: { connect: { id: listId } },
             film: { connect: { id: filmId } },
+            user: { connect: { id: userId } },
         },
     });
 }
@@ -139,6 +142,7 @@ export async function copyList(listToCopyId: string, newOwnerId: string) {
                 data: originalList.films.map(film => ({
                     listId: createdList.id,
                     filmId: film.filmId,
+                    userId: newOwnerId, // Add the userId here
                 })),
             });
         }
