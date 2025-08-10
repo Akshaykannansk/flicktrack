@@ -101,7 +101,10 @@ export async function deleteList(listId: string, userId: string) {
 export async function addFilmToList(listId: string, filmId: number) {
     await upsertFilm(filmId);
     return prisma.filmsOnList.create({
-        data: { listId, filmId },
+        data: {
+            list: { connect: { id: listId } },
+            film: { connect: { id: filmId } },
+        },
     });
 }
 
