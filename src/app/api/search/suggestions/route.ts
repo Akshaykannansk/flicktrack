@@ -12,11 +12,14 @@ export async function GET(request: Request) {
   }
 
   try {
-    const films = await searchFilms(query, 1, 5); // Fetch only 5 films for suggestions
+    const [films, users] = await Promise.all([
+        searchFilms(query, 1, 5), // Fetch only 5 films for suggestions
+        searchUsers(query, 5),    // Fetch only 5 users for suggestions
+    ]);
     
     const suggestions = {
-        films: films,
-        users: [] // Return empty array for users
+        films,
+        users
     }
 
     return NextResponse.json(suggestions);
@@ -25,4 +28,3 @@ export async function GET(request: Request) {
     return NextResponse.json({ films: [], users: [] });
   }
 }
-

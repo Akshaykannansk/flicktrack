@@ -67,30 +67,28 @@ export async function TrendingReviews() {
           const posterUrl = entry.film.poster_path ? `${IMAGE_BASE_URL}w500${entry.film.poster_path}` : 'https://placehold.co/400x600.png';
           return (
             <Card key={entry.id} className="bg-secondary/50 border-0 overflow-hidden hover:bg-secondary/80 transition-colors">
-                <CardHeader>
-                    <div className="flex items-center gap-3">
-                        <Link href={`/profile/${entry.user.id}`}>
+                 <Link href={`/review/${entry.id}`} className="block">
+                    <CardHeader>
+                        <div className="flex items-center gap-3">
                             <Image src={entry.user.imageUrl || 'https://placehold.co/40x40.png'} alt={entry.user.name || 'avatar'} width={40} height={40} className="rounded-full" />
-                        </Link>
-                        <div>
-                            <p className="text-sm font-semibold text-foreground">
-                                <Link href={`/profile/${entry.user.id}`} className="hover:text-primary transition-colors">{entry.user.name}</Link>
-                            </p>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <div className="flex items-center">
-                                    {[...Array(Math.floor(entry.rating))].map((_, i) => <Star key={`full-${i}`} className="w-3 h-3 text-accent fill-accent" />)}
-                                    {entry.rating % 1 !== 0 && <Star key='half' className="w-3 h-3 text-accent fill-accent" style={{ clipPath: 'inset(0 50% 0 0)' }} />}
-                                    {[...Array(5-Math.ceil(entry.rating))].map((_, i) => <Star key={`empty-${i}`} className="w-3 h-3 text-accent" />)}
-                                </div>
-                                <span>•</span>
-                                <p>
-                                    Reviewed on {new Date(entry.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+                            <div>
+                                <p className="text-sm font-semibold text-foreground">
+                                    <span className="hover:text-primary transition-colors">{entry.user.name}</span>
                                 </p>
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                    <div className="flex items-center">
+                                        {[...Array(Math.floor(entry.rating))].map((_, i) => <Star key={`full-${i}`} className="w-3 h-3 text-accent fill-accent" />)}
+                                        {entry.rating % 1 !== 0 && <Star key='half' className="w-3 h-3 text-accent fill-accent" style={{ clipPath: 'inset(0 50% 0 0)' }} />}
+                                        {[...Array(5-Math.ceil(entry.rating))].map((_, i) => <Star key={`empty-${i}`} className="w-3 h-3 text-accent" />)}
+                                    </div>
+                                    <span>•</span>
+                                    <p>
+                                        Reviewed on {new Date(entry.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+                                    </p>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </CardHeader>
-                <Link href={`/review/${entry.id}`} className="block">
+                    </CardHeader>
                     <CardContent className="space-y-4">
                         {entry.review && (
                             <blockquote className="text-lg text-foreground/90">

@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Film, Search, Loader2, User as UserIcon, Clapperboard, Menu, List, Heart, LogOut } from 'lucide-react';
+import { Film, Search, Loader2, User as UserIcon, Clapperboard, Menu, List, Heart, LogOut, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/sheet";
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { Separator } from '../ui/separator';
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -190,7 +192,7 @@ export default function Header() {
                     <Input
                         type="search"
                         name="q"
-                        placeholder="Search films..."
+                        placeholder="Search films, users..."
                         className="pl-10 w-32 sm:w-64 bg-secondary focus:bg-background border-secondary"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
@@ -204,7 +206,7 @@ export default function Header() {
                              <div className="flex items-center justify-center p-4">
                                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                              </div>
-                        ) : (suggestions.films.length > 0) ? (
+                        ) : (suggestions.films.length > 0 || suggestions.users.length > 0) ? (
                            <ul className="space-y-2 p-2">
                                 {suggestions.films.length > 0 && (
                                   <li>
@@ -232,9 +234,38 @@ export default function Header() {
                                     </ul>
                                   </li>
                                 )}
+                                 {suggestions.users.length > 0 && (
+                                  <li>
+                                    <p className="px-2 text-xs font-semibold text-muted-foreground uppercase flex items-center gap-2"><Users className="w-4 h-4" /> Profiles</p>
+                                    <ul className="mt-1">
+                                        {suggestions.users.map(user => (
+                                            <li key={user.id}>
+                                                <Link href={`/profile/${user.id}`} className="flex items-center p-2 hover:bg-accent transition-colors rounded-md">
+                                                     <Avatar className="h-10 w-10">
+                                                        <AvatarImage src={user.imageUrl || undefined} alt={user.name || 'avatar'} />
+                                                        <AvatarFallback>{user.name?.charAt(0) ?? 'U'}</AvatarFallback>
+                                                    </Avatar>
+                                                    <div className="ml-3">
+                                                        <p className="text-sm font-semibold truncate">{user.name}</p>
+                                                         <p className="text-xs text-muted-foreground">@{user.username}</p>
+                                                    </div>
+                                                </Link>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                  </li>
+                                )}
+                                <Separator className="my-2" />
+                                <li>
+                                     <Button asChild variant="ghost" className="w-full justify-center">
+                                         <Link href={`/search?q=${encodeURIComponent(query)}`}>
+                                            <Search className="mr-2 h-4 w-4" /> View all results
+                                         </Link>
+                                     </Button>
+                                </li>
                            </ul>
                         ) : (
-                            <p className="p-4 text-sm text-muted-foreground text-center">No results found.</p>
+                            <p className="p-4 text-sm text-muted-foreground text-center">No results found for "{query}".</p>
                         )}
                     </div>
                  )}
