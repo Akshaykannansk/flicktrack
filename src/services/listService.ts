@@ -61,23 +61,29 @@ export async function getListById(listId: string) {
 }
 
 export async function updateList(listId: string, userId: string, data: { name?: string; description?: string, filmIds?: number[] }) {
-     return prisma.$transaction(async (tx) => {
-        const { filmIds, ...listData } = data;
+    const { filmIds, ...listData } = data;
 
+    // First, ensure all films are in the database. This can take time.
+    if (filmIds) {
+        for (const filmId of filmIds) {
+            await upsertFilm(filmId);
+        }
+    }
+
+    // Then, perform the database updates in a transaction.
+    return prisma.$transaction(async (tx) => {
         const list = await tx.filmList.update({
             where: { id: listId, userId },
             data: listData,
         });
 
         if (filmIds) {
-             for (const filmId of filmIds) {
-                await upsertFilm(filmId);
-            }
-            
+            // Delete existing film associations
             await tx.filmsOnList.deleteMany({
                 where: { listId: listId },
             });
             
+            // Create new film associations
             if (filmIds.length > 0) {
                 await tx.filmsOnList.createMany({
                     data: filmIds.map(filmId => ({
@@ -91,6 +97,7 @@ export async function updateList(listId: string, userId: string, data: { name?: 
         return list;
     });
 }
+
 
 export async function deleteList(listId: string, userId: string) {
     return prisma.filmList.delete({
