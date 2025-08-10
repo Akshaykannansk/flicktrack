@@ -188,3 +188,40 @@ export async function getRecentReviewsForFilm(filmId: number, currentUserId?: st
         take: 10,
     })
 }
+
+export async function searchReviews(query: string, limit = 20) {
+    if (!query) return [];
+    return prisma.journalEntry.findMany({
+        where: {
+            review: { 
+                contains: query, 
+                mode: 'insensitive',
+                not: null,
+                notIn: ['']
+            }
+        },
+        take: limit,
+        include: {
+            user: {
+                select: {
+                    id: true,
+                    name: true,
+                    username: true,
+                    imageUrl: true,
+                }
+            },
+            film: {
+                select: {
+                    title: true
+                }
+            }
+        },
+        orderBy: {
+            _relevance: {
+                fields: ['review'],
+                search: query,
+                sort: 'desc'
+            }
+        }
+    })
+}

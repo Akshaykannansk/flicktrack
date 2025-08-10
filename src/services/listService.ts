@@ -38,7 +38,7 @@ export async function createList(userId: string, name: string, description?: str
                 data: filmIds.map(filmId => ({
                     listId: list.id,
                     filmId: filmId,
-                    userId: userId, // Add the userId here
+                    userId: userId,
                 })),
             });
         }
@@ -64,14 +64,12 @@ export async function getListById(listId: string) {
 export async function updateList(listId: string, userId: string, data: { name?: string; description?: string, filmIds?: number[] }) {
     const { filmIds, ...listData } = data;
 
-    // First, ensure all films are in the database. This can take time.
     if (filmIds) {
         for (const filmId of filmIds) {
             await upsertFilm(filmId);
         }
     }
 
-    // Then, perform the database updates in a transaction.
     return prisma.$transaction(async (tx) => {
         const list = await tx.filmList.update({
             where: { id: listId, userId },
@@ -79,18 +77,16 @@ export async function updateList(listId: string, userId: string, data: { name?: 
         });
 
         if (filmIds) {
-            // Delete existing film associations
             await tx.filmsOnList.deleteMany({
                 where: { listId: listId },
             });
             
-            // Create new film associations
             if (filmIds.length > 0) {
                 await tx.filmsOnList.createMany({
                     data: filmIds.map(filmId => ({
                         listId: list.id,
                         filmId: filmId,
-                        userId: userId, // Add the userId here
+                        userId: userId,
                     })),
                 });
             }
@@ -111,9 +107,9 @@ export async function addFilmToList(listId: string, filmId: number, userId: stri
     await upsertFilm(filmId);
     return prisma.filmsOnList.create({
         data: {
+            user: { connect: { id: userId } },
             list: { connect: { id: listId } },
             film: { connect: { id: filmId } },
-            user: { connect: { id: userId } },
         },
     });
 }
@@ -142,7 +138,7 @@ export async function copyList(listToCopyId: string, newOwnerId: string) {
                 data: originalList.films.map(film => ({
                     listId: createdList.id,
                     filmId: film.filmId,
-                    userId: newOwnerId, // Add the userId here
+                    userId: newOwnerId,
                 })),
             });
         }
@@ -202,5 +198,35 @@ export async function likeList(userId: string, listId: string) {
 export async function unlikeList(userId: string, listId: string) {
     return prisma.likedList.delete({
         where: { userId_listId: { userId, listId } },
+    });
+}
+
+export async function searchLists(query: string, limit = 20) {
+    if (!query) return [];
+    return prisma.filmList.findMany({
+        where: {
+            OR: [
+                { name: { contains: query, mode: 'insensitive' } },
+                { description: { contains: query, mode: 'insensitive' } },
+            ],
+            // You might want to add a filter for public lists if that's a feature
+        },
+        take: limit,
+        include: {
+            user: { select: { name: true } },
+            _count: { select: { films: true } },
+            films: {
+                take: 4,
+                orderBy: { addedAt: 'desc' },
+                include: { film: { select: { id: true, poster_path: true } } },
+            }
+        },
+        orderBy: {
+            _relevance: {
+                fields: ['name', 'description'],
+                search: query,
+                sort: 'desc',
+            },
+        },
     });
 }

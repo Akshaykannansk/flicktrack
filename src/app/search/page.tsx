@@ -2,7 +2,7 @@
 import { searchFilms } from '@/lib/tmdb';
 import { searchUsers } from '@/services/userService';
 import { FilmCard } from '@/components/film-card';
-import { Search, Clapperboard, Users } from 'lucide-react';
+import { Search, Clapperboard, Users, List, MessageSquareText } from 'lucide-react';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getUserFilmSets } from '@/services/userService';
@@ -12,8 +12,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { PublicUser } from '@/lib/types';
-import { Button } from '@/components/ui/button';
+import { PublicUser, FilmListSearchResult, ReviewSearchResult } from '@/lib/types';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { searchLists } from '@/services/listService';
+import { searchReviews } from '@/services/reviewService';
+import { IMAGE_BASE_URL } from '@/lib/tmdb-isomorphic';
+import { Star } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,6 +53,43 @@ const UserResultsSkeleton = () => (
         ))}
     </div>
 )
+
+const ListResultsSkeleton = () => (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[...Array(3)].map((_, i) => (
+            <Card key={i} className="h-full flex flex-col bg-secondary border-transparent">
+                <CardContent className="p-4 flex-grow">
+                    <Skeleton className="aspect-video rounded-md mb-4" />
+                    <Skeleton className="h-6 w-3/4" />
+                    <Skeleton className="h-4 w-1/4 mt-2" />
+                </CardContent>
+            </Card>
+        ))}
+    </div>
+);
+
+const ReviewResultsSkeleton = () => (
+    <div className="space-y-4">
+         {[...Array(3)].map((_, i) => (
+            <Card key={i} className="bg-secondary/50 border-0 overflow-hidden">
+                <CardHeader>
+                    <div className="flex items-center gap-3">
+                        <Skeleton className="h-10 w-10 rounded-full" />
+                        <div className='space-y-1'>
+                           <Skeleton className="h-4 w-32" />
+                           <Skeleton className="h-3 w-24" />
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <Skeleton className="h-4 w-1/2" />
+                    <Skeleton className="h-12 w-full" />
+                </CardContent>
+            </Card>
+        ))}
+    </div>
+);
+
 
 async function FilmResults({ query, userId }: { query: string; userId: string | null }) {
     const [films, { watchlistIds, likedIds }] = await Promise.all([
@@ -114,6 +155,104 @@ async function UserResults({ query }: { query: string }) {
     );
 }
 
+async function ListResults({ query }: { query: string }) {
+    const lists = await searchLists(query) as FilmListSearchResult[];
+
+    if (lists.length === 0) {
+        return (
+            <div className="text-center py-20 border-2 border-dashed rounded-lg">
+                <h2 className="text-xl font-semibold">No lists found for "{query}"</h2>
+                <p className="text-muted-foreground mt-2">Try a different search term.</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {lists.map((list) => (
+                <Link key={list.id} href={`/lists/${list.id}`} className="group block">
+                <Card className="h-full flex flex-col bg-secondary border-transparent hover:border-primary/50 transition-colors duration-300">
+                    <CardContent className="p-4 flex-grow">
+                    <div className="relative aspect-video rounded-md overflow-hidden mb-4 bg-muted">
+                        {list.films.length > 0 ? (
+                            <div className="absolute inset-0 grid grid-cols-2 gap-px">
+                            {list.films.slice(0, 4).map(({ film }, index) => (
+                                <div key={film.id} className="relative">
+                                {film.poster_path ? (
+                                    <Image
+                                        src={`${IMAGE_BASE_URL}w500${film.poster_path}`}
+                                        alt=""
+                                        fill
+                                        className="object-cover"
+                                        sizes="10vw"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full bg-secondary"></div>
+                                )}
+                                </div>
+                            ))}
+                            </div>
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                                <List className="w-10 h-10" />
+                            </div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                    </div>
+                    <h2 className="text-xl font-headline font-semibold text-foreground group-hover:text-primary transition-colors">{list.name}</h2>
+                     <p className="text-sm text-muted-foreground mt-1">by {list.user.name}</p>
+                     <p className="text-sm text-muted-foreground mt-1">{list._count.films} {list._count.films === 1 ? 'film' : 'films'}</p>
+                    </CardContent>
+                </Card>
+                </Link>
+            ))}
+            </div>
+    )
+}
+
+async function ReviewResults({ query }: { query: string }) {
+    const reviews = await searchReviews(query) as ReviewSearchResult[];
+    
+    if (reviews.length === 0) {
+         return (
+            <div className="text-center py-20 border-2 border-dashed rounded-lg">
+                <h2 className="text-xl font-semibold">No reviews found for "{query}"</h2>
+                <p className="text-muted-foreground mt-2">Try a different search term.</p>
+            </div>
+        )
+    }
+
+    return (
+        <div className="space-y-4">
+             {reviews.map((entry) => (
+                 <Link key={entry.id} href={`/review/${entry.id}`} className="block">
+                    <Card className="bg-secondary/50 border-0 overflow-hidden hover:bg-secondary/80 transition-colors">
+                        <CardHeader>
+                             <div className="flex items-center gap-3">
+                                <Avatar className="h-10 w-10">
+                                    <AvatarImage src={entry.user.imageUrl || undefined} alt={entry.user.name || 'avatar'} />
+                                    <AvatarFallback>{entry.user.name?.charAt(0) ?? 'U'}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <p className="font-semibold">{entry.user.name}</p>
+                                    <p className="text-sm text-muted-foreground">Reviewed {entry.film.title}</p>
+                                </div>
+                             </div>
+                        </CardHeader>
+                        <CardContent className="space-y-2">
+                             <div className="flex items-center">
+                                {[...Array(Math.floor(entry.rating))].map((_, i) => <Star key={`full-${i}`} className="w-4 h-4 text-accent fill-accent" />)}
+                                {entry.rating % 1 !== 0 && <Star key='half' className="w-4 h-4 text-accent fill-accent" style={{ clipPath: 'inset(0 50% 0 0)' }} />}
+                                {[...Array(5-Math.ceil(entry.rating))].map((_, i) => <Star key={`empty-${i}`} className="w-4 h-4 text-accent" />)}
+                            </div>
+                            <blockquote className="pl-4 border-l-2 text-muted-foreground italic">"{entry.review}"</blockquote>
+                        </CardContent>
+                    </Card>
+                 </Link>
+             ))}
+        </div>
+    )
+}
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
     const query = searchParams.q || '';
@@ -140,6 +279,13 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     const { data: { session } } = await supabase.auth.getSession();
     const user = session?.user;
 
+    const searchTypes = [
+        { name: 'films', icon: Clapperboard, label: 'Films' },
+        { name: 'profiles', icon: Users, label: 'Profiles' },
+        { name: 'lists', icon: List, label: 'Lists' },
+        { name: 'reviews', icon: MessageSquareText, label: 'Reviews' },
+    ];
+
     return (
         <div className="space-y-8">
             <div className="flex items-center space-x-3">
@@ -151,22 +297,33 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
             {query ? (
                 <Tabs value={type} className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 max-w-md">
-                        <TabsTrigger value="films" asChild>
-                           <Link href={`/search?q=${encodeURIComponent(query)}&type=films`}><Clapperboard className="mr-2" /> Films</Link>
-                        </TabsTrigger>
-                        <TabsTrigger value="users" asChild>
-                            <Link href={`/search?q=${encodeURIComponent(query)}&type=users`}><Users className="mr-2" /> Profiles</Link>
-                        </TabsTrigger>
+                    <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 max-w-2xl">
+                         {searchTypes.map((searchType) => (
+                             <TabsTrigger value={searchType.name} asChild key={searchType.name}>
+                                <Link href={`/search?q=${encodeURIComponent(query)}&type=${searchType.name}`}>
+                                    <searchType.icon className="mr-2" /> {searchType.label}
+                                </Link>
+                             </TabsTrigger>
+                         ))}
                     </TabsList>
                     <TabsContent value="films" className="mt-6">
                          <Suspense fallback={<FilmResultsSkeleton />}>
                             <FilmResults query={query} userId={user?.id ?? null} />
                         </Suspense>
                     </TabsContent>
-                    <TabsContent value="users" className="mt-6">
+                    <TabsContent value="profiles" className="mt-6">
                         <Suspense fallback={<UserResultsSkeleton />}>
                             <UserResults query={query} />
+                        </Suspense>
+                    </TabsContent>
+                    <TabsContent value="lists" className="mt-6">
+                        <Suspense fallback={<ListResultsSkeleton />}>
+                            <ListResults query={query} />
+                        </Suspense>
+                    </TabsContent>
+                    <TabsContent value="reviews" className="mt-6">
+                        <Suspense fallback={<ReviewResultsSkeleton />}>
+                            <ReviewResults query={query} />
                         </Suspense>
                     </TabsContent>
                 </Tabs>

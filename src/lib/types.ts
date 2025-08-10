@@ -129,3 +129,31 @@ export interface CommentWithUser {
   createdAt: string;
   user: PublicUser;
 }
+
+export interface FilmListSearchResult {
+    id: string;
+    name: string;
+    description: string | null;
+    user: {
+        name: string | null;
+    };
+    _count: {
+        films: number;
+    };
+    films: {
+        film: {
+            id: number;
+            poster_path: string | null;
+        };
+    }[];
+}
+
+export interface ReviewSearchResult {
+    id: string;
+    review: string;
+    rating: number;
+    user: PublicUser;
+    film: {
+        title: string;
+    }
+}
