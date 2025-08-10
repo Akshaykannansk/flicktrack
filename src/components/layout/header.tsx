@@ -190,7 +190,7 @@ export default function Header() {
                     <Input
                         type="search"
                         name="q"
-                        placeholder="Search..."
+                        placeholder="Search films..."
                         className="pl-10 w-32 sm:w-64 bg-secondary focus:bg-background border-secondary"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
@@ -204,7 +204,7 @@ export default function Header() {
                              <div className="flex items-center justify-center p-4">
                                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                              </div>
-                        ) : (suggestions.films.length > 0 || suggestions.users.length > 0) ? (
+                        ) : (suggestions.films.length > 0) ? (
                            <ul className="space-y-2 p-2">
                                 {suggestions.films.length > 0 && (
                                   <li>
@@ -231,24 +231,6 @@ export default function Header() {
                                         ))}
                                     </ul>
                                   </li>
-                                )}
-                                {suggestions.users.length > 0 && (
-                                     <li>
-                                        <p className="px-2 text-xs font-semibold text-muted-foreground uppercase flex items-center gap-2"><UserIcon className="w-4 h-4" /> Users</p>
-                                        <ul className="mt-1">
-                                            {suggestions.users.map(u => (
-                                                <li key={u.id}>
-                                                    <Link href={`/profile/${u.id}`} className="flex items-center p-2 hover:bg-accent transition-colors rounded-md">
-                                                        <Image src={u.imageUrl!} alt={u.name || 'User avatar'} width={40} height={40} className="rounded-full" />
-                                                        <div className="ml-3">
-                                                            <p className="text-sm font-semibold truncate">{u.name}</p>
-                                                            <p className="text-xs text-muted-foreground">@{u.username}</p>
-                                                        </div>
-                                                    </Link>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                     </li>
                                 )}
                            </ul>
                         ) : (

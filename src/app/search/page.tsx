@@ -1,15 +1,12 @@
 
 
+
 import { searchFilms } from '@/lib/tmdb';
 import { FilmCard } from '@/components/film-card';
-import { Search, User, Clapperboard } from 'lucide-react';
-import type { Film, PublicUser } from '@/lib/types';
-import Link from 'next/link';
-import Image from 'next/image';
-import { Card } from '@/components/ui/card';
+import { Search, Clapperboard } from 'lucide-react';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { getUserFilmSets, searchUsers } from '@/services/userService';
+import { getUserFilmSets } from '@/services/userService';
 import { Suspense } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -33,31 +30,16 @@ const FilmResultsSkeleton = () => (
     </div>
 );
 
-const UserResultsSkeleton = () => (
-     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {[...Array(4)].map((_, i) => (
-            <Card key={i} className="flex items-center gap-4 p-4 bg-secondary border-transparent">
-                <Skeleton className="w-12 h-12 rounded-full" />
-                <div className="space-y-2">
-                    <Skeleton className="h-4 w-24" />
-                    <Skeleton className="h-3 w-16" />
-                </div>
-            </Card>
-        ))}
-    </div>
-);
 
 async function SearchResults({ query, userId }: { query: string; userId: string | null }) {
-    const [films, users, { watchlistIds, likedIds }] = await Promise.all([
+    const [films, { watchlistIds, likedIds }] = await Promise.all([
         searchFilms(query),
-        searchUsers(query),
         getUserFilmSets(userId)
     ]);
 
     return (
-        (films.length > 0 || users.length > 0) ? (
+        films.length > 0 ? (
             <div className="space-y-12">
-                {films.length > 0 && (
                 <section>
                     <div className="flex items-center gap-2 mb-4">
                         <Clapperboard className="w-6 h-6 text-primary/80" />
@@ -77,35 +59,6 @@ async function SearchResults({ query, userId }: { query: string; userId: string 
                         })}
                     </div>
                 </section>
-                )}
-
-                {users.length > 0 && (
-                <section>
-                    <div className="flex items-center gap-2 mb-4">
-                        <User className="w-6 h-6 text-primary/80" />
-                        <h2 className="text-2xl font-headline font-semibold">Profiles</h2>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {users.map((userResult) => (
-                            <Link key={userResult.id} href={`/profile/${userResult.id}`}>
-                                <Card className="flex items-center gap-4 p-4 bg-secondary border-transparent hover:border-primary/50 transition-colors">
-                                    <Image 
-                                        src={userResult.imageUrl || 'https://placehold.co/48x48.png'} 
-                                        alt={userResult.name || 'User avatar'} 
-                                        width={48} 
-                                        height={48} 
-                                        className="rounded-full"
-                                    />
-                                    <div>
-                                        <p className="font-semibold">{userResult.name}</p>
-                                        <p className="text-sm text-muted-foreground">@{userResult.username}</p>
-                                    </div>
-                                </Card>
-                            </Link>
-                        ))}
-                    </div>
-                </section>
-                )}
             </div>
         ) : (
             <div className="text-center py-20 border-2 border-dashed rounded-lg">
@@ -158,21 +111,14 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                             </div>
                            <FilmResultsSkeleton />
                         </section>
-                         <section>
-                           <div className="flex items-center gap-2 mb-4">
-                            <User className="w-6 h-6 text-primary/80" />
-                            <h2 className="text-2xl font-headline font-semibold">Profiles</h2>
-                           </div>
-                           <UserResultsSkeleton />
-                        </section>
                     </div>
                 }>
                     <SearchResults query={query} userId={user?.id ?? null} />
                 </Suspense>
             ) : (
                  <div className="text-center py-20 border-2 border-dashed rounded-lg">
-                    <h2 className="text-xl font-semibold">Search for films or users</h2>
-                    <p className="text-muted-foreground mt-2">Use the search bar in the header to find films and other FlickTrack users.</p>
+                    <h2 className="text-xl font-semibold">Search for films</h2>
+                    <p className="text-muted-foreground mt-2">Use the search bar in the header to find films.</p>
                 </div>
             )}
         </div>
