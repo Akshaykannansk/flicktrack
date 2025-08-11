@@ -70,7 +70,7 @@ model JournalEntry {
   film        Film         @relation(fields: [filmId], references: [id], onDelete: Cascade)
   filmId      Int
   rating      Float
-  review      String?      @db.Text
+  review      String?    
   logged_date DateTime
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
@@ -105,7 +105,7 @@ model WatchlistItem {
 model FilmList {
   id          String        @id @default(cuid())
   name        String
-  description String?       @db.Text
+  description String?       
   user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId      String
   films       FilmsOnList[]
