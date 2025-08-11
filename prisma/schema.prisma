@@ -70,7 +70,7 @@ model JournalEntry {
   film        Film         @relation(fields: [filmId], references: [id], onDelete: Cascade)
   filmId      Int
   rating      Float
-  review      String?    
+  review      String?      @db.Text
   logged_date DateTime
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
@@ -79,7 +79,6 @@ model JournalEntry {
 
   @@index([userId])
   @@index([filmId])
-  @@fulltext([review])
 }
 
 model LikedFilm {
@@ -105,16 +104,13 @@ model WatchlistItem {
 model FilmList {
   id          String        @id @default(cuid())
   name        String
-  description String?       
+  description String?       @db.Text
   user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId      String
   films       FilmsOnList[]
   likedBy     LikedList[]
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
-
-
-  @@fulltext([name, description])
 
 }
 

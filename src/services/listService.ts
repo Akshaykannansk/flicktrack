@@ -208,8 +208,6 @@ export async function unlikeList(userId: string, listId: string) {
 export async function searchLists(query: string, limit = 20) {
     if (!query) return [];
     
-    const searchTerms = query.split(' ').join(' & ');
-
     return prisma.filmList.findMany({
         where: {
             OR: [
@@ -229,11 +227,7 @@ export async function searchLists(query: string, limit = 20) {
             }
         },
          orderBy: {
-            _relevance: {
-                fields: ['name', 'description'],
-                search: searchTerms,
-                sort: 'desc'
-            }
+            name: 'asc'
          }
     });
 }
