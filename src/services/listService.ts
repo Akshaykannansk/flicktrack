@@ -63,7 +63,8 @@ export async function getListById(listId: string) {
 
 export async function updateList(listId: string, userId: string, data: { name?: string; description?: string, filmIds?: number[] }) {
     const { filmIds, ...listData } = data;
-
+    
+    // Perform slow operations *before* the transaction
     if (filmIds) {
         for (const filmId of filmIds) {
             await upsertFilm(filmId);
@@ -71,16 +72,19 @@ export async function updateList(listId: string, userId: string, data: { name?: 
     }
 
     return prisma.$transaction(async (tx) => {
+        // Update list details
         const list = await tx.filmList.update({
             where: { id: listId, userId },
             data: listData,
         });
 
         if (filmIds) {
+            // Delete old film associations
             await tx.filmsOnList.deleteMany({
                 where: { listId: listId },
             });
             
+            // Create new film associations
             if (filmIds.length > 0) {
                 await tx.filmsOnList.createMany({
                     data: filmIds.map(filmId => ({
@@ -203,6 +207,9 @@ export async function unlikeList(userId: string, listId: string) {
 
 export async function searchLists(query: string, limit = 20) {
     if (!query) return [];
+    
+    const searchTerms = query.split(' ').join(' & ');
+
     return prisma.filmList.findMany({
         where: {
             OR: [
@@ -221,12 +228,12 @@ export async function searchLists(query: string, limit = 20) {
                 include: { film: { select: { id: true, poster_path: true } } },
             }
         },
-        orderBy: {
+         orderBy: {
             _relevance: {
                 fields: ['name', 'description'],
-                search: query,
-                sort: 'desc',
-            },
-        },
+                search: searchTerms,
+                sort: 'desc'
+            }
+         }
     });
 }
