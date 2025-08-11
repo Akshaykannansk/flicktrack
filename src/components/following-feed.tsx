@@ -1,17 +1,16 @@
 
+'use client';
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Star, MessageSquare, User, Users } from 'lucide-react';
 import { IMAGE_BASE_URL } from '@/lib/tmdb-isomorphic';
 import type { Film, PublicUser } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from './ui/button';
 import { LikeReviewButton } from './like-review-button';
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
-import { cookies } from 'next/headers';
-import { getFollowingFeedForUser } from '@/services/userService';
+import { Comments } from './comments';
 
 interface FeedEntry {
   id: string;
@@ -25,6 +24,11 @@ interface FeedEntry {
     reviewLikes: number;
     comments: number;
   }
+}
+
+interface FollowingFeedProps {
+    feed: FeedEntry[];
+    currentUserId?: string;
 }
 
 export const FeedSkeleton = () => (
@@ -53,29 +57,7 @@ export const FeedSkeleton = () => (
     </div>
 )
 
-export async function FollowingFeed() {
-  const cookieStore =await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-    cookies: {
-      get(name: string) {
-        return cookieStore.get(name)?.value
-      },
-      set(name: string, value: string, options: CookieOptions) {
-        cookieStore.set({ name, value, ...options })
-      },
-      remove(name: string, options: CookieOptions) {
-        cookieStore.set({ name, value: '', ...options })
-      },
-    },
-  });
-const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user;
-
-  const feed = await getFollowingFeedForUser(user?.id ?? null) as unknown as FeedEntry[];
-  
+export function FollowingFeed({ feed, currentUserId }: FollowingFeedProps) {
   if (feed.length === 0) {
     return (
        <div className="text-center py-20 border-2 border-dashed rounded-lg flex flex-col items-center bg-secondary/30">
@@ -95,7 +77,6 @@ const { data: { session } } = await supabase.auth.getSession();
     <div className="space-y-6">
       {feed.map((entry) => {
           const posterUrl = entry.film.poster_path ? `${IMAGE_BASE_URL}w500${entry.film.poster_path}` : 'https://placehold.co/400x600.png';
-          const ReviewLink = entry.review ? Link : 'div';
           return (
             <Card key={entry.id} className="bg-secondary/50 border-0 overflow-hidden">
                 <CardHeader>
@@ -114,56 +95,51 @@ const { data: { session } } = await supabase.auth.getSession();
                          </div>
                     </div>
                 </CardHeader>
-                 <ReviewLink href={`/review/${entry.id}`} className="block hover:bg-secondary/80 transition-colors">
-                    <CardContent className="flex gap-4">
-                        <div className="w-24 flex-shrink-0">
-                        <Link href={`/film/${entry.film.id}`}>
-                            <Image
-                            src={posterUrl}
-                            alt={`Poster for ${entry.film.title}`}
-                            width={200}
-                            height={300}
-                            className="rounded-md object-cover w-full aspect-[2/3]"
-                            data-ai-hint={`${entry.film.title} poster`}
-                            />
-                            </Link>
-                        </div>
-                        <div className="flex-1">
-                            <Link href={`/film/${entry.film.id}`} className="hover:text-primary transition-colors">
-                                <h3 className="font-headline text-xl font-semibold">{entry.film.title}</h3>
-                            </Link>
-                            <div className="flex items-center my-2">
-                                {[...Array(Math.floor(entry.rating))].map((_, i) => <Star key={`full-${i}`} className="w-4 h-4 text-accent fill-accent" />)}
-                                {entry.rating % 1 !== 0 && <Star key='half' className="w-4 h-4 text-accent fill-accent" style={{ clipPath: 'inset(0 50% 0 0)' }} />}
-                                {[...Array(5-Math.ceil(entry.rating))].map((_, i) => <Star key={`empty-${i}`} className="w-4 h-4 text-accent" />)}
-                            </div>
-                            {entry.review && (
-                                <blockquote className="mt-2 pl-4 border-l-2 border-border italic text-muted-foreground text-sm">
-                                    <p>{entry.review}</p>
-                                </blockquote>
-                            )}
-                        </div>
-                    </CardContent>
-                 </ReviewLink>
-                 {entry.review && user && (
-                   <CardFooter className="flex items-center gap-2 pt-4">
-                        {entry.user.id !== user.id && (
-                            <LikeReviewButton 
-                                journalEntryId={entry.id}
-                                initialIsLiked={!!entry.reviewLikes.length}
-                                initialLikeCount={entry._count.reviewLikes}
-                            />
-                        )}
-                        <Link href={`/review/${entry.id}`}>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-muted-foreground hover:text-primary"
-                            >
-                                <MessageSquare className="mr-2 h-4 w-4" />
-                                {entry._count.comments}
-                            </Button>
+                <CardContent className="flex gap-4">
+                     <div className="w-24 flex-shrink-0">
+                       <Link href={`/film/${entry.film.id}`}>
+                        <Image
+                          src={posterUrl}
+                          alt={`Poster for ${entry.film.title}`}
+                          width={200}
+                          height={300}
+                          className="rounded-md object-cover w-full aspect-[2/3]"
+                          data-ai-hint={`${entry.film.title} poster`}
+                        />
                         </Link>
+                    </div>
+                    <div className="flex-1">
+                        <Link href={`/film/${entry.film.id}`} className="hover:text-primary transition-colors">
+                            <h3 className="font-headline text-xl font-semibold">{entry.film.title}</h3>
+                        </Link>
+                        <div className="flex items-center my-2">
+                            {[...Array(Math.floor(entry.rating))].map((_, i) => <Star key={`full-${i}`} className="w-4 h-4 text-accent fill-accent" />)}
+                            {entry.rating % 1 !== 0 && <Star key='half' className="w-4 h-4 text-accent fill-accent" style={{ clipPath: 'inset(0 50% 0 0)' }} />}
+                            {[...Array(5-Math.ceil(entry.rating))].map((_, i) => <Star key={`empty-${i}`} className="w-4 h-4 text-accent" />)}
+                        </div>
+                        {entry.review && (
+                             <blockquote className="mt-2 pl-4 border-l-2 border-border italic text-muted-foreground text-sm flex items-start gap-2">
+                                <MessageSquare className="w-4 h-4 mt-0.5 shrink-0" />
+                                <p>"{entry.review}"</p>
+                             </blockquote>
+                        )}
+                    </div>
+                </CardContent>
+                 {entry.review && currentUserId && (
+                   <CardFooter className="flex-col items-start gap-4">
+                        <div className="flex items-center gap-2">
+                            {entry.user.id !== currentUserId && (
+                                <LikeReviewButton 
+                                    journalEntryId={entry.id}
+                                    initialIsLiked={!!entry.reviewLikes.length}
+                                    initialLikeCount={entry._count.reviewLikes}
+                                />
+                            )}
+                             <Comments 
+                                journalEntryId={entry.id}
+                                initialCommentCount={entry._count.comments}
+                            />
+                        </div>
                    </CardFooter>
                 )}
             </Card>

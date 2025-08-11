@@ -1,14 +1,15 @@
 
 import { getPopularMovies, getTopRatedMovies, getNowPlayingMovies } from '@/lib/tmdb';
 import { FilmCarouselSection } from '@/components/film-carousel-section';
-import { FollowingFeed } from '@/components/following-feed';
+import { FollowingFeed, FeedSkeleton } from '@/components/following-feed';
 import { Separator } from '@/components/ui/separator';
 import { Users, TrendingUp } from 'lucide-react';
-import React from 'react';
+import React, { Suspense } from 'react';
 import { TrendingReviews } from '@/components/trending-reviews';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { getUserFilmSets } from '@/services/userService';
+import { getUserFilmSets, getFollowingFeedForUser } from '@/services/userService';
+import { getTrendingReviews as fetchTrendingReviews } from '@/services/reviewService';
 import type { CookieOptions } from '@supabase/ssr';
 import { LazyCarouselSection } from '@/components/LazyCarouselSection';
 
@@ -36,6 +37,10 @@ export default async function HomePage() {
   
   // Fetch user-specific data first, as it's quick and needed by all carousels.
   const { watchlistIds, likedIds } = await getUserFilmSets(user?.id ?? null);
+  
+  // Fetch data for feeds
+  const followingFeed = await getFollowingFeedForUser(user?.id ?? null) as any[];
+  const trendingReviews = await fetchTrendingReviews(user?.id) as any[];
 
   return (
     <div className="space-y-12">
@@ -50,7 +55,7 @@ export default async function HomePage() {
                   <TrendingUp className="w-7 h-7 text-primary/80" />
                   <h2 className="text-3xl font-headline font-bold text-foreground tracking-tight">Trending Reviews</h2>
               </div>
-              <TrendingReviews />
+              <TrendingReviews reviews={trendingReviews} />
             </section>
             <Separator />
         </>
@@ -61,7 +66,7 @@ export default async function HomePage() {
                 <Users className="w-7 h-7 text-primary/80" />
                 <h2 className="text-3xl font-headline font-bold text-foreground tracking-tight">Following Activity</h2>
             </div>
-            <FollowingFeed />
+            <FollowingFeed feed={followingFeed} currentUserId={user.id} />
           </section>
           <Separator />
           <section className="space-y-6">
@@ -69,7 +74,7 @@ export default async function HomePage() {
                 <TrendingUp className="w-7 h-7 text-primary/80" />
                 <h2 className="text-3xl font-headline font-bold text-foreground tracking-tight">Trending Reviews</h2>
             </div>
-             <TrendingReviews />
+             <TrendingReviews reviews={trendingReviews} currentUserId={user.id} />
           </section>
           <Separator />
         </>
