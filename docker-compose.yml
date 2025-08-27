@@ -11,6 +11,8 @@ services:
     depends_on:
       cache:
         condition: service_started
+      recommendation-engine:
+        condition: service_started
     volumes:
       - ./:/app
       - /app/node_modules
@@ -40,5 +42,17 @@ services:
       timeout: 5s
       retries: 5
   
+  recommendation-engine:
+    container_name: flicktrack-recommendation-engine
+    build:
+      context: ./recommendation-engine
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./recommendation-engine:/app
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+
 volumes:
   redis_data:
