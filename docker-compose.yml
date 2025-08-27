@@ -41,7 +41,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-  
+
   recommendation-engine:
     container_name: flicktrack-recommendation-engine
     build:
@@ -51,8 +51,19 @@ services:
       - "8000:8000"
     volumes:
       - ./recommendation-engine:/app
-    environment:
-      - DATABASE_URL=${DATABASE_URL}
+      - processed_data:/app/processed_data
+    depends_on:
+      data-pipeline:
+        condition: service_completed_successfully
+
+  data-pipeline:
+    container_name: flicktrack-data-pipeline
+    build:
+      context: ./data-pipeline-pyspark
+      dockerfile: Dockerfile
+    volumes:
+      - processed_data:/app/processed_data
 
 volumes:
   redis_data:
+  processed_data:

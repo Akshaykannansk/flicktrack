@@ -1,5 +1,5 @@
-pyspark
-psycopg2-binary
-python-dotenv
 fastapi
 uvicorn
+torch
+pandas
+scikit-learn
