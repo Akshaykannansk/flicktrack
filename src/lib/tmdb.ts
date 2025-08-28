@@ -146,7 +146,17 @@ export async function getPersonDetails(id: string): Promise<PersonDetails | null
         return null;
     }
 
-    const filmography = (data.movie_credits?.cast ?? []).map(transformFilmData);
+    const acting: Film[] = (data.movie_credits?.cast ?? []).map(transformFilmData);
+    const crew: any[] = data.movie_credits?.crew ?? [];
+
+    const directing: Film[] = crew.filter(c => c.job === 'Director').map(transformFilmData);
+    const producing: Film[] = crew.filter(c => c.job === 'Producer').map(transformFilmData);
+    const writing: Film[] = crew.filter(c => c.job === 'Screenplay' || c.job === 'Writer').map(transformFilmData);
+
+    // Remove duplicates
+    const uniqueDirecting = directing.filter((film, index, self) => self.findIndex(f => f.id === film.id) === index);
+    const uniqueProducing = producing.filter((film, index, self) => self.findIndex(f => f.id === film.id) === index);
+    const uniqueWriting = writing.filter((film, index, self) => self.findIndex(f => f.id === film.id) === index);
 
     return {
         id: data.id.toString(),
@@ -154,6 +164,11 @@ export async function getPersonDetails(id: string): Promise<PersonDetails | null
         biography: data.biography,
         profile_path: data.profile_path,
         known_for_department: data.known_for_department,
-        filmography: filmography,
+        filmography: {
+            acting,
+            directing: uniqueDirecting,
+            producing: uniqueProducing,
+            writing: uniqueWriting,
+        },
     };
 }

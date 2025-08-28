@@ -68,7 +68,12 @@ export interface PersonDetails {
   biography: string;
   profile_path: string | null;
   known_for_department: string;
-  filmography: Film[];
+  filmography: {
+    acting: Film[];
+    directing: Film[];
+    producing: Film[];
+    writing: Film[];
+  };
 }
 
 interface FilmOnList {
