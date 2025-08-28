@@ -48,7 +48,7 @@ services:
       context: ./recommendation-engine
       dockerfile: Dockerfile
     ports:
-      - "8000:8000"
+      - "8005:8000"
     volumes:
       - ./recommendation-engine:/app
       - processed_data:/app/processed_data
