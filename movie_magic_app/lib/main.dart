@@ -1,8 +1,16 @@
-import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 
-void main() {
+import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'screens/login_screen.dart';
+import 'screens/home_screen.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Supabase.initialize(
+    url: 'https://qjxovdelcbwurdvgbech.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqeG92ZGVsY2J3dXJkdmdiZWNoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ1ODIxNjYsImV4cCI6MjA3MDE1ODE2Nn0.XKIwZ1nguj3mmb84KPeC6ugBb1G8ytg4MXaWvmbjI4A',
+  );
   runApp(const MyApp());
 }
 
@@ -16,88 +24,48 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const MovieList(),
+      initialRoute: '/',
+      routes: <String, WidgetBuilder>{
+        '/': (_) => const _SplashPage(),
+        '/login': (_) => const LoginScreen(),
+        '/home': (_) => const HomeScreen(),
+      },
     );
   }
 }
 
-class MovieList extends StatefulWidget {
-  const MovieList({super.key});
+class _SplashPage extends StatefulWidget {
+  const _SplashPage();
 
   @override
-  State<MovieList> createState() => _MovieListState();
+  _SplashPageState createState() => _SplashPageState();
 }
 
-class _MovieListState extends State<MovieList> {
-  List<dynamic> _reviews = [];
-
+class _SplashPageState extends State<_SplashPage> {
   @override
   void initState() {
     super.initState();
-    _fetchTrendingReviews();
+    _redirect();
   }
 
-  Future<void> _fetchTrendingReviews() async {
-    // This is a placeholder URL. Replace with your actual API endpoint.
-    // You might need to adjust the IP address and port based on where your API is running.
-    const url = 'http://localhost:3000/api/trending-reviews';
-    try {
-       final response = await http.get(Uri.parse(url));
-      if (response.statusCode == 200) {
-        setState(() {
-          _reviews = json.decode(response.body);
-        });
-      } else {
-        // Handle non-200 responses
-        print('Failed to load reviews: ${response.statusCode}');
-      }
-    } catch (e) {
-      // Handle errors
-       print('Error fetching reviews: $e');
+  Future<void> _redirect() async {
+    await Future.delayed(Duration.zero);
+    if (!mounted) {
+      return;
+    }
+
+    final session = Supabase.instance.client.auth.currentSession;
+    if (session != null) {
+      Navigator.of(context).pushReplacementNamed('/home');
+    } else {
+      Navigator.of(context).pushReplacementNamed('/login');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Trending Reviews'),
-      ),
-      body: _reviews.isEmpty
-          ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              itemCount: _reviews.length,
-              itemBuilder: (context, index) {
-                final review = _reviews[index];
-                final film = review['film'];
-                return Card(
-                  margin: const EdgeInsets.all(8.0),
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (film['poster_path'] != null)
-                           Image.network(
-                            'https://image.tmdb.org/t/p/w200${film['poster_path']}',
-                            height: 150,
-                          ),
-                        const SizedBox(height: 8.0),
-                        Text(
-                          film['title'],
-                          style: const TextStyle(
-                            fontSize: 18.0,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4.0),
-                        Text(review['content']),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
+    return const Scaffold(
+      body: Center(child: CircularProgressIndicator()),
     );
   }
 }
