@@ -11,8 +11,8 @@ services:
     depends_on:
       cache:
         condition: service_started
-      recommendation-engine:
-        condition: service_started
+      # recommendation-engine:
+      #   condition: service_started
     volumes:
       - ./:/app
       - /app/node_modules
@@ -56,13 +56,13 @@ services:
       data-pipeline:
         condition: service_completed_successfully
 
-  data-pipeline:
-    container_name: flicktrack-data-pipeline
-    build:
-      context: ./data-pipeline-pyspark
-      dockerfile: Dockerfile
-    volumes:
-      - processed_data:/app/processed_data
+  # data-pipeline:
+  #   container_name: flicktrack-data-pipeline
+  #   build:
+  #     context: ./data-pipeline-pyspark
+  #     dockerfile: Dockerfile
+  #   volumes:
+  #     - processed_data:/app/processed_data
 
 volumes:
   redis_data:
