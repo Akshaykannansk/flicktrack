@@ -1,18 +1,10 @@
 import { PersonDetails as PersonDetailsType } from "@/lib/types";
 import { IMAGE_BASE_URL } from "@/lib/tmdb-isomorphic";
 import Image from "next/image";
-import { FilmCard } from "./film-card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Filmography } from "./filmography";
 
 export function PersonDetails({ person }: { person: PersonDetailsType }) {
   const photoUrl = person.profile_path ? `${IMAGE_BASE_URL}w500${person.profile_path}` : 'https://placehold.co/400x600.png';
-
-  const filmographyTabs = [
-    { title: "Acting", films: person.filmography.acting },
-    { title: "Directing", films: person.filmography.directing },
-    { title: "Producing", films: person.filmography.producing },
-    { title: "Writing", films: person.filmography.writing },
-  ].filter(tab => tab.films.length > 0);
 
   return (
     <div className="space-y-12">
@@ -40,26 +32,7 @@ export function PersonDetails({ person }: { person: PersonDetailsType }) {
           </div>
         </div>
       </div>
-      <div>
-        <h2 className="text-2xl font-headline font-semibold mb-4">Filmography</h2>
-        <Tabs defaultValue={filmographyTabs[0]?.title} className="w-full">
-          <TabsList>
-            {filmographyTabs.map(tab => (
-              <TabsTrigger key={tab.title} value={tab.title}>{tab.title}</TabsTrigger>
-            ))}
-          </TabsList>
-
-          {filmographyTabs.map(tab => (
-            <TabsContent key={tab.title} value={tab.title}>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4">
-                {tab.films.map(film => (
-                  <FilmCard key={film.id} film={film} />
-                ))}
-              </div>
-            </TabsContent>
-          ))}
-        </Tabs>
-      </div>
+      <Filmography filmography={person.filmography} />
     </div>
   );
 }
