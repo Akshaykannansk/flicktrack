@@ -52,9 +52,9 @@ services:
     volumes:
       - ./recommendation-engine:/app
       - processed_data:/app/processed_data
-    depends_on:
-      data-pipeline:
-        condition: service_completed_successfully
+    # depends_on:
+    #   data-pipeline:
+    #     condition: service_completed_successfully
 
   # data-pipeline:
   #   container_name: flicktrack-data-pipeline
