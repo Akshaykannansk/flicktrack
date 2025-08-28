@@ -16,6 +16,7 @@ import type { FilmDetails } from '@/lib/types';
 import { getWatchlistStatusForFilm } from '@/services/filmService';
 import { Suspense } from 'react';
 import { CastList, CastListSkeleton } from '@/components/film-cast';
+import { CrewList, CrewListSkeleton } from '@/components/film-crew';
 import { RatingsDistributionChart } from '@/components/ratings-distribution-chart';
 import { getRatingsDistribution, getRecentReviewsForFilm } from '@/services/reviewService';
 import { FilmReviewsList } from '@/components/film-reviews-list';
@@ -172,6 +173,12 @@ export default async function FilmDetailPage({ params }: { params: { id: string 
           <h2 className="text-2xl font-headline font-semibold">Cast</h2>
           <Suspense fallback={<CastListSkeleton />}>
               <CastList filmId={id} />
+          </Suspense>
+        </div>
+        <div>
+          <h2 className="text-2xl font-headline font-semibold">Crew</h2>
+          <Suspense fallback={<CrewListSkeleton />}>
+              <CrewList filmId={id} />
           </Suspense>
         </div>
     </div>

@@ -34,6 +34,7 @@ export interface CrewMember {
   id: number;
   name: string;
   job: string;
+  profile_path: string | null;
 }
 
 export interface Video {
@@ -58,6 +59,16 @@ export interface FilmDetails {
   genres: Genre[];
   runtime: number;
   director?: CrewMember;
+  crew?: CrewMember[];
+}
+
+export interface PersonDetails {
+  id: string;
+  name: string;
+  biography: string;
+  profile_path: string | null;
+  known_for_department: string;
+  filmography: Film[];
 }
 
 interface FilmOnList {

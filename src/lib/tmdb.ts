@@ -1,5 +1,5 @@
 
-import type { Film, FilmDetails, PaginatedResponse, Video, CastMember } from './types';
+import type { Film, FilmDetails, PaginatedResponse, Video, CastMember, CrewMember, PersonDetails } from './types';
 import { IMAGE_BASE_URL } from './tmdb-isomorphic';
 import redis from '@/lib/redis';
 
@@ -102,7 +102,7 @@ export async function getNowPlayingMovies(page = 1, limit = 20): Promise<Film[] 
 }
 
 export async function getFilmDetails(id: string): Promise<FilmDetails | null> {
-    const data = await fetchFromTMDB<any>(`movie/${id}`);
+    const data = await fetchFromTMDB<any>(`movie/${id}`, { append_to_response: 'credits' });
     
     if (!data) {
         return null;
@@ -119,18 +119,41 @@ export async function getFilmDetails(id: string): Promise<FilmDetails | null> {
         genres: data.genres || [],
         runtime: data.runtime,
         director: data.credits?.crew?.find((person: any) => person.job === 'Director'),
+        crew: data.credits?.crew ?? [],
     };
     
     return filmDetails;
 }
 
-export async function getFilmCredits(id: string): Promise<CastMember[] | null> {
-    const data = await fetchFromTMDB<{cast: CastMember[]}>(`movie/${id}/credits`);
-    return data?.cast.slice(0, 10) || null;
+export async function getFilmCredits(id: string): Promise<{cast: CastMember[], crew: CrewMember[]} | null> {
+    const data = await fetchFromTMDB<{cast: CastMember[], crew: CrewMember[]}>(`movie/${id}/credits`);
+    if (!data) return null;
+    return {
+        cast: data.cast.slice(0,10),
+        crew: data.crew
+    }
 }
 
 export async function searchFilms(query: string, page = 1, limit = 20): Promise<Film[]> {
   if (!query) return [];
   const data = await fetchFromTMDB<PaginatedResponse<any>>('search/movie', { query, page: page.toString() });
   return data?.results.slice(0, limit).map(transformFilmData) || [];
+}
+
+export async function getPersonDetails(id: string): Promise<PersonDetails | null> {
+    const data = await fetchFromTMDB<any>(`person/${id}`, { append_to_response: 'movie_credits' });
+    if (!data) {
+        return null;
+    }
+
+    const filmography = (data.movie_credits?.cast ?? []).map(transformFilmData);
+
+    return {
+        id: data.id.toString(),
+        name: data.name,
+        biography: data.biography,
+        profile_path: data.profile_path,
+        known_for_department: data.known_for_department,
+        filmography: filmography,
+    };
 }
