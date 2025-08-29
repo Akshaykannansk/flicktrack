@@ -11,7 +11,7 @@ class FeedScreen extends StatefulWidget {
 }
 
 class _FeedScreenState extends State<FeedScreen> {
-  List<dynamic> _reviews = [];
+  final List<dynamic> _reviews = [];
   final _scrollController = ScrollController();
   int _page = 1;
   bool _isLoading = false;
