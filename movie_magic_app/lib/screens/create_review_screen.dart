@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:movie_magic_app/config.dart';
 
 class CreateReviewScreen extends StatefulWidget {
   final dynamic movie;
@@ -24,8 +25,7 @@ class _CreateReviewScreenState extends State<CreateReviewScreen> {
     setState(() {
       _isSubmitting = true;
     });
-    // This is a placeholder URL. Replace with your actual API endpoint.
-    final url = 'http://localhost:3000/api/movies/${widget.movie['id']}/reviews';
+    final url = '$baseUrl/movies/${widget.movie['id']}/reviews';
     try {
       final response = await http.post(
         Uri.parse(url),

@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'user_list_screen.dart';
+import 'package:movie_magic_app/config.dart';
 
 class ProfileScreen extends StatefulWidget {
   final dynamic user;
@@ -41,7 +42,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _fetchReviews() async {
-    final url = 'http://localhost:3000/api/users/${widget.user['id']}/reviews';
+    final url = '$baseUrl/users/${widget.user['id']}/reviews';
     try {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
@@ -62,8 +63,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final session = Supabase.instance.client.auth.currentSession;
     if (session == null) return;
 
-    final url =
-        'http://localhost:3000/api/users/${widget.user['id']}/is-following';
+    final url = '$baseUrl/users/${widget.user['id']}/is-following';
     try {
       final response = await http.get(
         Uri.parse(url),
@@ -87,8 +87,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final session = Supabase.instance.client.auth.currentSession;
     if (session == null) return;
 
-    final url =
-        'http://localhost:3000/api/users/${widget.user['id']}/toggle-follow';
+    final url = '$baseUrl/users/${widget.user['id']}/toggle-follow';
     try {
       final response = await http.post(
         Uri.parse(url),

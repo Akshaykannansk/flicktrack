@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:movie_magic_app/config.dart';
 
 class FeedScreen extends StatefulWidget {
   const FeedScreen({super.key});
@@ -42,8 +43,7 @@ class _FeedScreenState extends State<FeedScreen> {
       return;
     }
 
-    // This is a placeholder URL. Replace with your actual API endpoint.
-    final url = 'http://localhost:3000/api/feed?page=$_page';
+    final url = '$baseUrl/feed?page=$_page';
     try {
       final response = await http.get(
         Uri.parse(url),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'profile_screen.dart';
+import 'package:movie_magic_app/config.dart';
 
 enum UserListType { followers, following }
 
@@ -30,9 +31,8 @@ class _UserListScreenState extends State<UserListScreen> {
     final listTypeString = widget.listType == UserListType.followers
         ? 'followers'
         : 'following';
-    // This is a placeholder URL. Replace with your actual API endpoint.
     final url =
-        'http://localhost:3000/api/users/${widget.userId}/$listTypeString';
+        '$baseUrl/users/${widget.userId}/$listTypeString';
     try {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:movie_magic_app/config.dart';
 
 class TrendingScreen extends StatefulWidget {
   const TrendingScreen({super.key});
@@ -35,8 +36,7 @@ class _TrendingScreenState extends State<TrendingScreen> {
     setState(() {
       _isLoading = true;
     });
-    // This is a placeholder URL. Replace with your actual API endpoint.
-    final url = 'http://localhost:3000/api/trending-reviews?page=$_page';
+    final url = '$baseUrl/trending-reviews?page=$_page';
     try {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
