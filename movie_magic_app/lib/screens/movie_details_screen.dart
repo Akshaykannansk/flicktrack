@@ -180,6 +180,18 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
+                                      if (review['rating'] != null)
+                                        Row(
+                                          children: List.generate(5, (index) {
+                                            return Icon(
+                                              index < review['rating']
+                                                  ? Icons.star
+                                                  : Icons.star_border,
+                                              color: Colors.amber,
+                                              size: 16.0,
+                                            );
+                                          }),
+                                        ),
                                       const SizedBox(height: 4.0),
                                       Text(review['content']),
                                     ],

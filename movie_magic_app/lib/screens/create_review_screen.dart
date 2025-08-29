@@ -16,6 +16,7 @@ class CreateReviewScreen extends StatefulWidget {
 class _CreateReviewScreenState extends State<CreateReviewScreen> {
   final _reviewController = TextEditingController();
   bool _isSubmitting = false;
+  double _rating = 0;
 
   Future<void> _submitReview() async {
     final session = Supabase.instance.client.auth.currentSession;
@@ -35,6 +36,7 @@ class _CreateReviewScreenState extends State<CreateReviewScreen> {
         },
         body: json.encode({
           'content': _reviewController.text,
+          'rating': _rating,
         }),
       );
       if (response.statusCode == 201) {
@@ -61,6 +63,23 @@ class _CreateReviewScreenState extends State<CreateReviewScreen> {
         padding: const EdgeInsets.all(8.0),
         child: Column(
           children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(5, (index) {
+                return IconButton(
+                  onPressed: () {
+                    setState(() {
+                      _rating = index + 1.0;
+                    });
+                  },
+                  icon: Icon(
+                    index < _rating ? Icons.star : Icons.star_border,
+                    color: Colors.amber,
+                  ),
+                );
+              }),
+            ),
+            const SizedBox(height: 8.0),
             TextField(
               controller: _reviewController,
               maxLines: 5,

@@ -68,7 +68,7 @@ Your Flutter app should include the following features:
 *   Viewing movie details.
 *   Managing user profiles.
 *   Following/unfollowing users.
-*   Creating reviews for movies.
+*   Creating reviews for movies with a star rating.
 *   Viewing a feed of recent reviews from followed users.
 *   Viewing a user's watchlist and favorite movies.
 *   Adding/removing movies from the watchlist and favorites.
@@ -138,7 +138,14 @@ class _MovieListState extends State<MovieList> {
 
 ### 4. Feature Implementation
 
-The application has been extended to include watchlist and favorites functionality. Here's a breakdown of the implementation:
+The application has been extended to include watchlist, favorites, and movie rating functionality. Here's a breakdown of the implementation:
+
+*   **Movie Reviews and Ratings**: The application now includes a comprehensive movie review and rating system.
+    *   **`create_review_screen.dart`**: The review creation screen has been enhanced to include a 1-to-5 star rating system. Users can now provide a star rating in addition to their written review. The UI uses a row of `IconButton` widgets that change from `Icons.star_border` to `Icons.star` to represent the selected rating.
+    *   **Displaying Ratings**: The star ratings are now displayed alongside the reviews in multiple locations within the app:
+        *   **`movie_details_screen.dart`**: Each review card on the movie details page now shows the star rating given by the user.
+        *   **`profile_screen.dart`**: The list of reviews on a user's profile page now includes the star rating for each review.
+        *   **`feed_screen.dart`**: Reviews appearing in the user's feed also display the associated star rating.
 
 *   **`movie_list_screen.dart`**: A new screen has been created to display a list of movies. This screen is used to show a user's watchlist and their list of favorite movies. It takes a `userId` and a `MovieListType` (either `watchlist` or `favorite`) as input and fetches the corresponding list of movies from the backend.
 
