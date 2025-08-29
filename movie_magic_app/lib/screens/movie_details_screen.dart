@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'create_review_screen.dart';
 import 'package:movie_magic_app/config.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class MovieDetailsScreen extends StatefulWidget {
   final dynamic movie;
@@ -16,11 +17,18 @@ class MovieDetailsScreen extends StatefulWidget {
 class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
   List<dynamic> _reviews = [];
   bool _isLoading = true;
+  bool _isWatchlisted = false;
+  bool _isFavorited = false;
 
   @override
   void initState() {
     super.initState();
+    _fetchData();
+  }
+
+  Future<void> _fetchData() async {
     _fetchReviews();
+    _checkIfWatchlistedAndFavorited();
   }
 
   Future<void> _fetchReviews() async {
@@ -43,11 +51,94 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
     }
   }
 
+  Future<void> _checkIfWatchlistedAndFavorited() async {
+    final session = Supabase.instance.client.auth.currentSession;
+    if (session == null) return;
+
+    final url = '$baseUrl/movies/${widget.movie['id']}/status';
+    try {
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {'Authorization': 'Bearer ${session.accessToken}'},
+      );
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _isWatchlisted = data['isWatchlisted'];
+          _isFavorited = data['isFavorited'];
+        });
+      } else {
+        print(
+            'Failed to check if movie is watchlisted or favorited: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error checking if movie is watchlisted or favorited: $e');
+    }
+  }
+
+  Future<void> _toggleWatchlist() async {
+    final session = Supabase.instance.client.auth.currentSession;
+    if (session == null) return;
+
+    final url = '$baseUrl/movies/${widget.movie['id']}/toggle-watchlist';
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {'Authorization': 'Bearer ${session.accessToken}'},
+      );
+      if (response.statusCode == 200) {
+        setState(() {
+          _isWatchlisted = !_isWatchlisted;
+        });
+      } else {
+        print('Failed to toggle watchlist: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error toggling watchlist: $e');
+    }
+  }
+
+  Future<void> _toggleFavorite() async {
+    final session = Supabase.instance.client.auth.currentSession;
+    if (session == null) return;
+
+    final url = '$baseUrl/movies/${widget.movie['id']}/toggle-favorite';
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {'Authorization': 'Bearer ${session.accessToken}'},
+      );
+      if (response.statusCode == 200) {
+        setState(() {
+          _isFavorited = !_isFavorited;
+        });
+      } else {
+        print('Failed to toggle favorite: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error toggling favorite: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.movie['title']),
+        actions: [
+          IconButton(
+            onPressed: _toggleWatchlist,
+            icon: Icon(
+              _isWatchlisted ? Icons.bookmark : Icons.bookmark_border,
+            ),
+          ),
+          IconButton(
+            onPressed: _toggleFavorite,
+            icon: Icon(
+              _isFavorited ? Icons.favorite : Icons.favorite_border,
+            ),
+          ),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())

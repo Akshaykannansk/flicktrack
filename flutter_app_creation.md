@@ -66,7 +66,12 @@ Your Flutter app should include the following features:
 *   User authentication (login, signup).
 *   Movie browsing and searching.
 *   Viewing movie details.
-*   Managing user profiles (watchlist, favorites, etc.).
+*   Managing user profiles.
+*   Following/unfollowing users.
+*   Creating reviews for movies.
+*   Viewing a feed of recent reviews from followed users.
+*   Viewing a user's watchlist and favorite movies.
+*   Adding/removing movies from the watchlist and favorites.
 
 ### 2. Connecting to Your Backend
 
@@ -131,13 +136,25 @@ class _MovieListState extends State<MovieList> {
 }
 ```
 
-### 4. Challenges
+### 4. Feature Implementation
+
+The application has been extended to include watchlist and favorites functionality. Here's a breakdown of the implementation:
+
+*   **`movie_list_screen.dart`**: A new screen has been created to display a list of movies. This screen is used to show a user's watchlist and their list of favorite movies. It takes a `userId` and a `MovieListType` (either `watchlist` or `favorite`) as input and fetches the corresponding list of movies from the backend.
+
+*   **`profile_screen.dart`**: The user profile screen has been updated to include two new sections: "Watchlist" and "Favorites". These sections display the number of movies in each list and, when tapped, navigate to the `MovieListScreen` to show the full list.
+
+*   **`movie_details_screen.dart`**: The movie details screen now includes two icon buttons in the app bar: one for the watchlist and one for favorites. These buttons allow the user to add or remove the currently viewed movie from their watchlist or favorites. The screen also fetches the current watchlist and favorite status for the movie when it loads, so the button icons can reflect the current state.
+
+These changes are supported by API calls to the backend to fetch and update the user's watchlist and favorite movies. The `http` package is used for these network requests, and Supabase is used for user authentication and session management.
+
+### 5. Challenges
 
 *   **Different Screen Sizes:** Use Flutter's responsive design features to adapt your UI to different screen sizes.
 *   **Device Capabilities:** Be mindful of device-specific features and limitations.
 *   **Performance:** Optimize your app for performance by using techniques like lazy loading and code splitting.
 
-## Further Reading
+### 6. Further Reading
 
 *   **Flutter Documentation:** [https://flutter.dev/docs](https://flutter.dev/docs)
 *   **Provider Package:** [https://pub.dev/packages/provider](https://pub.dev/packages/provider)

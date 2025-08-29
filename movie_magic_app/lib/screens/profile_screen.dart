@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'user_list_screen.dart';
 import 'package:movie_magic_app/config.dart';
+import 'movie_list_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final dynamic user;
@@ -148,53 +149,109 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         const SizedBox(width: 20),
                         Expanded(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          child: Column(
                             children: [
-                              GestureDetector(
-                                onTap: () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => UserListScreen(
-                                      userId: widget.user['id'] as String,
-                                      listType: UserListType.followers,
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  GestureDetector(
+                                    onTap: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => UserListScreen(
+                                          userId: widget.user['id'] as String,
+                                          listType: UserListType.followers,
+                                        ),
+                                      ),
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        Text(
+                                          _followersCount.toString(),
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16),
+                                        ),
+                                        const Text('Followers'),
+                                      ],
                                     ),
                                   ),
-                                ),
-                                child: Column(
-                                  children: [
-                                    Text(
-                                      _followersCount.toString(),
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16),
+                                  GestureDetector(
+                                    onTap: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => UserListScreen(
+                                          userId: widget.user['id'] as String,
+                                          listType: UserListType.following,
+                                        ),
+                                      ),
                                     ),
-                                    const Text('Followers'),
-                                  ],
-                                ),
+                                    child: Column(
+                                      children: [
+                                        Text(
+                                          (widget.user['following_count'] ?? 0)
+                                              .toString(),
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16),
+                                        ),
+                                        const Text('Following'),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
-                              GestureDetector(
-                                onTap: () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => UserListScreen(
-                                      userId: widget.user['id'] as String,
-                                      listType: UserListType.following,
+                              const SizedBox(height: 16),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  GestureDetector(
+                                    onTap: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => MovieListScreen(
+                                          userId: widget.user['id'] as String,
+                                          listType: MovieListType.watchlist,
+                                        ),
+                                      ),
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        Text(
+                                          (widget.user['watchlist_count'] ?? 0)
+                                              .toString(),
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16),
+                                        ),
+                                        const Text('Watchlist'),
+                                      ],
                                     ),
                                   ),
-                                ),
-                                child: Column(
-                                  children: [
-                                    Text(
-                                      (widget.user['following_count'] ?? 0)
-                                          .toString(),
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16),
+                                  GestureDetector(
+                                    onTap: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => MovieListScreen(
+                                          userId: widget.user['id'] as String,
+                                          listType: MovieListType.favorite,
+                                        ),
+                                      ),
                                     ),
-                                    const Text('Following'),
-                                  ],
-                                ),
+                                    child: Column(
+                                      children: [
+                                        Text(
+                                          (widget.user['favorites_count'] ?? 0)
+                                              .toString(),
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16),
+                                        ),
+                                        const Text('Favorites'),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
