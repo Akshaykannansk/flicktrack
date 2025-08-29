@@ -5,6 +5,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'user_list_screen.dart';
 import 'package:movie_magic_app/config.dart';
 import 'movie_list_screen.dart';
+import 'create_edit_list_screen.dart';
+import 'list_details_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final dynamic user;
@@ -17,6 +19,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   List<dynamic> _reviews = [];
+  List<dynamic> _lists = [];
   bool _isLoading = true;
   bool _isFollowing = false;
   late int _followersCount;
@@ -34,6 +37,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _isLoading = true;
     });
     await _fetchReviews();
+    await _fetchLists();
     if (_currentUserId != null && _currentUserId != widget.user['id']) {
       await _checkIfFollowing();
     }
@@ -57,6 +61,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
     } catch (e) {
       print('Error fetching reviews: $e');
+    }
+  }
+
+  Future<void> _fetchLists() async {
+    final url = '$baseUrl/users/${widget.user['id']}/lists';
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        if (mounted) {
+          setState(() {
+            _lists = json.decode(response.body);
+          });
+        }
+      } else {
+        print('Failed to load lists: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching lists: $e');
     }
   }
 
@@ -273,6 +295,50 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       const SizedBox(height: 16),
                     ],
                     const Text(
+                      'Lists',
+                      style: TextStyle(
+                        fontSize: 18.0,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8.0),
+                    if (_lists.isEmpty)
+                      const Text('No lists yet.')
+                    else
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _lists.length,
+                        itemBuilder: (context, index) {
+                          final list = _lists[index];
+                          return Card(
+                            margin: const EdgeInsets.symmetric(vertical: 4.0),
+                            child: ListTile(
+                              title: Text(list['name']),
+                              subtitle: Text(list['description']),
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      ListDetailsScreen(list: list),
+                                ),
+                              ),
+                              trailing: isCurrentUser ? IconButton(
+                                icon: const Icon(Icons.edit),
+                                onPressed: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        CreateEditListScreen(list: list),
+                                  ),
+                                ),
+                              ) : null,
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                    const Text(
                       'Reviews',
                       style: TextStyle(
                         fontSize: 18.0,
@@ -326,6 +392,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
             ),
+      floatingActionButton: isCurrentUser
+          ? FloatingActionButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const CreateEditListScreen(),
+                  ),
+                ).then((_) => _fetchLists());
+              },
+              child: const Icon(Icons.add),
+            )
+          : null,
     );
   }
 }

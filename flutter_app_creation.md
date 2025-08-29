@@ -72,6 +72,7 @@ Your Flutter app should include the following features:
 *   Viewing a feed of recent reviews from followed users.
 *   Viewing a user's watchlist and favorite movies.
 *   Adding/removing movies from the watchlist and favorites.
+*   Creating, updating, and copying movie lists.
 
 ### 2. Connecting to Your Backend
 
@@ -152,6 +153,11 @@ The application has been extended to include watchlist, favorites, and movie rat
 *   **`profile_screen.dart`**: The user profile screen has been updated to include two new sections: "Watchlist" and "Favorites". These sections display the number of movies in each list and, when tapped, navigate to the `MovieListScreen` to show the full list.
 
 *   **`movie_details_screen.dart`**: The movie details screen now includes two icon buttons in the app bar: one for the watchlist and one for favorites. These buttons allow the user to add or remove the currently viewed movie from their watchlist or favorites. The screen also fetches the current watchlist and favorite status for the movie when it loads, so the button icons can reflect the current state.
+
+*   **Movie List Management**: Users can now create, update, and copy movie lists.
+    *   **`create_edit_list_screen.dart`**: A new screen allows users to create new movie lists or edit existing ones by providing a name and description.
+    *   **`list_details_screen.dart`**: This screen displays the movies within a selected list. If the user is viewing another user's list, they will see a "copy" button to duplicate the list for themselves.
+    *   **`profile_screen.dart`**: The profile screen now displays a list of the user's movie lists. Tapping on a list navigates to the `list_details_screen.dart`. A floating action button is available for creating new lists.
 
 These changes are supported by API calls to the backend to fetch and update the user's watchlist and favorite movies. The `http` package is used for these network requests, and Supabase is used for user authentication and session management.
 
