@@ -1,25 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:movie_magic_app/services/search_service.dart';
+import 'package:movie_magic_app/screens/search_state.dart';
 import 'movie_details_screen.dart';
 import 'profile_screen.dart';
 
-class SearchScreen extends StatefulWidget {
+class SearchScreen extends StatelessWidget {
   const SearchScreen({super.key});
 
   @override
-  State<SearchScreen> createState() => _SearchScreenState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => SearchState(),
+      child: const _SearchScreen(),
+    );
+  }
 }
 
-class _SearchScreenState extends State<SearchScreen> {
+class _SearchScreen extends StatefulWidget {
+  const _SearchScreen();
+
+  @override
+  State<_SearchScreen> createState() => _SearchScreenState();
+}
+
+class _SearchScreenState extends State<_SearchScreen> {
   final _searchController = TextEditingController();
-  List<dynamic> _movieResults = [];
-  List<dynamic> _userResults = [];
   final _scrollController = ScrollController();
   int _moviePage = 1;
   int _userPage = 1;
-  bool _isLoading = false;
-  bool _hasMoreMovies = true;
-  bool _hasMoreUsers = true;
   String _currentQuery = '';
 
   @override
@@ -34,54 +43,45 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Future<void> _search(String query, {bool loadMore = false}) async {
-    if (query.isEmpty || (_isLoading && !loadMore)) {
+    final searchState = Provider.of<SearchState>(context, listen: false);
+
+    if (query.isEmpty || (searchState.isLoading && !loadMore)) {
       return;
     }
 
     if (!loadMore) {
       _moviePage = 1;
       _userPage = 1;
-      _movieResults = [];
-      _userResults = [];
-      _hasMoreMovies = true;
-      _hasMoreUsers = true;
       _currentQuery = query;
+      searchState.reset();
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    searchState.setLoading(true);
 
     try {
-      if (_hasMoreMovies) {
+      if (searchState.hasMoreMovies) {
         final movieResults = await SearchService.searchMovies(query, page: _moviePage);
-        setState(() {
-          if (movieResults.isNotEmpty) {
-            _movieResults.addAll(movieResults);
-            _moviePage++;
-          } else {
-            _hasMoreMovies = false;
-          }
-        });
+        if (movieResults.isNotEmpty) {
+          searchState.addMovieResults(movieResults);
+          _moviePage++;
+        } else {
+          searchState.setHasMoreMovies(false);
+        }
       }
 
-      if (_hasMoreUsers) {
+      if (searchState.hasMoreUsers) {
         final userResults = await SearchService.searchUsers(query, page: _userPage);
-        setState(() {
-          if (userResults.isNotEmpty) {
-            _userResults.addAll(userResults);
-            _userPage++;
-          } else {
-            _hasMoreUsers = false;
-          }
-        });
+        if (userResults.isNotEmpty) {
+          searchState.addUserResults(userResults);
+          _userPage++;
+        } else {
+          searchState.setHasMoreUsers(false);
+        }
       }
     } catch (e) {
       print('Error searching: $e');
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      searchState.setLoading(false);
     }
   }
 
@@ -104,84 +104,90 @@ class _SearchScreenState extends State<SearchScreen> {
           onSubmitted: (query) => _search(query),
         ),
       ),
-      body: _isLoading && _movieResults.isEmpty && _userResults.isEmpty
-          ? const Center(child: CircularProgressIndicator())
-          : _movieResults.isEmpty && _userResults.isEmpty
-              ? const Center(child: Text('No results found.'))
-              : ListView.builder(
-                  controller: _scrollController,
-                  itemCount: _movieResults.length +
-                      _userResults.length +
-                      (_hasMoreMovies || _hasMoreUsers ? 1 : 0) +
-                      2, // For headers
-                  itemBuilder: (context, index) {
-                    if (index == 0) {
-                      return _movieResults.isNotEmpty
-                          ? const Padding(
-                              padding: EdgeInsets.all(8.0),
-                              child: Text(
-                                'Movies',
-                                style: TextStyle(
-                                  fontSize: 18.0,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            )
-                          : Container();
-                    }
-                    index -= 1;
-
-                    if (index < _movieResults.length) {
-                      final movie = _movieResults[index];
-                      return ListTile(
-                        title: Text(movie['title']),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  MovieDetailsScreen(movie: movie),
+      body: Consumer<SearchState>(
+        builder: (context, searchState, child) {
+          if (searchState.isLoading && searchState.movieResults.isEmpty && searchState.userResults.isEmpty) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (searchState.movieResults.isEmpty && searchState.userResults.isEmpty) {
+            return const Center(child: Text('No results found.'));
+          } else {
+            return ListView.builder(
+              controller: _scrollController,
+              itemCount: searchState.movieResults.length +
+                  searchState.userResults.length +
+                  (searchState.hasMoreMovies || searchState.hasMoreUsers ? 1 : 0) +
+                  2, // For headers
+              itemBuilder: (context, index) {
+                if (index == 0) {
+                  return searchState.movieResults.isNotEmpty
+                      ? const Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: Text(
+                            'Movies',
+                            style: TextStyle(
+                              fontSize: 18.0,
+                              fontWeight: FontWeight.bold,
                             ),
-                          );
-                        },
+                          ),
+                        )
+                      : Container();
+                }
+                index -= 1;
+
+                if (index < searchState.movieResults.length) {
+                  final movie = searchState.movieResults[index];
+                  return ListTile(
+                    title: Text(movie['title']),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              MovieDetailsScreen(movie: movie),
+                        ),
                       );
-                    }
-                    index -= _movieResults.length;
+                    },
+                  );
+                }
+                index -= searchState.movieResults.length;
 
-                    if (index == 0) {
-                      return _userResults.isNotEmpty
-                          ? const Padding(
-                              padding: EdgeInsets.all(8.0),
-                              child: Text(
-                                'Users',
-                                style: TextStyle(
-                                  fontSize: 18.0,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            )
-                          : Container();
-                    }
-                    index -= 1;
-
-                    if (index < _userResults.length) {
-                      final user = _userResults[index];
-                      return ListTile(
-                        title: Text(user['username']),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ProfileScreen(user: user),
+                if (index == 0) {
+                  return searchState.userResults.isNotEmpty
+                      ? const Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: Text(
+                            'Users',
+                            style: TextStyle(
+                              fontSize: 18.0,
+                              fontWeight: FontWeight.bold,
                             ),
-                          );
-                        },
-                      );
-                    }
+                          ),
+                        )
+                      : Container();
+                }
+                index -= 1;
 
-                    return const Center(child: CircularProgressIndicator());
-                  },
-                ),
+                if (index < searchState.userResults.length) {
+                  final user = searchState.userResults[index];
+                  return ListTile(
+                    title: Text(user['username']),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ProfileScreen(user: user),
+                        ),
+                      );
+                    },
+                  );
+                }
+
+                return const Center(child: CircularProgressIndicator());
+              },
+            );
+          }
+        },
+      ),
     );
   }
 }

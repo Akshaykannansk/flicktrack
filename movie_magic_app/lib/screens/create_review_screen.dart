@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:movie_magic_app/config.dart';
+import 'package:movie_magic_app/services/review_service.dart';
 
 class CreateReviewScreen extends StatefulWidget {
   final dynamic movie;
@@ -19,26 +16,17 @@ class _CreateReviewScreenState extends State<CreateReviewScreen> {
   double _rating = 0;
 
   Future<void> _submitReview() async {
-    final session = Supabase.instance.client.auth.currentSession;
-    if (session == null) {
-      return;
-    }
     setState(() {
       _isSubmitting = true;
     });
-    final url = '$baseUrl/movies/${widget.movie['id']}/reviews';
+
     try {
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${session.accessToken}',
-        },
-        body: json.encode({
-          'content': _reviewController.text,
-          'rating': _rating,
-        }),
+      final response = await ReviewService.submitReview(
+        widget.movie['id'].toString(),
+        _reviewController.text,
+        _rating,
       );
+
       if (response.statusCode == 201) {
         Navigator.of(context).pop();
       } else {

@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:movie_magic_app/services/review_service.dart';
+import 'package:movie_magic_app/services/movie_service.dart';
 import 'create_review_screen.dart';
-import 'package:movie_magic_app/config.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class MovieDetailsScreen extends StatefulWidget {
   final dynamic movie;
@@ -32,16 +30,11 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
   }
 
   Future<void> _fetchReviews() async {
-    final url = '$baseUrl/movies/${widget.movie['id']}/reviews';
     try {
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode == 200) {
-        setState(() {
-          _reviews = json.decode(response.body);
-        });
-      } else {
-        print('Failed to load reviews: ${response.statusCode}');
-      }
+      final reviews = await ReviewService.getReviews(widget.movie['id'].toString());
+      setState(() {
+        _reviews = reviews;
+      });
     } catch (e) {
       print('Error fetching reviews: $e');
     } finally {
@@ -52,69 +45,34 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
   }
 
   Future<void> _checkIfWatchlistedAndFavorited() async {
-    final session = Supabase.instance.client.auth.currentSession;
-    if (session == null) return;
-
-    final url = '$baseUrl/movies/${widget.movie['id']}/status';
     try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {'Authorization': 'Bearer ${session.accessToken}'},
-      );
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        setState(() {
-          _isWatchlisted = data['isWatchlisted'];
-          _isFavorited = data['isFavorited'];
-        });
-      } else {
-        print(
-            'Failed to check if movie is watchlisted or favorited: ${response.statusCode}');
-      }
+      final status = await MovieService.getMovieStatus(widget.movie['id'].toString());
+      setState(() {
+        _isWatchlisted = status['isWatchlisted'];
+        _isFavorited = status['isFavorited'];
+      });
     } catch (e) {
-      print('Error checking if movie is watchlisted or favorited: $e');
+      print('Error checking movie status: $e');
     }
   }
 
   Future<void> _toggleWatchlist() async {
-    final session = Supabase.instance.client.auth.currentSession;
-    if (session == null) return;
-
-    final url = '$baseUrl/movies/${widget.movie['id']}/toggle-watchlist';
     try {
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {'Authorization': 'Bearer ${session.accessToken}'},
-      );
-      if (response.statusCode == 200) {
-        setState(() {
-          _isWatchlisted = !_isWatchlisted;
-        });
-      } else {
-        print('Failed to toggle watchlist: ${response.statusCode}');
-      }
+      await MovieService.toggleWatchlist(widget.movie['id'].toString());
+      setState(() {
+        _isWatchlisted = !_isWatchlisted;
+      });
     } catch (e) {
       print('Error toggling watchlist: $e');
     }
   }
 
   Future<void> _toggleFavorite() async {
-    final session = Supabase.instance.client.auth.currentSession;
-    if (session == null) return;
-
-    final url = '$baseUrl/movies/${widget.movie['id']}/toggle-favorite';
     try {
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {'Authorization': 'Bearer ${session.accessToken}'},
-      );
-      if (response.statusCode == 200) {
-        setState(() {
-          _isFavorited = !_isFavorited;
-        });
-      } else {
-        print('Failed to toggle favorite: ${response.statusCode}');
-      }
+      await MovieService.toggleFavorite(widget.movie['id'].toString());
+      setState(() {
+        _isFavorited = !_isFavorited;
+      });
     } catch (e) {
       print('Error toggling favorite: $e');
     }
@@ -211,7 +169,7 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
             MaterialPageRoute(
               builder: (context) => CreateReviewScreen(movie: widget.movie),
             ),
-          );
+          ).then((_) => _fetchReviews());
         },
         child: const Icon(Icons.add),
       ),

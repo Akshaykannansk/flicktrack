@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:movie_magic_app/services/user_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'user_list_screen.dart';
-import 'package:movie_magic_app/config.dart';
 import 'movie_list_screen.dart';
 import 'create_edit_list_screen.dart';
 import 'list_details_screen.dart';
@@ -47,17 +45,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _fetchReviews() async {
-    final url = '$baseUrl/users/${widget.user['id']}/reviews';
     try {
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode == 200) {
-        if (mounted) {
-          setState(() {
-            _reviews = json.decode(response.body);
-          });
-        }
-      } else {
-        print('Failed to load reviews: ${response.statusCode}');
+      final reviews = await UserService.getUserReviews(widget.user['id']);
+      if (mounted) {
+        setState(() {
+          _reviews = reviews;
+        });
       }
     } catch (e) {
       print('Error fetching reviews: $e');
@@ -65,17 +58,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _fetchLists() async {
-    final url = '$baseUrl/users/${widget.user['id']}/lists';
     try {
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode == 200) {
-        if (mounted) {
-          setState(() {
-            _lists = json.decode(response.body);
-          });
-        }
-      } else {
-        print('Failed to load lists: ${response.statusCode}');
+      final lists = await UserService.getUserLists(widget.user['id']);
+      if (mounted) {
+        setState(() {
+          _lists = lists;
+        });
       }
     } catch (e) {
       print('Error fetching lists: $e');
@@ -83,23 +71,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _checkIfFollowing() async {
-    final session = Supabase.instance.client.auth.currentSession;
-    if (session == null) return;
-
-    final url = '$baseUrl/users/${widget.user['id']}/is-following';
     try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {'Authorization': 'Bearer ${session.accessToken}'},
-      );
-      if (response.statusCode == 200) {
-        if (mounted) {
-          setState(() {
-            _isFollowing = json.decode(response.body)['is_following'];
-          });
-        }
-      } else {
-        print('Failed to check if following: ${response.statusCode}');
+      final isFollowing = await UserService.isFollowing(widget.user['id']);
+      if (mounted) {
+        setState(() {
+          _isFollowing = isFollowing;
+        });
       }
     } catch (e) {
       print('Error checking if following: $e');
@@ -107,28 +84,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _toggleFollow() async {
-    final session = Supabase.instance.client.auth.currentSession;
-    if (session == null) return;
-
-    final url = '$baseUrl/users/${widget.user['id']}/toggle-follow';
     try {
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {'Authorization': 'Bearer ${session.accessToken}'},
-      );
-      if (response.statusCode == 200) {
-        if (mounted) {
-          setState(() {
-            _isFollowing = !_isFollowing;
-            if (_isFollowing) {
-              _followersCount++;
-            } else {
-              _followersCount--;
-            }
-          });
-        }
-      } else {
-        print('Failed to toggle follow: ${response.statusCode}');
+      await UserService.toggleFollow(widget.user['id']);
+      if (mounted) {
+        setState(() {
+          _isFollowing = !_isFollowing;
+          if (_isFollowing) {
+            _followersCount++;
+          } else {
+            _followersCount--;
+          }
+        });
       }
     } catch (e) {
       print('Error toggling follow: $e');
