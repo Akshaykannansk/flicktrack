@@ -37,9 +37,10 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
       _isSubmitting = true;
     });
 
+    final listId = widget.list?['id'];
     final url = widget.list == null
-        ? '\$baseUrl/lists'
-        : '\$baseUrl/lists/\${widget.list['id']}';
+        ? '$baseUrl/lists'
+        : "$baseUrl/lists/$listId";
         
     final method = widget.list == null ? 'POST' : 'PUT';
 
@@ -47,7 +48,7 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
       final request = http.Request(method, Uri.parse(url));
       request.headers.addAll({
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer \${session.accessToken}',
+          'Authorization': 'Bearer ${session.accessToken}',
         });
       request.body = json.encode({
           'name': _nameController.text,
@@ -60,10 +61,10 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
       if (response.statusCode == 200 || response.statusCode == 201) {
         Navigator.of(context).pop();
       } else {
-        print('Failed to submit list: \${response.statusCode}');
+        print('Failed to submit list: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error submitting list: \$e');
+      print('Error submitting list: $e');
     } finally {
       setState(() {
         _isSubmitting = false;
