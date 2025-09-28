@@ -12,6 +12,7 @@ import { redirect } from 'next/navigation';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getJournalEntriesForUser } from '@/services/reviewService';
+import { PlotSearch } from '@/components/plot-search';
 
 export default async function RecommendationsPage() {
   const cookieStore = await cookies();
@@ -98,6 +99,8 @@ export default async function RecommendationsPage() {
           <RecommendationsForm viewingHistory={viewingHistory} />
         </div>
       </div>
+
+      <PlotSearch />
     </div>
   );
 }
