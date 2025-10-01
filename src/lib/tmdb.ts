@@ -2,7 +2,6 @@
 import type { Film, FilmDetails, PaginatedResponse, Video, CastMember, CrewMember, PersonDetails } from './types';
 import { IMAGE_BASE_URL } from './tmdb-isomorphic';
 import redis from '@/lib/redis';
-import { getFilmSuggestionsFromGemini } from './gemini';
 
 const API_BASE_URL = 'https://api.themoviedb.org/3';
 const API_KEY = process.env.TMDB_API_KEY;
@@ -127,7 +126,7 @@ export async function getFilmDetails(id: string): Promise<FilmDetails | null> {
 }
 
 export async function getFilmCredits(id: string): Promise<{cast: CastMember[], crew: CrewMember[]} | null> {
-    const data = await fetchFromTMDB<{cast: CastMember[], crew: CrewMember[]}>(`movie/${id}/credits`);
+    const data = await fetchFromTMDB<{cast: CastMember[], crew: Member[]}>(`movie/${id}/credits`);
     if (!data) return null;
     return {
         cast: data.cast.slice(0,10),
@@ -146,26 +145,6 @@ export async function searchFilmsByPlot(plot: string, page = 1, limit = 20): Pro
   // Using the standard search endpoint. The quality of plot-based search may vary.
   const data = await fetchFromTMDB<PaginatedResponse<any>>('search/movie', { query: plot, page: page.toString() });
   return data?.results.slice(0, limit).map(transformFilmData) || [];
-}
-
-export async function searchFilmsByPlotWithGemini(plot: string): Promise<Film[]> {
-  const suggestions = await getFilmSuggestionsFromGemini(plot);
-  if (!suggestions || suggestions.length === 0) {
-    return [];
-  }
-
-  const searchPromises = suggestions.map(title => searchFilms(title, 1, 1));
-  const searchResults = await Promise.all(searchPromises);
-  const films = searchResults.flat().filter(film => film !== null) as Film[];
-
-  // Remove duplicates
-  const uniqueFilms = films.filter((film, index, self) => 
-    index === self.findIndex((f) => (
-      f.id === film.id
-    ))
-  );
-
-  return uniqueFilms;
 }
 
 export async function getPersonDetails(id: string): Promise<PersonDetails | null> {
