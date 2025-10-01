@@ -1,5 +1,5 @@
 
-import { getPopularMovies, getTopRatedMovies, getNowPlayingMovies } from '@/lib/tmdb';
+import { getPopularMovies, getTopRatedMovies, getNowPlayingMovies } from '@/lib/tmdb-server';
 import { FilmCarouselSection } from '@/components/film-carousel-section';
 import { FollowingFeed, FeedSkeleton } from '@/components/following-feed';
 import { Separator } from '@/components/ui/separator';

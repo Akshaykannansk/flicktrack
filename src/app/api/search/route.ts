@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { searchFilms } from '@/lib/tmdb';
+import { searchFilms } from '@/lib/tmdb-server';
 import type { Film } from '@/lib/types';
 
 // Function to get film suggestions from Gemini

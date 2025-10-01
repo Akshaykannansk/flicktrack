@@ -1,5 +1,5 @@
 
-import { getFilmDetails as getFilmDetailsFromTMDB } from '@/lib/tmdb';
+import { getFilmDetails as getFilmDetailsFromTMDB } from '@/lib/tmdb-server';
 import { IMAGE_BASE_URL } from '@/lib/tmdb-isomorphic';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
@@ -114,17 +114,17 @@ export default async function FilmDetailPage({ params }: { params: { id: string 
       <div className="flex flex-col md:flex-row gap-8 lg:gap-12">
         <div className="w-full md:w-1/3 lg:w-1/4 flex-shrink-0">
           <div className="aspect-[2/3] relative rounded-lg overflow-hidden shadow-lg shadow-primary/10">
-            <Image
+                <Image
               src={posterUrl}
               alt={`Poster for ${film.title}`}
-              fill
+                    fill
               className="object-cover"
               sizes="(max-width: 768px) 100vw, 33vw"
-              priority
+                    priority
               data-ai-hint={`${film.title} movie poster`}
             />
-          </div>
-        </div>
+                    </div>
+                </div>
         <div className="w-full md:w-2/3 lg:w-3/4 space-y-6">
           <div>
             <h1 className="text-4xl lg:text-5xl font-headline font-bold tracking-tighter">{film.title}</h1>
@@ -136,7 +136,7 @@ export default async function FilmDetailPage({ params }: { params: { id: string 
           </div>
           <div className="flex flex-wrap items-center gap-2">
              {film.genres.map(genre => <Badge key={genre.id} variant="outline">{genre.name}</Badge>)}
-          </div>
+            </div>
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-1 text-primary">
                 <span className="sr-only">Average rating: {rating.toFixed(1)} out of 5 stars</span>
@@ -145,7 +145,7 @@ export default async function FilmDetailPage({ params }: { params: { id: string 
                 {[...Array(5-Math.ceil(rating))].map((_, i) => <Star key={`empty-${i}`} aria-hidden="true" className="w-5 h-5" />)}
             </div>
             <span className="font-bold text-lg text-foreground">{film.vote_average ? film.vote_average.toFixed(1) : 'N/A'} / 10</span>
-          </div>
+            </div>
           <div className="flex flex-col sm:flex-row flex-wrap gap-4 pt-4">
             <LogFilmDialog film={film}>
               <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground w-full sm:w-auto">
@@ -153,7 +153,7 @@ export default async function FilmDetailPage({ params }: { params: { id: string 
               </Button>
             </LogFilmDialog>
             <WatchlistButton filmId={id} initialIsInWatchlist={isAlreadyInWatchlist} />
-          </div>
+            </div>
           <Separator className="my-6 !mt-8" />
           <div>
             <h2 className="text-2xl font-headline font-semibold">Plot Summary</h2>

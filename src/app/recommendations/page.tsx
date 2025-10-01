@@ -1,106 +1,104 @@
+'use client';
 
-import { Wand2, Star } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { createClient } from '@/utils/supabase/client';
+import type { Film, ViewingHistory } from '@/lib/types';
 import { RecommendationsForm } from '@/components/recommendations-form';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { redirect } from 'next/navigation';
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
-import { cookies } from 'next/headers';
-import { getJournalEntriesForUser } from '@/services/reviewService';
 import { PlotSearch } from '@/components/plot-search';
 
-export default async function RecommendationsPage() {
-  const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          cookieStore.set({ name, value, ...options });
-        },
-        remove(name: string, options: CookieOptions) {
-          cookieStore.set({ name, value: '', ...options });
-        },
-      },
+async function getViewingHistory(userId: string): Promise<ViewingHistory[]> {
+    const supabase = createClient();
+    const { data: ratings, error } = await supabase
+        .from('ratings')
+        .select('rating, films(title)')
+        .eq('user_id', userId)
+        .not('films', 'is', null)
+        // Get the 20 most recent ratings
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+    if (error) {
+        console.error('Error fetching viewing history:', error);
+        return [];
     }
-  );
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user;
 
-  if (!user) {
-    redirect('/login');
-  }
-
-  const journalEntries = await getJournalEntriesForUser(user.id, 20, ['film']);
-
-  const viewingHistory = journalEntries?.map(entry => ({
-    filmTitle: entry.film.title,
-    rating: entry.rating,
-  })) || [];
-
-  return (
-    <div className="space-y-8">
-      <div className="flex items-center space-x-3">
-        <Wand2 className="w-8 h-8 text-primary" />
-        <h1 className="text-4xl font-headline font-bold tracking-tighter">
-          For You
-        </h1>
-      </div>
-      <p className="max-w-2xl text-muted-foreground">
-        Get personalized film recommendations from our AI based on your viewing
-        history. The more films you log and rate, the better your
-        recommendations will be.
-      </p>
-
-      <div className="grid gap-8 md:grid-cols-3">
-        <div className="md:col-span-1">
-          <Card className="bg-secondary/50">
-            <CardHeader>
-              <CardTitle>Your Viewing History</CardTitle>
-              <CardDescription>
-                Recommendations are based on these rated films.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="max-h-96 space-y-4 overflow-y-auto">
-              {journalEntries && journalEntries.length > 0 ? (
-                journalEntries.map(entry => (
-                  <div
-                    key={entry.id}
-                    className="flex items-center justify-between"
-                  >
-                    <span className="text-sm text-foreground">
-                      {entry.film.title}
-                    </span>
-                    <div className="ml-4 flex flex-shrink-0 items-center text-xs text-amber-400">
-                      <span className="mr-1 font-bold">{entry.rating}</span>
-                      <Star className="h-3 w-3 fill-current" />
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  You haven&apos;t logged any films yet.
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="md:col-span-2">
-          <RecommendationsForm viewingHistory={viewingHistory} />
-        </div>
-      </div>
-
-      <PlotSearch />
-    </div>
-  );
+    return ratings.map(r => ({
+        filmTitle: r.films!.title,
+        rating: r.rating,
+    }));
 }
+
+export default function RecommendationsPage() {
+    const [viewingHistory, setViewingHistory] = useState<ViewingHistory[]>([]);
+    const [userId, setUserId] = useState<string | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            const supabase = createClient();
+            const { data, error } = await supabase.auth.getUser();
+            if (data.user) {
+                setUserId(data.user.id);
+            }
+            setLoading(false);
+        };
+        fetchUser();
+    }, []);
+
+    useEffect(() => {
+        if (userId) {
+            getViewingHistory(userId).then(setViewingHistory);
+        }
+    }, [userId]);
+
+    if (loading) {
+        return <div>Loading...</div>;
+    }
+
+    if (!userId) {
+        return <div>Please sign in to get recommendations.</div>;
+    }
+
+    if (viewingHistory.length < 5) {
+        return (
+            <div className="container mx-auto px-4 py-8">
+                <div className="text-center">
+                    <h1 className="text-3xl font-bold mb-4">Not Enough Viewing History</h1>
+                    <p className="text-lg text-muted-foreground">
+                        We need at least 5 rated films to generate personalized recommendations. Please rate some films and check back!
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center mb-12">
+            <h1 className="text-4xl font-headline font-bold tracking-tighter">AI-Powered Recommendations</h1>
+            <p className="text-lg text-muted-foreground mt-2 max-w-2xl mx-auto">
+              Discover your next favorite film. Our AI analyzes your viewing history to provide personalized suggestions.
+            </p>
+          </div>
+    
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
+            <div className="md:col-span-1">
+              <div className="sticky top-24">
+                <h2 className="text-2xl font-headline font-semibold mb-4">Your Recent Ratings</h2>
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                    {viewingHistory.map((item, index) => (
+                        <li key={index} className="flex justify-between p-2 rounded-lg bg-secondary">
+                            <span>{item.filmTitle}</span>
+                            <span className="font-bold text-primary">{'★'.repeat(item.rating)}</span>
+                        </li>
+                    ))}
+                </ul>
+              </div>
+            </div>
+            <div className="md:col-span-2">
+              <RecommendationsForm viewingHistory={viewingHistory} />
+            </div>
+          </div>
+        </div>
+      );
+    }

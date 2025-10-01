@@ -1,6 +1,5 @@
-
 import { NextResponse } from 'next/server';
-import { searchFilms } from '@/lib/tmdb';
+import { searchFilms } from '@/lib/tmdb-server';
 import { searchUsers } from '@/services/userService';
 
 export async function GET(request: Request) {

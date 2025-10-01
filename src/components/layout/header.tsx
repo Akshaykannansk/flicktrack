@@ -28,6 +28,7 @@ const navLinks = [
   { href: '/watchlist', label: 'Watchlist' },
   { href: '/likes', label: 'Likes', icon: Heart },
   { href: '/recommendations', label: 'For You' },
+  { href: '/plot-search', label: 'Plot Search' },
 ];
 
 interface Suggestions {

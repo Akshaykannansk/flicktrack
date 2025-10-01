@@ -1,5 +1,5 @@
 
-import { getPersonDetails } from "@/lib/tmdb";
+import { getPersonDetails } from "@/lib/tmdb-server";
 import { notFound } from "next/navigation";
 import { PersonDetails } from "@/components/person-details";
 

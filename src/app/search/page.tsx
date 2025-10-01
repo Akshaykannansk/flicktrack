@@ -1,5 +1,5 @@
 
-import { searchFilms } from '@/lib/tmdb';
+import { searchFilms } from '@/lib/tmdb-server';
 import { searchUsers } from '@/services/userService';
 import { FilmCard } from '@/components/film-card';
 import { Search, Clapperboard, Users, List, MessageSquareText } from 'lucide-react';
@@ -134,8 +134,8 @@ async function UserResults({ query }: { query: string }) {
             </div>
         )
     }
-    
-    return (
+
+  return (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {users.map((user: PublicUser) => (
                 <Link key={user.id} href={`/profile/${user.id}`}>
@@ -249,7 +249,7 @@ async function ReviewResults({ query }: { query: string }) {
                         </CardContent>
                     </Card>
                  </Link>
-             ))}
+          ))}
         </div>
     )
 }
@@ -332,7 +332,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                     <h2 className="text-xl font-semibold">Search for films or users</h2>
                     <p className="text-muted-foreground mt-2">Use the search bar in the header to find anything on FlickTrack.</p>
                 </div>
-            )}
-        </div>
-    );
+      )}
+    </div>
+  );
 }
