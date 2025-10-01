@@ -1,73 +1,97 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
-import type { Film, ViewingHistory } from '@/lib/types';
+import type { ViewingHistory } from '@/lib/types';
 import { RecommendationsForm } from '@/components/recommendations-form';
-import { PlotSearch } from '@/components/plot-search';
-
-async function getViewingHistory(userId: string): Promise<ViewingHistory[]> {
-    const supabase = createClient();
-    const { data: ratings, error } = await supabase
-        .from('ratings')
-        .select('rating, films(title)')
-        .eq('user_id', userId)
-        .not('films', 'is', null)
-        // Get the 20 most recent ratings
-        .order('created_at', { ascending: false })
-        .limit(20);
-
-    if (error) {
-        console.error('Error fetching viewing history:', error);
+import { createClient } from '@/lib/supabase/client';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Rocket }
+ from 'lucide-react';
+async function getViewingHistory(): Promise<ViewingHistory[]> {
+    const response = await fetch('/api/recommendations/history');
+    if (!response.ok) {
+        console.error('Failed to fetch viewing history');
         return [];
     }
+    return response.json();
+}
 
-    return ratings.map(r => ({
-        filmTitle: r.films!.title,
-        rating: r.rating,
-    }));
+function LoadingSkeleton() {
+    return (
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center mb-12">
+            <Skeleton className="h-10 w-3/4 mx-auto" />
+            <Skeleton className="h-6 w-1/2 mx-auto mt-4" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
+            <div className="md:col-span-1">
+                <div className="sticky top-24 space-y-4">
+                    <Skeleton className="h-8 w-48 mb-4" />
+                    <ul className="space-y-2">
+                        {[...Array(5)].map((_, i) => (
+                            <li key={i}>
+                                <Skeleton className="h-12 w-full" />
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            </div>
+            <div className="md:col-span-2">
+                <Skeleton className="h-96 w-full" />
+            </div>
+          </div>
+        </div>
+    )
 }
 
 export default function RecommendationsPage() {
     const [viewingHistory, setViewingHistory] = useState<ViewingHistory[]>([]);
-    const [userId, setUserId] = useState<string | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
     useEffect(() => {
-        const fetchUser = async () => {
+        const checkAuthAndFetch = async () => {
             const supabase = createClient();
-            const { data, error } = await supabase.auth.getUser();
-            if (data.user) {
-                setUserId(data.user.id);
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                setIsAuthenticated(true);
+                const history = await getViewingHistory();
+                setViewingHistory(history);
+            } else {
+                setIsAuthenticated(false);
             }
-            setLoading(false);
         };
-        fetchUser();
+        checkAuthAndFetch();
     }, []);
 
-    useEffect(() => {
-        if (userId) {
-            getViewingHistory(userId).then(setViewingHistory);
-        }
-    }, [userId]);
-
-    if (loading) {
-        return <div>Loading...</div>;
+    if (isAuthenticated === null) {
+        return <LoadingSkeleton />;
     }
 
-    if (!userId) {
-        return <div>Please sign in to get recommendations.</div>;
-    }
-
-    if (viewingHistory.length < 5) {
+    if (!isAuthenticated) {
         return (
-            <div className="container mx-auto px-4 py-8">
-                <div className="text-center">
-                    <h1 className="text-3xl font-bold mb-4">Not Enough Viewing History</h1>
-                    <p className="text-lg text-muted-foreground">
-                        We need at least 5 rated films to generate personalized recommendations. Please rate some films and check back!
-                    </p>
-                </div>
+             <div className="container mx-auto px-4 py-8 flex justify-center">
+                <Alert className="max-w-lg">
+                    <Rocket className="h-4 w-4" />
+                    <AlertTitle>Please sign in</AlertTitle>
+                    <AlertDescription>
+                    You need to be signed in to get personalized film recommendations.
+                    </AlertDescription>
+                </Alert>
+            </div>
+        );
+    }
+
+    if (isAuthenticated && viewingHistory.length < 5) {
+        return (
+            <div className="container mx-auto px-4 py-8 flex justify-center">
+                <Alert className="max-w-lg">
+                    <Rocket className="h-4 w-4" />
+                    <AlertTitle>Not Enough Viewing History</AlertTitle>
+                    <AlertDescription>
+                    We need at least 5 rated films to generate personalized recommendations. Please rate some films and check back!
+                    </AlertDescription>
+                </Alert>
             </div>
         );
     }
@@ -87,9 +111,9 @@ export default function RecommendationsPage() {
                 <h2 className="text-2xl font-headline font-semibold mb-4">Your Recent Ratings</h2>
                 <ul className="space-y-2 text-sm text-muted-foreground">
                     {viewingHistory.map((item, index) => (
-                        <li key={index} className="flex justify-between p-2 rounded-lg bg-secondary">
-                            <span>{item.filmTitle}</span>
-                            <span className="font-bold text-primary">{'★'.repeat(item.rating)}</span>
+                        <li key={index} className="flex justify-between items-center p-2 rounded-lg bg-secondary/50">
+                            <span className="truncate font-medium text-foreground pr-4">{item.filmTitle}</span>
+                            <span className="font-bold text-primary flex-shrink-0">{'★'.repeat(item.rating)}</span>
                         </li>
                     ))}
                 </ul>

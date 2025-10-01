@@ -173,3 +173,8 @@ export interface ReviewSearchResult {
         title: string;
     }
 }
+
+export interface ViewingHistory {
+  filmTitle: string;
+  rating: number;
+}
