@@ -1,7 +1,7 @@
 
 'use server';
 
-import { getPopularMovies, getTopRatedMovies, getNowPlayingMovies } from '@/lib/tmdb';
+import { getPopularMovies, getTopRatedMovies, getNowPlayingMovies } from '@/lib/tmdb-server';
 import type { Film } from '@/lib/types';
 
 export async function getMoreFilms(category: string, page: number): Promise<Film[] | null> {
