@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { searchFilmsByPlotWithGemini } from '@/lib/tmdb';
 import type { Film } from '@/lib/types';
-import { FilmCard } from '@/components/FilmCard';
+import { FilmCard } from '@/components/film-card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
