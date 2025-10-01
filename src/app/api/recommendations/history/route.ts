@@ -21,37 +21,35 @@ export async function GET() {
         } 
       }
     );
-  const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) {
-    return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
+    if (!user) {
+        return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
+            status: 401,
+            headers: { 'Content-Type': 'application/json' },
+        });
+    }
 
-  const { data: ratings, error } = await supabase
-    .from('ratings')
-    .select('rating, films(title)')
-    .eq('user_id', user.id)
-    .not('films', 'is', null)
-    .order('created_at', { ascending: false })
-    .limit(20);
+    const { data: journalEntries, error } = await supabase
+        .from('JournalEntry')
+        .select('rating, film:filmId(title)')
+        .eq('userId', user.id)
+        .not('film', 'is', null);
 
-  if (error) {
-    console.error('Error fetching viewing history:', error);
-    return new NextResponse(JSON.stringify({ error: 'Failed to fetch viewing history' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
+    if (error) {
+        console.error('Error fetching viewing history:', error);
+        return new NextResponse(JSON.stringify({ error: 'Failed to fetch viewing history' }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' },
+        });
+    }
 
-    const viewingHistory: ViewingHistory[] = ratings
-        .filter(r => r.films) // Ensure film data is not null
+    const viewingHistory: ViewingHistory[] = journalEntries
+        .filter(r => r.film) // Ensure film data is not null
         .map(r => ({
-            filmTitle: r.films!.title,
+            filmTitle: r.film[0].title,
             rating: r.rating,
-    }));
+        }));
 
-  return NextResponse.json(viewingHistory);
+    return NextResponse.json(viewingHistory);
 }
