@@ -61,7 +61,7 @@ const nextConfig: NextConfig = {
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
-        net: require.resolve('net-browserify'),
+        net: false,
         tls: false,
         dns: false,
       };
