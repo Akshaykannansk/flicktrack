@@ -16,6 +16,8 @@ import { cn } from '@/lib/utils';
 import { AddToListButton } from './add-to-list-button';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
+import { Skeleton } from '@/components/ui/skeleton';
+
 
 interface FilmCardProps {
   film: Film;
@@ -88,3 +90,13 @@ export function FilmCard({ film, isInWatchlist, isLiked }: FilmCardProps) {
     </div>
   );
 }
+
+export function FilmCardSkeleton() {
+    return (
+      <div className="space-y-2">
+        <Skeleton className="aspect-[2/3] rounded-lg" />
+        <Skeleton className="h-5 w-3/4" />
+        <Skeleton className="h-4 w-1/4" />
+      </div>
+    );
+  }
