@@ -1,4 +1,4 @@
-
+ 
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
@@ -61,7 +61,7 @@ const nextConfig: NextConfig = {
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
-        net: false,
+        net: require.resolve('net-browserify'),
         tls: false,
         dns: false,
       };

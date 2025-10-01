@@ -1,9 +1,15 @@
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:movie_magic_app/config.dart';
+
+// Top-level function for JSON encoding in a separate isolate
+String _encodeJson(Map<String, dynamic> data) {
+  return json.encode(data);
+}
 
 class CreateEditListScreen extends StatefulWidget {
   final dynamic list;
@@ -50,10 +56,14 @@ class _CreateEditListScreenState extends State<CreateEditListScreen> {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${session.accessToken}',
         });
-      request.body = json.encode({
+
+      final requestBody = {
           'name': _nameController.text,
           'description': _descriptionController.text,
-        });
+        };
+
+      // Offload JSON encoding to a background isolate
+      request.body = await compute(_encodeJson, requestBody);
 
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
