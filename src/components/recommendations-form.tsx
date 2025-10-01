@@ -9,32 +9,27 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Wand2, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { RecommendationResults } from '@/components/recommendation-results';
-import { searchFilms } from '@/services/filmService';
+import { searchFilms } from '@/lib/tmdb-server';
 
 interface RecommendationsFormProps {
   viewingHistory: GenerateFilmRecommendationsInput['viewingHistory'];
 }
 
 export function RecommendationsForm({ viewingHistory }: RecommendationsFormProps) {
-  const [recommendations, setRecommendations] = useState<any[]>([]);
   const [isGenerating, startGeneration] = useTransition();
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
   const [detailedRecommendations, setDetailedRecommendations] = useState<Film[]>([]);
-  const [visibleCount, setVisibleCount] = useState(4);
 
   const handleSubmit = async () => {
     startGeneration(async () => {
       setIsLoading(true);
-      setRecommendations([]);
       setDetailedRecommendations([]);
-      setVisibleCount(4);
       
       try {
         const result = await getRecommendations({ viewingHistory });
         if (result.recommendations && result.recommendations.length > 0) {
-          setRecommendations(result.recommendations);
           await fetchFilmDetails(result.recommendations);
         } else {
            toast({
@@ -59,22 +54,23 @@ export function RecommendationsForm({ viewingHistory }: RecommendationsFormProps
   const fetchFilmDetails = async (recommendationsToFetch: any[]) => {
     const filmPromises = recommendationsToFetch.map(rec => searchFilms(rec.filmTitle, 1).then(res => res[0]));
     const films = await Promise.all(filmPromises);
-    setDetailedRecommendations(prev => [...prev, ...films.filter(film => film) as Film[]]);
-  };
-
-  const handleLoadMore = () => {
-    setVisibleCount(prev => Math.min(prev + 4, detailedRecommendations.length));
+    const validFilms = films.filter(film => film) as Film[];
+    
+    if (validFilms.length === 0) {
+        toast({
+            variant: "destructive",
+            title: "Could Not Find Details",
+            description: "We received recommendations, but couldn't find their details.",
+        });
+    }
+    setDetailedRecommendations(validFilms);
   };
 
   if (detailedRecommendations.length > 0 && !isGenerating) {
       return (
           <RecommendationResults 
-              recommendations={detailedRecommendations.slice(0, visibleCount)}
+              recommendations={detailedRecommendations}
               viewingHistory={viewingHistory}
-              onLoadMore={handleLoadMore}
-              isLoadingMore={isLoading}
-              hasMore={visibleCount < detailedRecommendations.length}
-              totalRecommendations={detailedRecommendations.length}
           />
       )
   }

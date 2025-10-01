@@ -25,6 +25,7 @@ const GenerateFilmRecommendationsInputSchema = z.object({
       })
     )
     .describe('The user viewing history with film titles and ratings.'),
+    existingRecommendations: z.array(z.string()).optional().describe('A list of film titles that have already been recommended.'),
 });
 export type GenerateFilmRecommendationsInput = z.infer<
   typeof GenerateFilmRecommendationsInputSchema
@@ -35,6 +36,7 @@ const GenerateFilmRecommendationsOutputSchema = z.object({
     .array(
       z.object({
         filmTitle: z.string().describe('The title of the recommended film.'),
+        releaseYear: z.number().describe('The release year of the recommended film.'),
         reason: z.string().describe('The reason for recommending this film.'),
       })
     )
@@ -54,14 +56,21 @@ const prompt = ai.definePrompt({
   name: 'generateFilmRecommendationsPrompt',
   input: {schema: GenerateFilmRecommendationsInputSchema},
   output: {schema: GenerateFilmRecommendationsOutputSchema},
-  prompt: `You are a film recommendation expert. Based on the user's viewing history and ratings, suggest films they might enjoy.
+  prompt: `You are a film recommendation expert. Based on the user's viewing history and ratings, suggest 10 films they might enjoy.
 
-  Consider their preferences and provide a reason for each recommendation.
+  For each film, provide the title, the release year, and a reason for the recommendation.
 
   Viewing History:
   {{#each viewingHistory}}
   - Film: {{filmTitle}}, Rating: {{rating}} stars
   {{/each}}
+  
+  {{#if existingRecommendations}}
+  Do not suggest any of the following films:
+  {{#each existingRecommendations}}
+  - {{this}}
+  {{/each}}
+  {{/if}}
   `,
 });
 
