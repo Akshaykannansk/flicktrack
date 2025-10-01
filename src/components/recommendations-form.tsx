@@ -57,7 +57,7 @@ export function RecommendationsForm({ viewingHistory }: RecommendationsFormProps
   };
 
   const fetchFilmDetails = async (recommendationsToFetch: any[]) => {
-    const filmPromises = recommendationsToFetch.map(rec => searchFilms(rec.filmTitle, 1).then(res => res.results[0]));
+    const filmPromises = recommendationsToFetch.map(rec => searchFilms(rec.filmTitle, 1).then(res => res[0]));
     const films = await Promise.all(filmPromises);
     setDetailedRecommendations(prev => [...prev, ...films.filter(film => film) as Film[]]);
   };
