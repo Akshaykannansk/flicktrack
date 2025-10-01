@@ -1,6 +1,6 @@
 
 import prisma from "@/lib/prisma";
-import { getFilmDetails } from "@/lib/tmdb";
+import { getFilmDetails } from "@/lib/tmdb-server";
 
 export async function upsertFilm(filmId: number) {
     const filmDetails = await getFilmDetails(filmId.toString());
