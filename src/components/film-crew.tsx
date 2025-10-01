@@ -1,5 +1,5 @@
 
-import { getFilmCredits } from "@/lib/tmdb";
+import { getFilmCredits } from "@/lib/tmdb-server";
 import { IMAGE_BASE_URL } from "@/lib/tmdb-isomorphic";
 import Image from "next/image";
 import Link from "next/link";

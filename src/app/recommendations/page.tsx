@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@/utils/supabase/client';
+import { createClient } from '@/lib/supabase/client';
 import type { Film, ViewingHistory } from '@/lib/types';
 import { RecommendationsForm } from '@/components/recommendations-form';
 import { PlotSearch } from '@/components/plot-search';
