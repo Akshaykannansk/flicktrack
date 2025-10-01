@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { searchFilmsByPlotWithGemini } from '@/lib/tmdb';
 import type { Film } from '@/lib/types';
 import { FilmCard } from '@/components/film-card';
 import { Input } from '@/components/ui/input';
@@ -14,8 +13,24 @@ export default function PlotSearch() {
 
   const handleSearch = async () => {
     setIsLoading(true);
-    const results = await searchFilmsByPlotWithGemini(plot);
-    setFilms(results);
+    try {
+      const response = await fetch('/api/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ plot }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setFilms(data.films);
+      } else {
+        console.error('Search failed');
+      }
+    } catch (error) {
+      console.error('An error occurred during search:', error);
+    }
     setIsLoading(false);
   };
 
