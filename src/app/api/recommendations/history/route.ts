@@ -47,7 +47,7 @@ export async function GET() {
     const viewingHistory: ViewingHistory[] = journalEntries
         .filter(r => r.film) // Ensure film data is not null
         .map(r => ({
-            filmTitle: r.film[0].title,
+            filmTitle: r.film.title,
             rating: r.rating,
         }));
 
