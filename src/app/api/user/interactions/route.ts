@@ -5,7 +5,7 @@ import prisma from '@/lib/prisma';
 import type { CookieOptions } from '@supabase/ssr';
 
 export async function GET() {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
