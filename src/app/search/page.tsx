@@ -21,13 +21,6 @@ import { Star } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
-interface SearchPageProps {
-    searchParams: {
-        q?: string;
-        type?: string;
-    };
-}
-
 const FilmResultsSkeleton = () => (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
         {[...Array(12)].map((_, i) => (
@@ -254,7 +247,14 @@ async function ReviewResults({ query }: { query: string }) {
     )
 }
 
-export default async function SearchPage({ searchParams }: SearchPageProps) {
+export default async function SearchPage({ 
+    searchParams, 
+}: { 
+    searchParams: { 
+        q?: string, 
+        type?: string 
+    } 
+}) {
     const query = searchParams.q || '';
     const type = searchParams.type || 'films';
 
