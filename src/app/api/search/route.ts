@@ -11,7 +11,7 @@ async function getFilmSuggestionsFromGemini(plot: string): Promise<string[]> {
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
   const prompt = `Based on the following plot summary, suggest up to 5 film titles that match. Return only the titles, separated by newlines. Plot: "${plot}"`;
 
