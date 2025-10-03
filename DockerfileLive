@@ -1,0 +1,53 @@
+# -------------------
+# 1. Build Stage
+# -------------------
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Install required packages (openssl for Prisma)
+RUN apk add --no-cache openssl
+
+# Copy package files
+COPY package*.json ./
+
+# Install ALL deps (including dev) for build
+RUN npm ci
+
+# Copy rest of the app
+COPY . .
+
+# Generate Prisma client
+RUN npx prisma generate
+
+# Build Next.js app
+RUN npm run build
+
+
+# -------------------
+# 2. Production Stage
+# -------------------
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV PORT=9002
+
+# Install only production dependencies
+COPY package*.json ./
+RUN npm ci --omit=dev
+
+# Copy built app + Prisma client from builder
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/public ./public
+
+EXPOSE 9002
+
+# Run production server
+CMD ["npm", "run", "start"]
+
+
