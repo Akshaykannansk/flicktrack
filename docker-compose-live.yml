@@ -6,7 +6,7 @@ services:
     image: akshaykannansk/flicktrack
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: DockerfileLive
     command: npm run start
     ports:
       - "9002:9002"
