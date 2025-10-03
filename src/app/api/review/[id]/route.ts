@@ -4,7 +4,7 @@ import { getJournalEntryWithDetails } from '@/services/reviewService';
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: any
 ) {
   try {
     const entry = await getJournalEntryWithDetails(params.id);

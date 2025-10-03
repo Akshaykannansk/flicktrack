@@ -7,7 +7,7 @@ import { likeReview, unlikeReview } from '@/services/reviewService';
 // POST to like a review
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: any
 ) {
   const cookieStore = await cookies();
   const supabase = createServerClient(
@@ -53,7 +53,7 @@ export async function POST(
 // DELETE to unlike a review
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: any
 ) {
   const cookieStore = await cookies();
   const supabase = createServerClient(

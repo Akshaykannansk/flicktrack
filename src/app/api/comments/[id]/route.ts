@@ -7,7 +7,7 @@ import { deleteComment, getCommentById } from '@/services/reviewService';
 // DELETE a comment
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: any
 ) {
   const cookieStore = await cookies();
   const supabase = createServerClient(

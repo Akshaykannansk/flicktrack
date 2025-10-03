@@ -65,7 +65,7 @@ async function getFilmDetails(id: string): Promise<FilmDetails | null> {
 }
 
 
-export default async function FilmDetailPage({ params }: { params: { id: string } }) {
+export default async function FilmDetailPage({ params }: any) {
   const { id } = params;
   if (!id || isNaN(parseInt(id, 10))) {
       notFound();

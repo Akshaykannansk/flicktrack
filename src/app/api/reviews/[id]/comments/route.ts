@@ -8,7 +8,7 @@ import { getCommentsForReview, createComment } from '@/services/reviewService';
 // GET all comments for a review
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: any
 ) {
   try {
     const journalEntryId = params.id;
@@ -40,7 +40,7 @@ const commentSchema = z.object({
 // POST a new comment
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: any
 ) {
   const cookieStore = await cookies();
   const supabase = createServerClient(

@@ -8,24 +8,19 @@ WORKDIR /app
 # Install required packages (openssl for Prisma)
 RUN apk add --no-cache openssl
 
-# Copy package files from repo root
-COPY ../package*.json ./
-
-# Install ALL deps (including dev) for build
+# Copy only dependency files first
+COPY package*.json ./
 RUN npm ci
 
-# Copy only Next.js relevant files
-COPY ../src ./src
-COPY ../public ./public
-COPY ../prisma ./prisma
-COPY ../next.config.js .
-COPY ../tsconfig.json .
-COPY ../next-env.d.ts .
+# Copy rest of app
+COPY src ./src
+COPY public ./public
+COPY prisma ./prisma
+COPY next.config.ts .
+COPY tsconfig.json .
 
-# Generate Prisma client
+# Generate Prisma client & build Next.js
 RUN npx prisma generate
-
-# Build Next.js app
 RUN npm run build
 
 
@@ -39,21 +34,22 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=9002
 
-# Install only production dependencies
-COPY ../package*.json ./
+# Install only production deps
+COPY package*.json ./
 RUN npm ci --omit=dev
 
-# Copy built app + Prisma client from builder
+# Copy built app from builder
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/public ./public
+COPY --from=builder /app/next.config.ts ./next.config.ts
 
 EXPOSE 9002
 
-# Run production server
 CMD ["npm", "run", "start"]
+
 
 
 

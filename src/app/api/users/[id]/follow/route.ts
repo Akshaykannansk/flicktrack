@@ -7,7 +7,7 @@ import { followUser, unfollowUser } from '@/services/userService';
 // POST to follow a user
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: any
 ) {
   const cookieStore = await cookies();
   const supabase = createServerClient(
@@ -54,7 +54,7 @@ export async function POST(
 // DELETE to unfollow a user
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: any
 ) {
   const cookieStore = await cookies();
   const supabase = createServerClient(

@@ -6,7 +6,7 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getUserDataForProfile } from '@/services/userService';
 
-export default async function OtherUserProfilePage({ params }: { params: { id: string } }) {
+export default async function OtherUserProfilePage({ params }: any) {
     const cookieStore = await cookies();
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,

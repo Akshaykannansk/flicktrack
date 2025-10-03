@@ -14,7 +14,7 @@ const journalEntryUpdateSchema = z.object({
 // GET a single journal entry
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: any
 ) {
   try {
     const entry = await getJournalEntry(params.id);
@@ -33,7 +33,7 @@ export async function GET(
 // UPDATE a journal entry
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: any
 ) {
   const cookieStore = await cookies();
   const supabase = createServerClient(
@@ -79,7 +79,7 @@ export async function PUT(
 // DELETE a journal entry
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: any
 ) {
   const cookieStore = await cookies();
   const supabase = createServerClient(

@@ -7,7 +7,7 @@ import { copyList } from '@/services/listService';
 // POST to copy a list
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: any
 ) {
   const cookieStore = await cookies();
   const supabase = createServerClient(

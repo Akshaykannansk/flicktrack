@@ -19,7 +19,7 @@ const filmActionSchema = z.object({
 // GET a single list with its films
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: any
 ) {
   try {
     const listId = params.id;
@@ -47,7 +47,7 @@ export async function GET(
 // PUT (update) a list's details
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: any
 ) {
   const cookieStore = await cookies();
   const supabase = createServerClient(
@@ -94,7 +94,7 @@ export async function PUT(
 // DELETE a list
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: any
 ) {
   const cookieStore = await cookies();
   const supabase = createServerClient(
@@ -133,7 +133,7 @@ export async function DELETE(
 // POST a film to a list
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: any
 ) {
   const cookieStore = await cookies();
   const supabase = createServerClient(
