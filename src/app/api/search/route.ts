@@ -4,21 +4,23 @@ import { searchFilms } from '@/lib/tmdb-server';
 import type { Film } from '@/lib/types';
 
 async function searchFilmsByPlotWithGenkit(plot: string): Promise<Film[]> {
-  const suggestions = await ai.run(moviePlotSearch, plot);
+  const { result: suggestions } = await moviePlotSearch.run(plot);
+  console.log("suggestions", suggestions);
 
-  if (!suggestions || suggestions.length === 0) {
+  if (!Array.isArray(suggestions) || suggestions.length === 0) {
     return [];
   }
 
   const searchPromises = suggestions.map(title => searchFilms(title, 1, 1));
   const searchResults = await Promise.all(searchPromises);
-  const films = searchResults.flat().filter(film => film !== null) as Film[];
 
-  // Remove duplicates
-  const uniqueFilms = films.filter((film, index, self) =>
-    index === self.findIndex((f) => (
-      f.id === film.id
-    ))
+  const films = searchResults
+    .flat()
+    .filter((film): film is Film => film !== null);
+
+  // Deduplicate
+  const uniqueFilms = films.filter(
+    (film, index, self) => index === self.findIndex(f => f.id === film.id)
   );
 
   return uniqueFilms;
