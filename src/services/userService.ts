@@ -61,7 +61,7 @@ export async function getFollowingFeedForUser(userId: string | null) {
 
     if (followingIds.length === 0) return [];
     
-    return prisma.journalEntry.findMany({
+    const journalEntries = await prisma.journalEntry.findMany({
         where: { userId: { in: followingIds } },
         include: {
             film: true,
@@ -76,6 +76,11 @@ export async function getFollowingFeedForUser(userId: string | null) {
         orderBy: { logged_date: 'desc' },
         take: 20
     });
+
+    return journalEntries.map(entry => ({
+        ...entry,
+        logged_date: entry.logged_date.toISOString(),
+    }));
 }
 
 export async function getUserFilmSets(userId: string | null) {

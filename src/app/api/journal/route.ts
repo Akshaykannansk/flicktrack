@@ -52,6 +52,7 @@ export async function GET(request: Request) {
     const responseData = journalEntries.map(entry => ({
         ...entry,
         id: entry.id,
+        loggedDate: entry.logged_date.toISOString(),
         film: {
             ...entry.film,
             id: entry.film.id.toString(),
