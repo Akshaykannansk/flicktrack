@@ -3,7 +3,7 @@ version: "3.9"
 services:
   app:
     container_name: flicktrack-app
-    image: akshaykannansk/flicktrack
+    image: akshaykannansk/flicktrack:latest
     build:
       context: .
       dockerfile: DockerfileLive
