@@ -194,7 +194,7 @@ export function ProfilePageContent({ user, stats, isCurrentUser, isFollowing }: 
             <div>
                 <h2 className="text-2xl font-headline font-semibold mb-4">Favorite Films</h2>
                 {favoriteFilms.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 md:gap-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                     {favoriteFilms.map((film) => {
                         const filmId = parseInt(film.id, 10);
                         return (
@@ -218,28 +218,28 @@ export function ProfilePageContent({ user, stats, isCurrentUser, isFollowing }: 
             <div>
                 <h2 className="text-2xl font-headline font-semibold mb-4">Recent Activity</h2>
                 {recentJournalEntries.length > 0 ? (
-                    <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {recentJournalEntries.map((entry) => {
                             const film = entry.film;
                             const posterUrl = film.poster_path ? `${IMAGE_BASE_URL}w500${film.poster_path}` : 'https://placehold.co/400x600.png';
                             const year = film.release_date ? new Date(film.release_date).getFullYear() : 'N/A';
                             
                             return (
-                                <Card key={entry.id} className="bg-secondary border-0 md:flex overflow-hidden">
-                                    <div className="md:w-32 flex-shrink-0 relative aspect-[2/3] md:aspect-auto">
+                                <Card key={entry.id} className="bg-secondary border-0 flex flex-col overflow-hidden">
+                                    <div className="relative aspect-[2/3]">
                                         <Link href={`/film/${film.id}`} className="block h-full w-full">
                                             <Image
                                             src={posterUrl}
                                             alt={`Poster for ${film.title}`}
                                             fill
                                             className="object-cover"
-                                            sizes="(max-width: 768px) 100vw, 8rem"
+                                            sizes="(max-width: 768px) 50vw, 33vw"
                                             data-ai-hint={`${film.title} poster`}
                                             />
                                         </Link>
                                     </div>
-                                    <div className="flex flex-col flex-grow">
-                                        <CardHeader>
+                                    <div className="p-4 flex flex-col flex-grow">
+                                        <CardHeader className="p-0">
                                             <CardTitle>
                                                 <Link href={`/film/${film.id}`} className="hover:text-primary transition-colors">
                                                     <span className="font-headline text-xl">{film.title}</span>
@@ -252,10 +252,10 @@ export function ProfilePageContent({ user, stats, isCurrentUser, isFollowing }: 
                                                 {[...Array(5-Math.ceil(entry.rating))].map((_, i) => <Star key={`empty-${i}`} className="w-4 h-4 text-accent" />)}
                                             </div>
                                         </CardHeader>
-                                        <CardContent className="flex-grow">
+                                        <CardContent className="p-0 flex-grow mt-3">
                                             {entry.review && <p className="text-muted-foreground text-sm italic leading-relaxed">"{entry.review}"</p>}
                                         </CardContent>
-                                        <CardFooter>
+                                        <CardFooter className="p-0 mt-4 pt-4 border-t border-border/50">
                                             <p className="text-xs text-muted-foreground">Logged on {new Date(entry.loggedDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
                                         </CardFooter>
                                     </div>

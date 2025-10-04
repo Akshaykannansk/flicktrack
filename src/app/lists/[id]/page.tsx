@@ -145,7 +145,7 @@ export default function ListDetailPage() {
           <Skeleton className="h-5 w-3/4 mt-2" />
           <Skeleton className="h-4 w-1/4 mt-2" />
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-4 md:gap-6">
           {[...Array(6)].map((_, i) => (
             <div key={i} className="space-y-2">
               <Skeleton className="aspect-[2/3] rounded-lg" />
@@ -230,7 +230,7 @@ export default function ListDetailPage() {
       </div>
 
       {list.films.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-4 md:gap-6">
           {list.films.map(({ film }) => {
               if (!film) return null;
               const filmId = parseInt(film.id, 10);

@@ -41,17 +41,14 @@ export default function JournalPage() {
           <BookOpen className="w-8 h-8 text-primary" />
           <h1 className="text-4xl font-headline font-bold tracking-tighter">My Journal</h1>
         </div>
-        <div className="space-y-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(3)].map((_, i) => (
-            <Card key={i} className="bg-secondary border-0 md:flex overflow-hidden">
-              <div className="md:w-48 flex-shrink-0 relative aspect-[2/3] md:aspect-auto">
-                <Skeleton className="w-full h-full" />
-              </div>
-              <div className="flex flex-col flex-grow p-6 space-y-4">
-                <Skeleton className="h-8 w-3/4" />
-                <Skeleton className="h-6 w-1/4" />
-                <Skeleton className="h-12 w-full" />
-                <Skeleton className="h-4 w-1/2" />
+            <Card key={i} className="bg-secondary border-0 flex flex-col">
+              <Skeleton className="w-full aspect-[2/3] rounded-t-lg" />
+              <div className="p-4 flex flex-col flex-grow">
+                <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-4 w-1/2 mt-2" />
+                <Skeleton className="h-10 w-full mt-4" />
               </div>
             </Card>
           ))}
@@ -72,46 +69,40 @@ export default function JournalPage() {
       </div>
 
       {journal.length > 0 ? (
-        <div className="space-y-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {journal.map((entry) => {
               const film = entry.film as Film;
               const posterUrl = film.poster_path ? `${IMAGE_BASE_URL}w500${film.poster_path}` : 'https://placehold.co/400x600.png';
               const year = film.release_date ? new Date(film.release_date).getFullYear() : 'N/A';
 
               return (
-                <Card key={film.id} className="bg-secondary border-0 md:flex overflow-hidden">
-                    <div className="md:w-48 flex-shrink-0 relative aspect-[2/3] md:aspect-auto">
+                <Card key={film.id} className="bg-secondary border-0 flex flex-col overflow-hidden">
+                    <div className="relative aspect-[2/3]">
                        <Link href={`/film/${film.id}`} className="block h-full w-full">
                         <Image
                           src={posterUrl}
                           alt={`Poster for ${film.title}`}
                           fill
                           className="object-cover"
-                          sizes="(max-width: 768px) 100vw, 12rem"
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                           data-ai-hint={`${film.title} poster`}
                         />
                         </Link>
                     </div>
-                    <div className="flex flex-col flex-grow">
-                        <CardHeader>
-                            <CardTitle>
-                              <Link href={`/film/${film.id}`} className="hover:text-primary transition-colors">
-                                <span className="font-headline text-2xl">{film.title}</span>
-                                <span className="text-muted-foreground font-normal text-lg ml-2">({year})</span>
-                              </Link>
-                            </CardTitle>
-                            <div className="flex items-center pt-1">
-                                {[...Array(Math.floor(entry.rating))].map((_, i) => <Star key={`full-${i}`} className="w-5 h-5 text-accent fill-accent" />)}
-                                {entry.rating % 1 !== 0 && <Star key='half' className="w-5 h-5 text-accent fill-accent" style={{ clipPath: 'inset(0 50% 0 0)' }} />}
-                                {[...Array(5-Math.ceil(entry.rating))].map((_, i) => <Star key={`empty-${i}`} className="w-5 h-5 text-accent" />)}
-                            </div>
-                        </CardHeader>
-                        <CardContent className="flex-grow">
-                            {entry.review && <p className="text-muted-foreground italic leading-relaxed">"{entry.review}"</p>}
-                        </CardContent>
-                        <CardFooter>
-                            <p className="text-xs text-muted-foreground">Logged on {new Date(entry.loggedDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                        </CardFooter>
+                    <div className="p-4 flex flex-col flex-grow">
+                        <CardTitle>
+                          <Link href={`/film/${film.id}`} className="hover:text-primary transition-colors">
+                            <span className="font-headline text-xl leading-tight">{film.title}</span>
+                            <span className="text-muted-foreground font-normal text-base ml-2">({year})</span>
+                          </Link>
+                        </CardTitle>
+                        <div className="flex items-center pt-2">
+                            {[...Array(Math.floor(entry.rating))].map((_, i) => <Star key={`full-${i}`} className="w-4 h-4 text-accent fill-accent" />)}
+                            {entry.rating % 1 !== 0 && <Star key='half' className="w-4 h-4 text-accent fill-accent" style={{ clipPath: 'inset(0 50% 0 0)' }} />}
+                            {[...Array(5-Math.ceil(entry.rating))].map((_, i) => <Star key={`empty-${i}`} className="w-4 h-4 text-accent" />)}
+                        </div>
+                        {entry.review && <p className="text-muted-foreground italic leading-relaxed mt-3 text-sm flex-grow">"{entry.review}"</p>}
+                         <p className="text-xs text-muted-foreground mt-4 pt-4 border-t border-border/50">Logged on {new Date(entry.loggedDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
                     </div>
                 </Card>
               )

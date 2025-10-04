@@ -73,7 +73,7 @@ export default function LikesPage() {
           <Heart className="w-8 h-8 text-primary" />
           <h1 className="text-4xl font-headline font-bold tracking-tighter">My Likes</h1>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-4 md:gap-6">
           {[...Array(6)].map((_, i) => (
              <div key={i} className="space-y-2">
               <Skeleton className="aspect-[2/3] rounded-lg" />
@@ -108,7 +108,7 @@ export default function LikesPage() {
         </TabsList>
         <TabsContent value="films" className="mt-6">
            {likedFilms.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-4 md:gap-6">
                 {likedFilms.map(({ film }) => {
                     const filmId = parseInt(film.id, 10);
                     return (

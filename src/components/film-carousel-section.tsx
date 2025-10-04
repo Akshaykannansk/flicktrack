@@ -93,7 +93,7 @@ export function FilmCarouselSection({ title, initialFilms, category, watchlistId
                 {films.map((film, index) => {
                     const filmId = parseInt(film.id, 10);
                     return (
-                        <CarouselItem key={`${film.id}-${index}`} className="pl-2 md:pl-4 basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/5 xl:basis-1/6 2xl:basis-1/7">
+                        <CarouselItem key={`${film.id}-${index}`} className="pl-2 md:pl-4 basis-1/3 sm:basis-1/4 md:basis-1/5 lg:basis-1/6 xl:basis-1/7 2xl:basis-1/8">
                            <FilmCard 
                                 film={film} 
                                 isInWatchlist={watchlistIds.has(filmId)}
@@ -104,7 +104,7 @@ export function FilmCarouselSection({ title, initialFilms, category, watchlistId
                 })}
                 {isLoading && (
                      [...Array(2)].map((_, i) => (
-                        <CarouselItem key={`skeleton-${i}`} className="pl-2 md:pl-4 basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/5 xl:basis-1/6 2xl:basis-1/7">
+                        <CarouselItem key={`skeleton-${i}`} className="pl-2 md:pl-4 basis-1/3 sm:basis-1/4 md:basis-1/5 lg:basis-1/6 xl:basis-1/7 2xl:basis-1/8">
                             <div className="space-y-2">
                                 <Skeleton className="aspect-[2/3] rounded-lg" />
                                 <Skeleton className="h-4 w-5/6" />
@@ -120,4 +120,3 @@ export function FilmCarouselSection({ title, initialFilms, category, watchlistId
         </section>
     );
 }
-

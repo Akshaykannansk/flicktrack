@@ -22,7 +22,7 @@ import { Star } from 'lucide-react';
 export const dynamic = 'force-dynamic';
 
 const FilmResultsSkeleton = () => (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-4 md:gap-6">
         {[...Array(12)].map((_, i) => (
             <div key={i} className="space-y-2">
                 <Skeleton className="aspect-[2/3] rounded-lg" />
@@ -100,7 +100,7 @@ async function FilmResults({ query, userId }: { query: string; userId: string | 
     }
 
     return (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-4 md:gap-6">
             {films.map((film) => {
                 const filmId = parseInt(film.id, 10);
                 return (
