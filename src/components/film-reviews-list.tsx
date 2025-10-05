@@ -58,7 +58,7 @@ export function FilmReviewsList({ reviews, currentUserId }: FilmReviewsListProps
                                 <Link href={`/profile/${entry.user.id}`} className="hover:text-primary transition-colors">{entry.user.name}</Link>
                             </p>
                             <p className="text-xs text-muted-foreground">
-                                Reviewed on {new Date(entry.logged_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+                                Reviewed on {new Date(entry.logged_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                             </p>
                          </div>
                     </div>

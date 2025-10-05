@@ -58,7 +58,7 @@ export function TrendingReviews({ reviews, currentUserId }: TrendingReviewsProps
                                 <span className="text-muted-foreground font-normal ml-1.5">reviewed a film</span>
                             </p>
                             <p className="text-xs text-muted-foreground">
-                                {new Date(entry.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+                                {new Date(entry.logged_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                             </p>
                          </div>
                     </div>
