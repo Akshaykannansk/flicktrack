@@ -5,12 +5,17 @@
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_DATABASE_URL")
+  directUrl = env("DATABASE_URL")
 }
 
 generator client {
   provider = "prisma-client-js"
   previewFeatures = ["fullTextIndex"]
+}
+
+model AppSettings {
+  key     String @id
+  value   Json?
 }
 
 model User {
@@ -23,6 +28,7 @@ model User {
   bio             String?        @db.Text
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
+  isAdmin         Boolean        @default(false)
   journalEntries  JournalEntry[]
   lists           FilmList[]
   likedFilms      LikedFilm[]

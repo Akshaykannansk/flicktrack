@@ -14,7 +14,8 @@
     "db:migrate": "prisma db push",
     "db:seed": "prisma db seed",
     "migrate-and-dev": "npm run db:migrate && npm run dev",
-    "postinstall": "patch-package"
+    "postinstall": "patch-package",
+    "promote-user": "tsx scripts/promote-user.ts"
   },
   "dependencies": {
     "@genkit-ai/googleai": "^1.15.1",

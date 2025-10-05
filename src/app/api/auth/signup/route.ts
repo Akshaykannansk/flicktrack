@@ -3,9 +3,16 @@ import { NextResponse } from 'next/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import prisma from '@/lib/prisma';
+import { getSetting } from '@/services/settingsService';
 
 export async function POST(request: Request) {
-  const { email, password, fullName, username, id } = await request.json();
+  const { email, password, fullName, username, id, referralCode } = await request.json();
+
+  // 1. Referral Code Validation
+  const validReferralCode = await getSetting("referralCode");
+  if (validReferralCode && referralCode !== validReferralCode) {
+      return NextResponse.json({ error: 'Invalid referral code' }, { status: 403 });
+  }
   
   if (!id) {
     // This part of the logic runs *after* Supabase has already created the user.
@@ -42,6 +49,25 @@ export async function POST(request: Request) {
         );
       }
   }
+
+  const cookieStore = cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value;
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          cookieStore.set({ name, value, ...options });
+        },
+        remove(name: string, options: CookieOptions) {
+          cookieStore.set({ name, value: '', ...options });
+        },
+      },
+    }
+  );
 
   // Since the user is already signed up on the client, we don't need to re-run
   // signUp here. We're just creating the local DB record.
