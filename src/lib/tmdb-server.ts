@@ -3,6 +3,7 @@
 import type { Film, FilmDetails, PaginatedResponse, CastMember, CrewMember, PersonDetails } from './types';
 import redis from '@/lib/redis';
 import { transformFilmData } from './tmdb';
+import { fetchWithRetry } from '@/lib/utils'
 
 const API_BASE_URL = 'https://api.themoviedb.org/3';
 const API_KEY = process.env.TMDB_API_KEY;

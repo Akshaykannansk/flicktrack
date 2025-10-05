@@ -1,5 +1,5 @@
 
-import Image from 'next/image';
+import Image from '@/components/CustomImage';;
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

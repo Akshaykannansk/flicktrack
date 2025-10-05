@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { List, Loader2, PlusCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import Image from 'next/image';
+import Image from '@/components/CustomImage';;
 import { IMAGE_BASE_URL } from '@/lib/tmdb-isomorphic';
 import { Button } from '@/components/ui/button';
 import { CreateListDialog } from '@/components/create-list-dialog';

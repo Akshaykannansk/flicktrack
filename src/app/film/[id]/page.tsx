@@ -1,7 +1,7 @@
 
 import { getFilmDetails as getFilmDetailsFromTMDB } from '@/lib/tmdb-server';
 import { IMAGE_BASE_URL } from '@/lib/tmdb-isomorphic';
-import Image from 'next/image';
+import Image from '@/components/CustomImage';;
 import { notFound } from 'next/navigation';
 import { Star, PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -66,7 +66,7 @@ async function getFilmDetails(id: string): Promise<FilmDetails | null> {
 
 
 export default async function FilmDetailPage({ params }: any) {
-  const { id } = params;
+  const { id } = await params;
   if (!id || isNaN(parseInt(id, 10))) {
       notFound();
   }

@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { PersonDetails } from "@/components/person-details";
 
 export default async function PersonPage({ params }: any) {
-  const { id } = params;
+  const { id } = await params;
   const person = await getPersonDetails(id);
 
   if (!person) {

@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
+import Image from '@/components/CustomImage';;
 import Link from 'next/link';
 import type { Film } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
@@ -61,7 +61,8 @@ export function FilmCard({ film, isInWatchlist, isLiked }: FilmCardProps) {
                     fill
                     className="object-cover rounded-md transition-transform duration-300 group-hover:scale-105"
                     sizes="(max-width: 640px) 33vw, (max-width: 1024px) 20vw, 16vw"
-                    data-ai-hint={`${film.title} movie poster`}
+                    data-ai-hint={`${film.title} movie poster`} 
+                    unoptimized
                   />
                 </div>
             </Link>

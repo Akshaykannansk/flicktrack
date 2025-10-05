@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import type { Film as FilmType, FilmListSummary } from '@/lib/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Link from 'next/link';
-import Image from 'next/image';
+import Image from '@/components/CustomImage';;
 import { Card, CardContent } from '@/components/ui/card';
 import { IMAGE_BASE_URL } from '@/lib/tmdb-isomorphic';
 

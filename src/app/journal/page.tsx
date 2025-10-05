@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Image from 'next/image';
+import Image from '@/components/CustomImage';;
 import Link from 'next/link';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Star, BookOpen, Loader2 } from 'lucide-react';
@@ -86,6 +86,8 @@ export default function JournalPage() {
                           className="object-cover"
                           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                           data-ai-hint={`${film.title} poster`}
+                          unoptimized
+
                         />
                         </Link>
                     </div>

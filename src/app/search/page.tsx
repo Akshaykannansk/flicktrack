@@ -10,7 +10,7 @@ import { Suspense } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Link from 'next/link';
-import Image from 'next/image';
+import Image from '@/components/CustomImage';;
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PublicUser, FilmListSearchResult, ReviewSearchResult } from '@/lib/types';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';

@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import * as React from 'react';
 import type { Film as FilmType, PublicUser } from '@/lib/types';
-import Image from 'next/image';
+import Image from '@/components/CustomImage';;
 import { IMAGE_BASE_URL } from '@/lib/tmdb-isomorphic';
 import {
   Sheet,

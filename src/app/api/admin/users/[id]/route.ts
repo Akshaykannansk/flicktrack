@@ -6,7 +6,7 @@ import { cookies } from 'next/headers';
 
 // PUT update a user
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -33,7 +33,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
   }
 
-  const { id } = params;
+  const { id } = await params;
   const { name, username, email, isAdmin } = await request.json();
 
   try {
@@ -58,7 +58,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
 // DELETE a user
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -85,7 +85,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
   }
 
-  const { id } = params;
+  const { id } = await params;
 
   try {
     // First, delete from Supabase Auth

@@ -28,7 +28,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Search, X, Film as FilmIcon } from 'lucide-react';
 import type { Film } from '@/lib/types';
-import Image from 'next/image';
+import Image from '@/components/CustomImage';;
 import { IMAGE_BASE_URL } from '@/lib/tmdb-isomorphic';
 
 const createListSchema = z.object({

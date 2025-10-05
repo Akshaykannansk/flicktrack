@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, notFound, useRouter } from 'next/navigation';
-import Image from 'next/image';
+import Image from '@/components/CustomImage';;
 import Link from 'next/link';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Star, Loader2 } from 'lucide-react';

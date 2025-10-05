@@ -1,7 +1,7 @@
 
 'use client';
 
-import Image from 'next/image';
+import Image from '@/components/CustomImage';;
 import Link from 'next/link';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Star, MessageSquare, User, Users } from 'lucide-react';

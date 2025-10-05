@@ -22,7 +22,7 @@ services:
       - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
       - PORT=9002
     env_file:
-      - .env
+      - .env.live
     restart: always
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:9002"]
