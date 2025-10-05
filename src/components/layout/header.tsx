@@ -46,6 +46,7 @@ export default function Header() {
   const [isLoading, setIsLoading] = React.useState(false);
   const [isSuggestionsVisible, setIsSuggestionsVisible] = React.useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const [isSearchFocused, setIsSearchFocused] = React.useState(false);
   const searchContainerRef = React.useRef<HTMLDivElement>(null);
   
   const supabase = createClient();
@@ -74,6 +75,7 @@ export default function Header() {
     const handleClickOutside = (event: MouseEvent) => {
         if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
             setIsSuggestionsVisible(false);
+            setIsSearchFocused(false);
         }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -114,6 +116,7 @@ export default function Header() {
     if (query) {
       router.push(`/search?q=${encodeURIComponent(query)}`);
       setIsSuggestionsVisible(false);
+      setIsSearchFocused(false);
     }
   };
   
@@ -189,20 +192,29 @@ export default function Header() {
           <div className="flex items-center space-x-4">
             <div className="relative" ref={searchContainerRef}>
                 <form onSubmit={handleSearchSubmit}>
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
                     <Input
                         type="search"
                         name="q"
                         placeholder="Search films, users..."
-                        className="pl-10 w-32 sm:w-64 bg-secondary focus:bg-background border-secondary"
+                        className={cn(
+                            "pl-10 bg-secondary focus:bg-background border-secondary transition-all duration-300 ease-in-out",
+                            isSearchFocused ? "w-64 sm:w-80" : "w-32 sm:w-64"
+                        )}
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
-                        onFocus={() => setIsSuggestionsVisible(true)}
+                        onFocus={() => {
+                            setIsSuggestionsVisible(true);
+                            setIsSearchFocused(true);
+                        }}
                         autoComplete="off"
                     />
                 </form>
                  {isSuggestionsVisible && (query.length > 1) && (
-                    <div className="absolute top-full mt-2 w-full sm:w-80 max-h-96 overflow-y-auto rounded-md bg-popover border border-border shadow-lg z-50">
+                    <div className={cn(
+                        "absolute top-full mt-2 max-h-96 overflow-y-auto rounded-md bg-popover border border-border shadow-lg z-50",
+                        isSearchFocused ? "w-64 sm:w-80" : "w-full sm:w-64"
+                    )}>
                         {isLoading ? (
                              <div className="flex items-center justify-center p-4">
                                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
