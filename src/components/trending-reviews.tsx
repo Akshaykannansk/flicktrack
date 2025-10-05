@@ -10,6 +10,7 @@ import type { Film, PublicUser } from '@/lib/types';
 import { CardDescription } from './ui/card';
 import { LikeReviewButton } from './like-review-button';
 import { Comments } from './comments';
+import { useEffect, useState } from 'react';
 
 interface TrendingReviewEntry {
   id: string;
@@ -17,6 +18,7 @@ interface TrendingReviewEntry {
   user: PublicUser;
   rating: number;
   review: string | null;
+  logged_date: string;
   created_at: string;
   reviewLikes: { userId: string }[];
   _count: {
@@ -31,6 +33,12 @@ interface TrendingReviewsProps {
 }
 
 export function TrendingReviews({ reviews, currentUserId }: TrendingReviewsProps) {
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   if (reviews.length === 0) {
     return (
        <Card className="bg-secondary/30">
@@ -58,7 +66,7 @@ export function TrendingReviews({ reviews, currentUserId }: TrendingReviewsProps
                                 <span className="text-muted-foreground font-normal ml-1.5">reviewed a film</span>
                             </p>
                             <p className="text-xs text-muted-foreground">
-                                {new Date(entry.logged_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                                {isClient ? new Date(entry.logged_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : <>&thinsp;</>}
                             </p>
                          </div>
                     </div>
