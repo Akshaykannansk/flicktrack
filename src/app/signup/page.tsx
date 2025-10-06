@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,24 +16,47 @@ export default function SignupPage() {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
+  const [referralCode, setReferralCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isReferralEnabled, setIsReferralEnabled] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
   const supabase = createClient();
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+        try {
+            const response = await fetch('/api/settings');
+            const data = await response.json();
+            if (response.ok) {
+                setIsReferralEnabled(data.isReferralSystemEnabled);
+            } else {
+                setIsReferralEnabled(false);
+            }
+        } catch (error) {
+            console.error("Failed to fetch app settings:", error);
+            setIsReferralEnabled(false);
+        }
+    };
+
+    fetchSettings();
+  }, []);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    const { data: { user } , error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
           full_name: fullName,
           username: username,
-          image_url: `https://placehold.co/128x128.png?text=${username.charAt(0).toUpperCase()}`
+          avatar_url: `https://placehold.co/128x128.png?text=${username.charAt(0).toUpperCase()}`,
+          referral_code: isReferralEnabled && referralCode ? referralCode : undefined,
         },
+        emailRedirectTo: `${location.origin}/auth/callback`,
       },
     });
 
@@ -43,22 +66,14 @@ export default function SignupPage() {
             title: 'Sign Up Failed',
             description: error.message,
         });
-        setIsLoading(false);
-    } else if (user) {
-        // This call to our own API creates the user in our public.users table.
-        // This is necessary because Supabase auth.users is separate.
-        await fetch('/api/auth/signup', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password, fullName, username, id: user.id })
-        });
-
+    } else if (data.user) {
         toast({
-            title: 'Sign Up Successful',
-            description: "Check your email to confirm your account, then you can log in.",
+            title: 'Confirm Your Email',
+            description: "We've sent you an email. Please click the link inside to activate your account.",
         });
-        router.push('/login');
+        router.push('/login?message=Check your email to confirm your account.');
     }
+    setIsLoading(false);
   };
 
   return (
@@ -119,6 +134,19 @@ export default function SignupPage() {
                 disabled={isLoading}
                 />
             </div>
+            {isReferralEnabled && (
+                 <div>
+                    <Label htmlFor="referralCode">Referral Code (Optional)</Label>
+                    <Input
+                    id="referralCode"
+                    type="text"
+                    value={referralCode}
+                    onChange={(e) => setReferralCode(e.target.value)}
+                    placeholder="Enter referral code"
+                    disabled={isLoading}
+                    />
+                </div>
+            )}
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? <Loader2 className="animate-spin" /> : 'Create Account'}
             </Button>
