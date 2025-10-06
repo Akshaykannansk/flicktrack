@@ -1,6 +1,6 @@
 import { PersonDetails as PersonDetailsType } from "@/lib/types";
 import { IMAGE_BASE_URL } from "@/lib/tmdb-isomorphic";
-import Image from "next/image";
+import Image from '@/components/CustomImage'
 import { Filmography } from "./filmography";
 
 export function PersonDetails({ person }: { person: PersonDetailsType }) {

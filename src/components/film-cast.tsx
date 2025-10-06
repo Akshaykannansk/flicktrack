@@ -1,7 +1,7 @@
 
 import { getFilmCredits } from "@/lib/tmdb-server";
 import { IMAGE_BASE_URL } from "@/lib/tmdb-isomorphic";
-import Image from "next/image";
+import Image from '@/components/CustomImage';;
 import Link from "next/link";
 import { Film as FilmIcon } from 'lucide-react';
 import { Skeleton } from "./ui/skeleton";
