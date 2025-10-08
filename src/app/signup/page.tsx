@@ -16,7 +16,6 @@ export default function SignupPage() {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
-  const [referralCode, setReferralCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isReferralEnabled, setIsReferralEnabled] = useState(false);
   const router = useRouter();
@@ -30,15 +29,11 @@ export default function SignupPage() {
             const data = await response.json();
             if (response.ok) {
                 setIsReferralEnabled(data.isReferralSystemEnabled);
-            } else {
-                setIsReferralEnabled(false);
             }
         } catch (error) {
             console.error("Failed to fetch app settings:", error);
-            setIsReferralEnabled(false);
         }
     };
-
     fetchSettings();
   }, []);
 
@@ -46,32 +41,39 @@ export default function SignupPage() {
     e.preventDefault();
     setIsLoading(true);
 
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName,
-          username: username,
-          avatar_url: `https://placehold.co/128x128.png?text=${username.charAt(0).toUpperCase()}`,
-          referral_code: isReferralEnabled && referralCode ? referralCode : undefined,
+    if (isReferralEnabled) {
+      // Store details and redirect to the referral page
+      const signupDetails = { email, password, fullName, username };
+      sessionStorage.setItem('signupDetails', JSON.stringify(signupDetails));
+      router.push('/referral');
+    } else {
+      // Sign up directly if referral system is disabled
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            username: username,
+            avatar_url: `https://placehold.co/128x128.png?text=${username.charAt(0).toUpperCase()}`,
+          },
+          emailRedirectTo: `${location.origin}/auth/callback`,
         },
-        emailRedirectTo: `${location.origin}/auth/callback`,
-      },
-    });
+      });
 
-    if (error) {
-        toast({
-            variant: 'destructive',
-            title: 'Sign Up Failed',
-            description: error.message,
-        });
-    } else if (data.user) {
-        toast({
-            title: 'Confirm Your Email',
-            description: "We've sent you an email. Please click the link inside to activate your account.",
-        });
-        router.push('/login?message=Check your email to confirm your account.');
+      if (error) {
+          toast({
+              variant: 'destructive',
+              title: 'Sign Up Failed',
+              description: error.message,
+          });
+      } else if (data.user) {
+          toast({
+              title: 'Confirm Your Email',
+              description: "We've sent you an email. Please click the link inside to activate your account.",
+          });
+          router.push('/login?message=Check your email to confirm your account.');
+      }
     }
     setIsLoading(false);
   };
@@ -134,21 +136,8 @@ export default function SignupPage() {
                 disabled={isLoading}
                 />
             </div>
-            {isReferralEnabled && (
-                 <div>
-                    <Label htmlFor="referralCode">Referral Code (Optional)</Label>
-                    <Input
-                    id="referralCode"
-                    type="text"
-                    value={referralCode}
-                    onChange={(e) => setReferralCode(e.target.value)}
-                    placeholder="Enter referral code"
-                    disabled={isLoading}
-                    />
-                </div>
-            )}
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? <Loader2 className="animate-spin" /> : 'Create Account'}
+              {isLoading ? <Loader2 className="animate-spin" /> : (isReferralEnabled ? 'Continue' : 'Create Account')}
             </Button>
             </form>
              <p className="text-center text-sm text-muted-foreground">
