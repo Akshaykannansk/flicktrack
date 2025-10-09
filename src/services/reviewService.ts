@@ -1,6 +1,15 @@
+import prisma from '@/lib/prisma';
+import { upsertFilm } from './filmService';
 
-import prisma from "@/lib/prisma";
-import { upsertFilm } from "./filmService";
+export async function getReviewsForUser(userId: string) {
+  return prisma.journalEntry.findMany({
+    where: { userId },
+    include: {
+      film: true,
+    },
+    orderBy: { logged_date: 'desc' },
+  });
+}
 
 export async function getJournalEntriesForUser(userId: string, take?: number, include?: ('film' | 'user')[]) {
     return prisma.journalEntry.findMany({

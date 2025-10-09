@@ -2,9 +2,11 @@
 import { NextResponse } from 'next/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { updateUserProfile } from '@/services/userService';
 
-export async function PUT(request: Request) {
+export async function POST(
+  request: Request,
+  { params }: { params: { userId: string } }
+) {
   const cookieStore = cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -25,18 +27,28 @@ export async function PUT(request: Request) {
   );
 
   const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user;
+  const currentUserId = session?.user?.id;
 
-  if (!user) {
+  if (!currentUserId) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
-  try {
-    const { username, bio } = await request.json();
-    await updateUserProfile(user.id, { username, bio });
-    return new NextResponse('Profile updated', { status: 200 });
-  } catch (error) {
-    console.error('Failed to update profile:', error);
-    return new NextResponse('Failed to update profile', { status: 500 });
+  const { data, error } = await supabase
+    .from('followers')
+    .select('id')
+    .eq('user_id', params.userId)
+    .eq('follower_id', currentUserId)
+    .maybeSingle();
+
+  if (error) {
+    return new NextResponse(error.message, { status: 500 });
   }
+
+  if (data) {
+    await supabase.from('followers').delete().eq('id', data.id);
+  } else {
+    await supabase.from('followers').insert({ user_id: params.userId, follower_id: currentUserId });
+  }
+
+  return new NextResponse('OK', { status: 200 });
 }
