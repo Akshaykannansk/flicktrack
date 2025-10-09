@@ -21,13 +21,13 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useState } from 'react';
 import Image from 'next/image';
+import { ImageCropper } from '@/components/image-cropper'; // Import the new component
 
 const profileSchema = z.object({
   name: z.string().min(1, 'Name is required.'),
   username: z.string().min(1, 'Username is required.'),
   bio: z.string().max(160, 'Bio must be 160 characters or less.').optional(),
-  // Allow a file or a string URL
-  imageUrl: z.any().optional(), 
+  imageUrl: z.any().optional(),
   socialLinks: z.object({
       twitter: z.string().url().optional().or(z.literal('')),
       instagram: z.string().url().optional().or(z.literal('')),
@@ -46,6 +46,9 @@ export function EditProfileForm({ initialData }: EditProfileFormProps) {
   const { toast } = useToast();
   const supabase = createClient();
   const [preview, setPreview] = useState<string | null>(initialData.imageUrl || null);
+  const [cropperImage, setCropperImage] = useState<string | null>(null);
+  const [isCropperOpen, setIsCropperOpen] = useState(false);
+  const [croppedImageBlob, setCroppedImageBlob] = useState<Blob | null>(null);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -63,16 +66,15 @@ export function EditProfileForm({ initialData }: EditProfileFormProps) {
     try {
         let imageUrl = initialData.imageUrl; // Keep the old image by default
 
-        // If a new file is selected (it will be a File object)
-        if (data.imageUrl && typeof data.imageUrl !== 'string') {
-            const file = data.imageUrl as File;
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${initialData.id}-${Date.now()}.${fileExt}`;
+        if (croppedImageBlob) {
+            const fileExt = 'png'; // Cropped image is always a png
+            // Use username and a timestamp for a more descriptive and unique filename
+            const fileName = `${data.username}-avatar-${Date.now()}.${fileExt}`;
             const filePath = `avatars/${fileName}`;
 
             const { error: uploadError } = await supabase.storage
                 .from('avatars')
-                .upload(filePath, file);
+                .upload(filePath, croppedImageBlob, { contentType: 'image/png' });
 
             if (uploadError) {
                 throw new Error(`Failed to upload image: ${uploadError.message}`);
@@ -87,6 +89,7 @@ export function EditProfileForm({ initialData }: EditProfileFormProps) {
 
         const updatedProfile = {
             ...data,
+            id: initialData.id, // Make sure to pass the ID for the update
             imageUrl: imageUrl,
         };
 
@@ -115,9 +118,33 @@ export function EditProfileForm({ initialData }: EditProfileFormProps) {
     }
   }
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+          const reader = new FileReader();
+          reader.onload = () => {
+              setCropperImage(reader.result as string);
+              setIsCropperOpen(true);
+          };
+          reader.readAsDataURL(file);
+      }
+  };
+
+  const handleCropComplete = (croppedBlob: Blob) => {
+      setCroppedImageBlob(croppedBlob);
+      const previewUrl = URL.createObjectURL(croppedBlob);
+      setPreview(previewUrl);
+  };
+
   return (
     <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 mt-6">
+            <ImageCropper
+                isOpen={isCropperOpen}
+                onClose={() => setIsCropperOpen(false)}
+                image={cropperImage}
+                onCropComplete={handleCropComplete}
+            />
              <FormField
                 control={form.control}
                 name="imageUrl"
@@ -138,13 +165,7 @@ export function EditProfileForm({ initialData }: EditProfileFormProps) {
                                     accept="image/*"
                                     className="hidden"
                                     id="file-upload"
-                                    onChange={(e) => {
-                                        const file = e.target.files?.[0];
-                                        if (file) {
-                                            field.onChange(file);
-                                            setPreview(URL.createObjectURL(file));
-                                        }
-                                    }}
+                                    onChange={handleFileChange}
                                 />
                                 <Button asChild variant="outline">
                                     <label htmlFor="file-upload">{preview ? 'Change' : 'Upload'}</label>

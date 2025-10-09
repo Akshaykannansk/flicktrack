@@ -13,6 +13,7 @@ async function getEditProfileData(userId: string) {
     const userProfile = await prisma.user.findUnique({
         where: { id: userId },
         select: {
+            id: true, // Select the id
             name: true,
             username: true,
             bio: true,
@@ -35,7 +36,9 @@ async function getEditProfileData(userId: string) {
         release_date: fav.film.release_date?.toISOString() ?? null,
     })) as FilmType[];
 
+    // Now includes the id
     const profile = {
+        id: userProfile.id,
         name: userProfile.name ?? '',
         username: userProfile.username ?? '',
         bio: userProfile.bio ?? '',
@@ -89,6 +92,7 @@ export default async function EditProfilePage() {
                 <p className="text-muted-foreground mt-2">
                     Update your public profile information.
                 </p>
+                {/* The entire profile object, including id, is now passed */}
                 <EditProfileForm initialData={profile} />
             </div>
             
