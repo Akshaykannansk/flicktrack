@@ -153,7 +153,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     final croppedFile = await ImageCropper().cropImage(
       sourcePath: imageFile.path,
-      aspectRatioPresets: [CropAspectRatioPreset.square],
       uiSettings: [
         AndroidUiSettings(
             toolbarTitle: 'Crop Image',
@@ -163,6 +162,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             lockAspectRatio: true),
         IOSUiSettings(
           title: 'Crop Image',
+          aspectRatioLockEnabled: true,
         ),
       ],
     );

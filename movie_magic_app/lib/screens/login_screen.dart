@@ -97,7 +97,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_isLogin ? 'Login' : 'Sign Up'))),
+      appBar: AppBar(title: Text(_isLogin ? 'Login' : 'Sign Up')),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Form(
