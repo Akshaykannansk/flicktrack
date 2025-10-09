@@ -4,8 +4,8 @@ import { getListsForUser } from '@/services/listService';
 
 export async function GET(
   request: Request,
-  { params }: { params: { userId: string } }
+  { params }: { params: { id: string } }
 ) {
-  const lists = await getListsForUser(params.userId);
+  const lists = await getListsForUser(params.id);
   return NextResponse.json(lists);
 }

@@ -5,7 +5,7 @@ import { cookies } from 'next/headers';
 
 export async function GET(
   request: Request,
-  { params }: { params: { userId: string } }
+  { params }: { params: { id: string } }
 ) {
   const cookieStore = cookies();
   const supabase = createServerClient(
@@ -36,7 +36,7 @@ export async function GET(
   const { data, error } = await supabase
     .from('followers')
     .select('id')
-    .eq('user_id', params.userId)
+    .eq('user_id', params.id)
     .eq('follower_id', currentUserId)
     .maybeSingle();
 

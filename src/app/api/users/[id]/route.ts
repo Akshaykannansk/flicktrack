@@ -1,11 +1,12 @@
 
 import { NextResponse } from 'next/server';
+import { getUserDataForProfile } from '@/services/userService';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
-export async function POST(
+export async function GET(
   request: Request,
-  { params }: { params: { userId: string } }
+  { params }: { params: { id: string } }
 ) {
   const cookieStore = cookies();
   const supabase = createServerClient(
@@ -28,27 +29,11 @@ export async function POST(
 
   const { data: { session } } = await supabase.auth.getSession();
   const currentUserId = session?.user?.id;
+  const data = await getUserDataForProfile(params.id, currentUserId);
 
-  if (!currentUserId) {
-    return new NextResponse('Unauthorized', { status: 401 });
+  if (!data) {
+    return new NextResponse('User not found', { status: 404 });
   }
 
-  const { data, error } = await supabase
-    .from('followers')
-    .select('id')
-    .eq('user_id', params.userId)
-    .eq('follower_id', currentUserId)
-    .maybeSingle();
-
-  if (error) {
-    return new NextResponse(error.message, { status: 500 });
-  }
-
-  if (data) {
-    await supabase.from('followers').delete().eq('id', data.id);
-  } else {
-    await supabase.from('followers').insert({ user_id: params.userId, follower_id: currentUserId });
-  }
-
-  return new NextResponse('OK', { status: 200 });
+  return NextResponse.json(data);
 }

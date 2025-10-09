@@ -4,8 +4,8 @@ import { getReviewsForUser } from '@/services/reviewService';
 
 export async function GET(
   request: Request,
-  { params }: { params: { userId: string } }
+  { params }: { params: { id: string } }
 ) {
-  const reviews = await getReviewsForUser(params.userId);
+  const reviews = await getReviewsForUser(params.id);
   return NextResponse.json(reviews);
 }
