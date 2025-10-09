@@ -46,36 +46,42 @@ export default function SignupPage() {
       const signupDetails = { email, password, fullName, username };
       sessionStorage.setItem('signupDetails', JSON.stringify(signupDetails));
       router.push('/referral');
-    } else {
-      // Sign up directly if referral system is disabled
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            username: username,
-            avatar_url: `https://placehold.co/128x128.png?text=${username.charAt(0).toUpperCase()}`,
-          },
-          emailRedirectTo: `${location.origin}/auth/callback`,
-        },
-      });
+      return; // Exit early as we are navigating
+    } 
 
-      if (error) {
-          toast({
-              variant: 'destructive',
-              title: 'Sign Up Failed',
-              description: error.message,
-          });
-      } else if (data.user) {
-          toast({
-              title: 'Confirm Your Email',
-              description: "We've sent you an email. Please click the link inside to activate your account.",
-          });
-          router.push('/login?message=Check your email to confirm your account.');
-      }
+    // Sign up directly if referral system is disabled
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+          username: username,
+          avatar_url: `https://placehold.co/128x128.png?text=${username.charAt(0).toUpperCase()}`,
+        },
+        // emailRedirectTo is removed for the OTP flow
+      },
+    });
+
+    if (error) {
+        toast({
+            variant: 'destructive',
+            title: 'Sign Up Failed',
+            description: error.message,
+        });
+        setIsLoading(false);
+    } else if (data.user) {
+        // Redirect to the OTP confirmation page on successful sign-up initiation
+        router.push(`/auth/confirm-otp?email=${encodeURIComponent(email)}`);
+    } else {
+        // Fallback for an unexpected state
+        toast({
+            variant: 'destructive',
+            title: 'Sign Up Failed',
+            description: 'An unexpected error occurred. Please try again.',
+        });
+        setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   return (

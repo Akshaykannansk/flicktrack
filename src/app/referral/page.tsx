@@ -45,7 +45,7 @@ export default function ReferralPage() {
                 avatar_url: `https://placehold.co/128x128.png?text=${username.charAt(0).toUpperCase()}`,
                 referral_code: referralCode, // Add the referral code here
             },
-            emailRedirectTo: `${location.origin}/auth/callback`,
+            // emailRedirectTo is removed for the OTP flow
         },
     });
     
@@ -58,14 +58,19 @@ export default function ReferralPage() {
             title: 'Sign Up Failed',
             description: error.message,
         });
+        setIsLoading(false);
     } else if (data.user) {
+        // Redirect to the OTP confirmation page on successful sign-up initiation
+        router.push(`/auth/confirm-otp?email=${encodeURIComponent(email)}`);
+    } else {
+        // Fallback for an unexpected state
         toast({
-            title: 'Confirm Your Email',
-            description: "We've sent you an email. Please click the link inside to activate your account.",
+            variant: 'destructive',
+            title: 'Sign Up Failed',
+            description: 'An unexpected error occurred. Please try again.',
         });
-        router.push('/login?message=Check your email to confirm your account.');
+        setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   return (
