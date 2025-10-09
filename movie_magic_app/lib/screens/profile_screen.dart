@@ -1,4 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_cropper/image_cropper.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:movie_magic_app/services/user_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'user_list_screen.dart';
@@ -23,10 +26,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late int _followersCount;
   final _currentUserId = Supabase.instance.client.auth.currentUser?.id;
 
+  // Controllers for editing
+  late final _usernameController = TextEditingController(text: widget.user['username']);
+  late final _bioController = TextEditingController(text: widget.user['bio']);
+  String? _avatarUrl;
+
   @override
   void initState() {
     super.initState();
     _followersCount = widget.user['followers_count'] ?? 0;
+    _avatarUrl = widget.user['avatar_url'];
     _fetchData();
   }
 
@@ -39,9 +48,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (_currentUserId != null && _currentUserId != widget.user['id']) {
       await _checkIfFollowing();
     }
-    setState(() {
-      _isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _fetchReviews() async {
@@ -101,14 +112,163 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+
+  Future<void> _updateProfile() async {
+    final username = _usernameController.text.trim();
+    final bio = _bioController.text.trim();
+    
+    try {
+      await Supabase.instance.client.from('profiles').update({
+        'username': username,
+        'bio': bio,
+      }).eq('id', _currentUserId!);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile updated successfully!')),
+        );
+        setState(() {
+          widget.user['username'] = username;
+          widget.user['bio'] = bio;
+        });
+        Navigator.of(context).pop(); // Close the dialog
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error updating profile: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _uploadAvatar() async {
+    final picker = ImagePicker();
+    final imageFile = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 300,
+      maxHeight: 300,
+    );
+    if (imageFile == null) return;
+
+    final croppedFile = await ImageCropper().cropImage(
+      sourcePath: imageFile.path,
+      aspectRatioPresets: [CropAspectRatioPreset.square],
+      uiSettings: [
+        AndroidUiSettings(
+            toolbarTitle: 'Crop Image',
+            toolbarColor: Theme.of(context).primaryColor,
+            toolbarWidgetColor: Colors.white,
+            initAspectRatio: CropAspectRatioPreset.square,
+            lockAspectRatio: true),
+        IOSUiSettings(
+          title: 'Crop Image',
+        ),
+      ],
+    );
+
+    if (croppedFile == null) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final bytes = await croppedFile.readAsBytes();
+      final fileExt = croppedFile.path.split('.').last;
+      final fileName = '$_currentUserId.$fileExt';
+      final filePath = fileName;
+
+      await Supabase.instance.client.storage.from('avatars').uploadBinary(
+            filePath,
+            bytes,
+            fileOptions: FileOptions(cacheControl: '3600', upsert: true),
+          );
+
+      final imageUrl = Supabase.instance.client.storage
+          .from('avatars')
+          .getPublicUrl(filePath);
+
+      await Supabase.instance.client
+          .from('profiles')
+          .update({'avatar_url': imageUrl}).eq('id', _currentUserId!);
+
+      setState(() {
+        _avatarUrl = imageUrl;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Avatar updated!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error uploading avatar: $e')),
+        );
+      }
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  void _showEditProfileDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Profile'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              controller: _usernameController,
+              decoration: const InputDecoration(labelText: 'Username'),
+            ),
+            TextFormField(
+              controller: _bioController,
+              decoration: const InputDecoration(labelText: 'Bio'),
+              maxLines: 3,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: _updateProfile,
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _signOut() async {
+    await Supabase.instance.client.auth.signOut();
+    if (mounted) {
+      Navigator.of(context).pushReplacementNamed('/login');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final bool isCurrentUser = _currentUserId == widget.user['id'];
+    final isCurrentUser = _currentUserId == widget.user['id'];
 
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.user['username']),
         actions: [
+          if (isCurrentUser)
+            IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed: _showEditProfileDialog,
+            ),
+          if (isCurrentUser)
+            IconButton(
+              icon: const Icon(Icons.logout),
+              onPressed: _signOut,
+            ),
           if (!isCurrentUser)
             TextButton(
               onPressed: _toggleFollow,
@@ -126,14 +286,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     Row(
                       children: [
-                        CircleAvatar(
-                          radius: 40,
-                          backgroundImage: widget.user['image_url'] != null
-                              ? NetworkImage(widget.user['image_url'])
-                              : null,
-                          child: widget.user['image_url'] == null
-                              ? const Icon(Icons.person, size: 40)
-                              : null,
+                        InkWell(
+                          onTap: isCurrentUser ? _uploadAvatar : null,
+                          child: CircleAvatar(
+                            radius: 40,
+                            backgroundImage: _avatarUrl != null && _avatarUrl!.isNotEmpty
+                                ? NetworkImage(_avatarUrl!)
+                                : null,
+                            child: _avatarUrl == null || _avatarUrl!.isEmpty
+                                ? const Icon(Icons.person, size: 40)
+                                : null,
+                          ),
                         ),
                         const SizedBox(width: 20),
                         Expanded(
