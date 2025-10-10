@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -50,7 +49,7 @@ const logFilmSchema = z.object({
 type LogFilmFormValues = z.infer<typeof logFilmSchema>;
 
 interface LogFilmDialogProps {
-  film: Pick<FilmDetails, 'id' | 'title'>;
+  film: Pick<FilmDetails, 'id' | 'title';
   children: React.ReactNode;
 }
 
@@ -76,7 +75,7 @@ export function LogFilmDialog({ film, children }: LogFilmDialogProps) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          filmId: parseInt(film.id, 10),
+          filmId: film.id,
           rating: data.rating,
           review: data.review,
           loggedDate: data.watchedDate.toISOString(),
@@ -195,7 +194,7 @@ export function LogFilmDialog({ film, children }: LogFilmDialogProps) {
             </div>
             <DialogFooter>
               <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? 'Saving...' : 'Save Log Entry'}
+                {form.formSstate.isSubmitting ? 'Saving...' : 'Save Log Entry'}
               </Button>
             </DialogFooter>
           </form>
@@ -213,23 +212,48 @@ function StarRating({
   onRatingChange: (rating: number) => void;
 }) {
   const [hoverRating, setHoverRating] = React.useState(0);
+  const ratingToShow = hoverRating || currentRating;
 
   return (
     <div className="flex items-center space-x-1">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <Star
-          key={star}
-          className={cn(
-            'w-8 h-8 sm:w-10 sm:h-10 cursor-pointer transition-colors',
-            (hoverRating || currentRating) >= star
-              ? 'text-accent fill-accent'
-              : 'text-muted-foreground/50'
-          )}
-          onClick={() => onRatingChange(star)}
-          onMouseEnter={() => setHoverRating(star)}
-          onMouseLeave={() => setHoverRating(0)}
-        />
-      ))}
+      {[1, 2, 3, 4, 5].map((starValue) => {
+        let fillPercentage = '0%';
+        if (ratingToShow >= starValue) {
+          fillPercentage = '100%';
+        } else if (ratingToShow >= starValue - 0.5) {
+          fillPercentage = '50%';
+        }
+
+        return (
+          <div
+            key={starValue}
+            className="relative cursor-pointer"
+            onMouseLeave={() => setHoverRating(0)}
+          >
+            <div
+              className="absolute w-1/2 h-full left-0 top-0 z-10"
+              onMouseEnter={() => setHoverRating(starValue - 0.5)}
+              onClick={() => onRatingChange(starValue - 0.5)}
+            />
+            <div
+              className="absolute w-1/2 h-full right-0 top-0 z-10"
+              onMouseEnter={() => setHoverRating(starValue)}
+              onClick={() => onRatingChange(starValue)}
+            />
+            <Star
+              className="w-8 h-8 sm:w-10 sm:h-10 text-muted-foreground/50"
+            />
+            <div
+              className="absolute top-0 left-0 h-full overflow-hidden"
+              style={{ width: fillPercentage }}
+            >
+              <Star
+                className="w-8 h-8 sm:w-10 sm:h-10 text-accent fill-accent"
+              />
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

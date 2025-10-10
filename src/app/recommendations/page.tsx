@@ -1,21 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { ViewingHistory } from '@/lib/types';
-import { RecommendationsForm } from '@/components/recommendations-form';
 import { createClient } from '@/lib/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Rocket } from 'lucide-react';
-
-async function getViewingHistory(): Promise<ViewingHistory[]> {
-    const response = await fetch('/api/recommendations/history');
-    if (!response.ok) {
-        console.error('Failed to fetch viewing history');
-        return [];
-    }
-    return response.json();
-}
+import { RecommendationResults } from '@/components/recommendation-results';
 
 function LoadingSkeleton() {
     return (
@@ -24,44 +14,34 @@ function LoadingSkeleton() {
             <Skeleton className="h-10 w-3/4 mx-auto" />
             <Skeleton className="h-6 w-1/2 mx-auto mt-4" />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
-            <div className="md:col-span-1">
-                <div className="sticky top-24 space-y-4">
+          <div className="space-y-8">
+            {[...Array(3)].map((_, i) => (
+                <div key={i}>
                     <Skeleton className="h-8 w-48 mb-4" />
-                    <ul className="space-y-2">
-                        {[...Array(5)].map((_, i) => (
-                            <li key={i}>
-                                <Skeleton className="h-12 w-full" />
-                            </li>
+                    <div className="flex space-x-2 md:space-x-4 overflow-x-auto pb-4">
+                        {[...Array(5)].map((_, j) => (
+                           <div key={j} className="flex-shrink-0 basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/5 xl:basis-1/6 2xl:basis-1/7">
+                                <Skeleton key={j} className="h-64 w-full" />
+                           </div>
                         ))}
-                    </ul>
+                    </div>
                 </div>
-            </div>
-            <div className="md:col-span-2">
-                <Skeleton className="h-96 w-full" />
-            </div>
+            ))}
           </div>
         </div>
     )
 }
 
 export default function RecommendationsPage() {
-    const [viewingHistory, setViewingHistory] = useState<ViewingHistory[]>([]);
     const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
     useEffect(() => {
-        const checkAuthAndFetch = async () => {
+        const checkAuth = async () => {
             const supabase = createClient();
             const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
-                setIsAuthenticated(true);
-                const history = await getViewingHistory();
-                setViewingHistory(history);
-            } else {
-                setIsAuthenticated(false);
-            }
+            setIsAuthenticated(!!session);
         };
-        checkAuthAndFetch();
+        checkAuth();
     }, []);
 
     if (isAuthenticated === null) {
@@ -82,20 +62,6 @@ export default function RecommendationsPage() {
         );
     }
 
-    if (isAuthenticated && viewingHistory.length < 5) {
-        return (
-            <div className="container mx-auto px-4 py-8 flex justify-center">
-                <Alert className="max-w-lg">
-                    <Rocket className="h-4 w-4" />
-                    <AlertTitle>Not Enough Viewing History</AlertTitle>
-                    <AlertDescription>
-                    We need at least 5 rated films to generate personalized recommendations. Please rate some films and check back!
-                    </AlertDescription>
-                </Alert>
-            </div>
-        );
-    }
-
     return (
         <div className="container mx-auto px-4 py-8">
           <div className="text-center mb-8">
@@ -104,26 +70,7 @@ export default function RecommendationsPage() {
               Discover your next favorite film. Our AI analyzes your viewing history and preferences to provide personalized suggestions.
             </p>
           </div>
-    
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12 items-start">
-            <aside className="lg:col-span-1 lg:sticky top-24">
-                <div className="rounded-xl bg-secondary/50 p-6">
-                    <h2 className="text-2xl font-headline font-semibold mb-4">Your Recent Ratings</h2>
-                    <p className="text-sm text-muted-foreground mb-4">The AI will use these films to understand your taste. The more you rate, the better the recommendations!</p>
-                    <ul className="space-y-3">
-                        {viewingHistory.map((item, index) => (
-                            <li key={index} className="flex justify-between items-center text-sm">
-                                <span className="truncate font-medium text-foreground pr-4">{item.filmTitle}</span>
-                                <span className="font-bold text-primary flex-shrink-0">{'★'.repeat(item.rating)}</span>
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            </aside>
-            <main className="lg:col-span-2">
-              <RecommendationsForm viewingHistory={viewingHistory} />
-            </main>
-          </div>
+          <RecommendationResults />
         </div>
       );
     }

@@ -10,7 +10,7 @@ export interface PaginatedResponse<T> {
 }
 
 export interface Film {
-  id: string;
+  id: number;
   title: string;
   poster_path: string | null;
   release_date: string | null;
@@ -49,7 +49,7 @@ export interface Video {
 }
 
 export interface FilmDetails {
-  id: string;
+  id: number;
   title: string;
   overview: string;
   poster_path: string | null;
