@@ -41,9 +41,7 @@ import { useToast } from '@/hooks/use-toast';
 const logFilmSchema = z.object({
   rating: z.number().min(0.5, 'A rating is required.').max(5),
   review: z.string().optional(),
-  watchedDate: z.date({
-    required_error: 'A date is required.',
-  }),
+  watchedDate: z.date().optional(),
 });
 
 type LogFilmFormValues = z.infer<typeof logFilmSchema>;
@@ -62,10 +60,11 @@ export function LogFilmDialog({ film, children }: LogFilmDialogProps) {
     resolver: zodResolver(logFilmSchema),
     defaultValues: {
       rating: 0,
-      watchedDate: new Date(),
       review: '',
     },
   });
+  
+  const watchedDate = form.watch('watchedDate');
 
   async function onSubmit(data: LogFilmFormValues) {
     try {
@@ -78,7 +77,7 @@ export function LogFilmDialog({ film, children }: LogFilmDialogProps) {
           filmId: film.id,
           rating: data.rating,
           review: data.review,
-          loggedDate: data.watchedDate.toISOString(),
+          loggedDate: data.watchedDate?.toISOString(),
         }),
       });
 
@@ -88,8 +87,8 @@ export function LogFilmDialog({ film, children }: LogFilmDialogProps) {
 
       setOpen(false);
       toast({
-        title: 'Film Logged!',
-        description: `You've successfully logged "${film.title}".`,
+        title: watchedDate ? 'Film Logged!' : 'Film Rated!',
+        description: `You\'ve successfully ${watchedDate ? 'logged' : 'rated'} "${film.title}".`,
       });
       form.reset();
       router.refresh();
@@ -109,9 +108,11 @@ export function LogFilmDialog({ film, children }: LogFilmDialogProps) {
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
-          <DialogTitle>Log "{film.title}"</DialogTitle>
+          <DialogTitle>{watchedDate ? 'Log' : 'Rate'} "{film.title}"</DialogTitle>
           <DialogDescription>
-            Record your thoughts and rating for this film.
+            {watchedDate
+                ? 'Record your thoughts and rating for this film.'
+                : 'Select a rating. You can also add a review and log the date you watched it.'}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -155,7 +156,7 @@ export function LogFilmDialog({ film, children }: LogFilmDialogProps) {
                 name="watchedDate"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Watched On</FormLabel>
+                    <FormLabel>Watched On (optional)</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -169,7 +170,7 @@ export function LogFilmDialog({ film, children }: LogFilmDialogProps) {
                             {field.value ? (
                               format(field.value, 'PPP')
                             ) : (
-                              <span>Pick a date</span>
+                              <span>Pick a date to log</span>
                             )}
                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
@@ -194,7 +195,7 @@ export function LogFilmDialog({ film, children }: LogFilmDialogProps) {
             </div>
             <DialogFooter>
               <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? 'Saving...' : 'Save Log Entry'}
+                {form.formState.isSubmitting ? 'Saving...' : (watchedDate ? 'Save Log Entry' : 'Save Rating')}
               </Button>
             </DialogFooter>
           </form>

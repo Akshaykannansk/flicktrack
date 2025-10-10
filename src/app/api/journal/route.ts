@@ -9,7 +9,7 @@ const journalEntrySchema = z.object({
   filmId: z.number(),
   rating: z.number().min(0.5).max(5),
   review: z.string().optional(),
-  loggedDate: z.string().datetime(),
+  loggedDate: z.string().datetime().optional(),
 });
 
 // GET all journal entries for a user
@@ -55,7 +55,6 @@ export async function GET(request: Request) {
         loggedDate: entry.logged_date.toISOString(),
         film: {
             ...entry.film,
-            id: entry.film.id.toString(),
         },
     }));
 
@@ -100,7 +99,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: validation.error.formErrors }, { status: 400 });
     }
     
-    const newEntry = await createJournalEntry(user.id, validation.data);
+    const entryData = {
+        ...validation.data,
+        loggedDate: validation.data.loggedDate || new Date().toISOString()
+    };
+    
+    const newEntry = await createJournalEntry(user.id, entryData);
 
     return NextResponse.json(newEntry, { status: 201 });
   } catch (error) {
