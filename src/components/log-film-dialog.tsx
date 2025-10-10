@@ -49,7 +49,7 @@ const logFilmSchema = z.object({
 type LogFilmFormValues = z.infer<typeof logFilmSchema>;
 
 interface LogFilmDialogProps {
-  film: Pick<FilmDetails, 'id' | 'title';
+  film: Pick<FilmDetails, 'id' | 'title'>;
   children: React.ReactNode;
 }
 
@@ -194,7 +194,7 @@ export function LogFilmDialog({ film, children }: LogFilmDialogProps) {
             </div>
             <DialogFooter>
               <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formSstate.isSubmitting ? 'Saving...' : 'Save Log Entry'}
+                {form.formState.isSubmitting ? 'Saving...' : 'Save Log Entry'}
               </Button>
             </DialogFooter>
           </form>
