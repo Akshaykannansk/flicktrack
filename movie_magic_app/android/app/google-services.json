@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "550679240160",
+    "project_id": "filmfriend-kj51e",
+    "storage_bucket": "filmfriend-kj51e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:550679240160:android:3d96efe3aa04a8fc785f85",
+        "android_client_info": {
+          "package_name": "com.example.movie_magic_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD4JQnBqFLFeqTy1MLTf4b3_rij9MXjgPg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

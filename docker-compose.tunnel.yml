@@ -1,0 +1,6 @@
+services:
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    network_mode: host
+    command: --url http://localhost:9002

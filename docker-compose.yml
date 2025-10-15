@@ -1,0 +1,141 @@
+version: "3.9"
+
+services:
+  # ==============================
+  # FlickTrack App (Next.js)
+  # ==============================
+  app:
+    container_name: flicktrack-app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: npm run dev
+    ports:
+      - "${APP_PORT}:${APP_PORT}"
+    depends_on:
+      cache:
+        condition: service_started
+      supabase-db:
+        condition: service_healthy
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    environment:
+      - REDIS_URL=${REDIS_URL}
+      - DATABASE_URL=${DATABASE_URL}
+      - TMDB_API_KEY=${TMDB_API_KEY}
+      - NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      - PORT=${APP_PORT}
+      - NODE_TLS_REJECT_UNAUTHORIZED=${NODE_TLS_REJECT_UNAUTHORIZED}
+    env_file:
+      - .env
+
+  # ==============================
+  # Redis Cache
+  # ==============================
+  cache:
+    container_name: flicktrack-cache
+    image: redis:7
+    restart: always
+    ports:
+      - "${REDIS_PORT}:${REDIS_PORT}"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==============================
+  # Supabase Database (Postgres)
+  # ==============================
+  supabase-db:
+    image: supabase/postgres:17.6.1.022
+    container_name: supabase-db
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_EXTERNAL_PORT}:${POSTGRES_PORT}"
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_DB: ${POSTGRES_DB}
+      SUPABASE_INTERNAL_PASSWORD: ${SUPABASE_INTERNAL_PASSWORD}
+      SUPABASE_ADMIN_PASSWORD: ${SUPABASE_ADMIN_PASSWORD}
+      SUPABASE_REPLICA_PASSWORD: ${SUPABASE_REPLICA_PASSWORD}
+    volumes:
+      - supabase_db:/var/lib/postgresql/data
+    env_file:
+      - supabase.env
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ==============================
+  # Supabase Auth (GoTrue)
+  # ==============================
+  supabase-auth:
+    image: supabase/gotrue:v2.181.0-rc.12
+    container_name: supabase-auth
+    ports:
+      - "${SUPABASE_AUTH_PORT}:${SUPABASE_AUTH_PORT}"
+    depends_on:
+        supabase-db:
+          condition: service_healthy
+    env_file:
+      - supabase.env
+
+  # ==============================
+  # Supabase REST (PostgREST)
+  # ==============================
+  supabase-rest:
+    image: postgrest/postgrest:latest
+    container_name: supabase-rest
+    ports:
+      - "${SUPABASE_REST_PORT}:3000"
+    depends_on:
+      - supabase-db
+    environment:
+      PGRST_DB_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@supabase-db:${POSTGRES_PORT}/${POSTGRES_DB}
+      PGRST_DB_SCHEMA: public
+      PGRST_DB_ANON_ROLE: anon
+    env_file:
+      - supabase.env
+
+  # ==============================
+  # Supabase Storage
+  # ==============================
+  supabase-storage:
+    image: supabase/storage-api:latest
+    container_name: supabase-storage
+    ports:
+      - "${SUPABASE_STORAGE_PORT}:${SUPABASE_STORAGE_PORT}"
+    depends_on:
+      - supabase-db
+    env_file:
+      - supabase.env
+
+  # ==============================
+  # Supabase Studio
+  # ==============================
+  supabase-studio:
+    image: supabase/studio:latest
+    container_name: supabase-studio
+    ports:
+      - "${SUPABASE_STUDIO_PORT}:3000"
+    depends_on:
+      - supabase-rest
+    environment:
+      SUPABASE_URL: http://supabase-rest:3000
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+    env_file:
+      - supabase.env
+
+volumes:
+  redis_data:
+  supabase_db:
+

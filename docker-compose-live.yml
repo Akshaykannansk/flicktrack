@@ -1,0 +1,50 @@
+version: "3.9"
+
+services:
+  app:
+    container_name: flicktrack-app
+    image: akshaykannansk/flicktrack:latest
+    build:
+      context: .
+      dockerfile: DockerfileLive
+    command: npm run start
+    ports:
+      - "9002:9002"
+    depends_on:
+      cache:
+        condition: service_healthy
+    environment:
+      - REDIS_URL=redis://cache:6379
+      - DATABASE_URL=${DATABASE_URL}
+      - TMDB_API_KEY=${TMDB_API_KEY}
+      - NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      - PORT=9002
+      - NEXT_DISABLE_IMAGE_OPTIMIZATION=${NEXT_DISABLE_IMAGE_OPTIMIZATION}
+    env_file:
+      - .env.live
+    restart: always
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9002"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  cache:
+    container_name: flicktrack-cache
+    image: redis:7-alpine
+    restart: always
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # No port mapping, keeps Redis internal-only
+    # ports:
+    #   - "6379:6379"
+
+volumes:
+  redis_data:
