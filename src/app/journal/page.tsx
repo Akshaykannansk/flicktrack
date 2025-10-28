@@ -76,7 +76,7 @@ export default function JournalPage() {
               const year = film.release_date ? new Date(film.release_date).getFullYear() : 'N/A';
 
               return (
-                <Card key={film.id} className="bg-secondary border-0 flex flex-col overflow-hidden">
+                <Card key={entry.id} className="bg-secondary border-0 flex flex-col overflow-hidden">
                     <div className="relative aspect-[2/3]">
                        <Link href={`/film/${film.id}`} className="block h-full w-full">
                         <Image
@@ -99,9 +99,9 @@ export default function JournalPage() {
                           </Link>
                         </CardTitle>
                         <div className="flex items-center pt-2">
-                            {[...Array(Math.floor(entry.rating))].map((_, i) => <Star key={`full-${i}`} className="w-4 h-4 text-accent fill-accent" />)}
-                            {entry.rating % 1 !== 0 && <Star key='half' className="w-4 h-4 text-accent fill-accent" style={{ clipPath: 'inset(0 50% 0 0)' }} />}
-                            {[...Array(5-Math.ceil(entry.rating))].map((_, i) => <Star key={`empty-${i}`} className="w-4 h-4 text-accent" />)}
+                            {[...Array(Math.floor(entry.rating))].map((_, i) => <Star key={`full-${entry.id}-${i}`} className="w-4 h-4 text-accent fill-accent" />)}
+                            {entry.rating % 1 !== 0 && <Star key={`half-${entry.id}`} className="w-4 h-4 text-accent fill-accent" style={{ clipPath: 'inset(0 50% 0 0)' }} />}
+                            {[...Array(5-Math.ceil(entry.rating))].map((_, i) => <Star key={`empty-${entry.id}-${i}`} className="w-4 h-4 text-accent" />)}
                         </div>
                         {entry.review && <p className="text-muted-foreground italic leading-relaxed mt-3 text-sm flex-grow">"{entry.review}"</p>}
                          <p className="text-xs text-muted-foreground mt-4 pt-4 border-t border-border/50">Logged on {new Date(entry.loggedDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
