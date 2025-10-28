@@ -114,3 +114,35 @@ docker-compose -f docker-compose.yml -f docker-compose.tunnel.yml up
 ```
 
 This will start the `cloudflared` container, which will connect to your `app` container and expose it to the internet through a secure tunnel. Check the terminal output for the public URL.
+
+### & . supabase local issue fix
+------ supabase issue fix
+
+```bash
+docker exec -it supabase-db psql -U postgres -d postgres
+```
+```bash
+CREATE SCHEMA IF NOT EXISTS auth;
+CREATE TYPE auth.factor_type AS ENUM ('totp', 'webauthn');
+```
+```bash
+CREATE SCHEMA IF NOT EXISTS auth;
+
+-- Create the enum if missing
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_type t
+        JOIN pg_namespace n ON n.oid = t.typnamespace
+        WHERE n.nspname = 'auth' AND t.typname = 'code_challenge_method'
+    ) THEN
+        CREATE TYPE auth.code_challenge_method AS ENUM ('s256', 'plain');
+    END IF;
+END $$;
+```
+
+
+migration issue fix in supabase db
+
+insert into auth.schema_migrations values ('20221125140132');
+insert into auth.schema_migrations values ('20221208132122');
