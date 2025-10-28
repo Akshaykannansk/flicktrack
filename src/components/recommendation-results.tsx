@@ -7,11 +7,16 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Rocket } from 'lucide-react';
 import { RecommendationsCarousel } from './recommendations-carousel';
 
-const recommendationSections = [
+const loggedInSections = [
     { title: 'Because You Liked', key: 'liked' },
     { title: 'From Your Watchlist', key: 'watchlist' },
     { title: 'Based on Your High Ratings', key: 'rated' },
-    { title: 'Trending Among Users You Follow', key: 'following' }
+    { title: 'Trending Among Users You Follow', key: 'following' },
+    { title: 'Trending Now', key: 'trending' }
+];
+
+const loggedOutSections = [
+    { title: 'Trending Now', key: 'trending' }
 ];
 
 function SectionSkeleton() {
@@ -31,90 +36,115 @@ function SectionSkeleton() {
 
 export function RecommendationResults() {
     const [recommendations, setRecommendations] = useState<Record<string, Film[]>>({});
-    const [visibleSections, setVisibleSections] = useState<number>(2);
-    const [loading, setLoading] = useState<boolean>(true);
     const [userFilmSets, setUserFilmSets] = useState<{ watchlistIds: Set<number>, likedIds: Set<number> }>({ watchlistIds: new Set(), likedIds: new Set() });
+    const [isLoadingInitial, setIsLoadingInitial] = useState(true);
+    const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+    const [activeSections, setActiveSections] = useState<{title: string, key: string}[]>([]);
 
     useEffect(() => {
         const fetchInitialData = async () => {
-            setLoading(true);
-            const [recsResponse, setsResponse] = await Promise.all([
-                fetch('/api/recommendations/sections'),
-                fetch('/api/user/film-sets')
-            ]);
-
-            if (recsResponse.ok) {
-                const data = await recsResponse.json();
-                setRecommendations(data);
+            try {
+                const setsResponse = await fetch('/api/user/film-sets');
+                if (setsResponse.ok) {
+                    const data = await setsResponse.json();
+                    setUserFilmSets({
+                        watchlistIds: new Set(data.watchlistIds),
+                        likedIds: new Set(data.likedIds),
+                    });
+                    setIsLoggedIn(true);
+                    setActiveSections(loggedInSections);
+                } else {
+                    setIsLoggedIn(false);
+                    setActiveSections(loggedOutSections);
+                }
+            } catch (error) {
+                console.error("Failed to fetch user's film sets, assuming logged out.", error);
+                setIsLoggedIn(false);
+                setActiveSections(loggedOutSections);
+            } finally {
+                setIsLoadingInitial(false);
             }
-
-            if (setsResponse.ok) {
-                const { watchlistIds, likedIds } = await setsResponse.json();
-                setUserFilmSets({ 
-                    watchlistIds: new Set(watchlistIds),
-                    likedIds: new Set(likedIds),
-                });
-            }
-
-            setLoading(false);
         };
+
         fetchInitialData();
     }, []);
 
     useEffect(() => {
-        const handleScroll = () => {
-            if (window.innerHeight + document.documentElement.scrollTop >= document.documentElement.offsetHeight - 500) {
-                if (visibleSections < recommendationSections.length) {
-                    setVisibleSections(prev => prev + 1);
+        if (activeSections.length === 0) return;
+
+        const fetchAllSectionsSequentially = async () => {
+            for (const section of activeSections) {
+                if (recommendations[section.key]) continue;
+
+                try {
+                    const recsResponse = await fetch(`/api/recommendations/section?key=${section.key}`);
+                    if (recsResponse.ok) {
+                        const data = await recsResponse.json();
+                        setRecommendations(prev => ({ ...prev, [section.key]: data || [] }));
+                    } else {
+                        setRecommendations(prev => ({ ...prev, [section.key]: [] }));
+                    }
+                } catch (error) {
+                    console.error(`Failed to fetch recommendation section: ${section.key}`, error);
+                    setRecommendations(prev => ({ ...prev, [section.key]: [] }));
                 }
             }
         };
 
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, [visibleSections]);
+        fetchAllSectionsSequentially();
+    }, [activeSections, recommendations]);
 
-    if (loading) {
+    if (isLoadingInitial) {
         return (
             <div className="space-y-8">
                 {[...Array(2)].map((_, i) => <SectionSkeleton key={i} />)}
             </div>
         );
     }
-
+    
     const hasRecommendations = Object.values(recommendations).some(section => section && section.length > 0);
+    const allSectionsAttempted = activeSections.every(section => recommendations[section.key] !== undefined);
 
-    if (!hasRecommendations) {
+    if (allSectionsAttempted && !hasRecommendations) {
         return (
             <div className="container mx-auto px-4 py-8 flex justify-center">
                 <Alert className="max-w-lg">
                     <Rocket className="h-4 w-4" />
-                    <AlertTitle>Not Enough Data for Recommendations</AlertTitle>
+                    <AlertTitle>Couldn't Find Recommendations For You</AlertTitle>
                     <AlertDescription>
-                    We need at least 5 films in your history (likes, ratings, watchlist) to generate personalized recommendations. Please interact with some films and check back!
+                        {isLoggedIn
+                            ? "We need a bit more about your taste to give you personalized recommendations. Try liking some films, adding them to your watchlist, or logging a review."
+                            : "Log in to get personalized recommendations based on your taste. For now, check out what's trending!"
+                        }
                     </AlertDescription>
                 </Alert>
             </div>
         );
     }
 
-
     return (
         <div className="space-y-12">
-            {recommendationSections.slice(0, visibleSections).map(section => (
-                recommendations[section.key] && recommendations[section.key].length > 0 && (
+            {activeSections.map(section => {
+                const films = recommendations[section.key];
+
+                if (films === undefined) {
+                    return <SectionSkeleton key={section.key} />;
+                }
+
+                if (films.length === 0) {
+                    return null;
+                }
+
+                return (
                     <RecommendationsCarousel 
                         key={section.key}
                         title={section.title}
-                        films={recommendations[section.key]}
+                        films={films}
                         watchlistIds={userFilmSets.watchlistIds}
                         likedIds={userFilmSets.likedIds}
                     />
-                )
-            ))}
-            {visibleSections < recommendationSections.length && (
-                <SectionSkeleton />
-            )}
+                );
+            })}
         </div>
     );
 }
