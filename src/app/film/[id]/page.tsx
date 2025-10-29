@@ -12,7 +12,7 @@ import { WatchlistButton } from '@/components/watchlist-button';
 import redis from '@/lib/redis';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import type { FilmDetails } from '@/lib/types';
+import type { FilmDetails, Review } from '@/lib/types';
 import { getWatchlistStatusForFilm } from '@/services/filmService';
 import { Suspense } from 'react';
 import { CastList, CastListSkeleton } from '@/components/film-cast';
@@ -20,6 +20,7 @@ import { CrewList, CrewListSkeleton } from '@/components/film-crew';
 import { RatingsDistributionChart } from '@/components/ratings-distribution-chart';
 import { getRatingsDistribution, getRecentReviewsForFilm } from '@/services/reviewService';
 import { FilmReviewsList } from '@/components/film-reviews-list';
+import { ShareFilmButton } from '@/components/share-film-button';
 
 const CACHE_EXPIRATION_SECONDS = 60 * 60 * 24; // 24 hours
 
@@ -108,6 +109,8 @@ export default async function FilmDetailPage({ params }: any) {
   const posterUrl = film.poster_path ? `${IMAGE_BASE_URL}w500${film.poster_path}` : 'https://placehold.co/400x600.png';
   const year = film.release_date ? new Date(film.release_date).getFullYear() : 'N/A';
   const rating = film.vote_average ? film.vote_average / 2 : 0;
+  const userReview = recentReviews.find((review: Review) => review.author.id === authUser?.id);
+
 
   return (
     <div className="space-y-12">
@@ -153,6 +156,7 @@ export default async function FilmDetailPage({ params }: any) {
               </Button>
             </LogFilmDialog>
             <WatchlistButton filmId={id} initialIsInWatchlist={isAlreadyInWatchlist} />
+            <ShareFilmButton film={film} userReview={userReview} />
             </div>
           <Separator className="my-6 !mt-8" />
           <div>
