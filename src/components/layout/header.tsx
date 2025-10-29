@@ -161,7 +161,7 @@ export default function Header() {
                 </div>
             )}
             <Link href="/" className="flex items-center space-x-2">
-              <Film className="w-8 h-8 text-primary" />
+                <Image src="icons/logo.png" alt="FlickTrack logo" width={32} height={32} />
               <span className="font-headline text-2xl font-bold text-primary-foreground hidden sm:inline">
                 FlickTrack
               </span>

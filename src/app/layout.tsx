@@ -8,6 +8,9 @@ import Footer from '@/components/layout/footer';
 export const metadata: Metadata = {
   title: 'FlickTrack',
   description: 'Your personal film journal.',
+  icons: {
+    icon: 'icons/logo.png',
+  },
 };
 
 export default function RootLayout({
