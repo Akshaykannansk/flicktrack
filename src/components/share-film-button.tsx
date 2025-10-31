@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import type { Film, Review } from '@/lib/types';
 import { Share2, Instagram, Facebook, Twitter, Copy, Download } from 'lucide-react';
 import { useState } from 'react';
-import { useToast } from './ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 interface ShareFilmButtonProps {
   film: Film;

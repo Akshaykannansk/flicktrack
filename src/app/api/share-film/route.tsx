@@ -1,9 +1,9 @@
 
 import { ImageResponse } from '@vercel/og';
 import { NextRequest } from 'next/server';
-import { getFilm } from '@/lib/tmdb';
+import { getFilmDetails } from '@/lib/tmdb-server';
 
-export const runtime = 'edge';
+// export const runtime = 'edge';
 
 const Star = ({ filled, size }: { filled: boolean; size: number }) => (
   <svg
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
       return new Response('Missing filmId', { status: 400 });
     }
 
-    const film = await getFilm(filmId, true);
+    const film = await getFilmDetails(parseInt(filmId));
 
     if (!film) {
       return new Response('Film not found', { status: 404 });
