@@ -2,8 +2,8 @@ const CACHE_NAME = 'flicktrack-v1';
 const urlsToCache = [
   '/',
   '/manifest.json',
-  '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png'
+  '/icons/web-app-manifest-192x192.png',
+  '/icons/web-app-manifest-512x512.png'
 ];
 
 // Install event → cache essential assets
