@@ -90,15 +90,14 @@ export default async function FilmDetailPage({ params }: any) {
       },
     }
   );
-  const { data: { session } } = await supabase.auth.getSession();
-  const authUser = session?.user;
+  const { data: { user } } = await supabase.auth.getUser();
 
   const filmId = parseInt(id, 10);
   const [film, isAlreadyInWatchlist, ratingsDistribution, recentReviews] = await Promise.all([
     getFilmDetails(id),
-    getWatchlistStatusForFilm(id, authUser?.id ?? null),
+    getWatchlistStatusForFilm(id, user?.id ?? null),
     getRatingsDistribution(filmId),
-    getRecentReviewsForFilm(filmId, authUser?.id),
+    getRecentReviewsForFilm(filmId, user?.id),
   ]);
 
 
@@ -109,7 +108,7 @@ export default async function FilmDetailPage({ params }: any) {
   const posterUrl = film.poster_path ? `${IMAGE_BASE_URL}w500${film.poster_path}` : 'https://placehold.co/400x600.png';
   const year = film.release_date ? new Date(film.release_date).getFullYear() : 'N/A';
   const rating = film.vote_average ? film.vote_average / 2 : 0;
-  const userReview = recentReviews.find((review: Review) => review.author.id === authUser?.id);
+  const userReview = recentReviews.find((review: Review) => review.author.id === user?.id);
 
 
   return (
@@ -171,7 +170,7 @@ export default async function FilmDetailPage({ params }: any) {
         </div>
         <div>
             <h2 className="text-2xl font-headline font-semibold">Recent Reviews</h2>
-            <FilmReviewsList reviews={recentReviews} currentUserId={authUser?.id} />
+            <FilmReviewsList reviews={recentReviews} currentUserId={user?.id} />
         </div>
         <div>
           <h2 className="text-2xl font-headline font-semibold">Cast</h2>
