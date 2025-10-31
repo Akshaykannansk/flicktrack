@@ -25,14 +25,14 @@ export async function GET(request: Request) {
         }
     );
 
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { user } } = await supabase.auth.getUser();
 
-    if (!session) {
+    if (!user) {
         return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
     const adminUser = await prisma.user.findUnique({
-        where: { id: session.user.id },
+        where: { id: user.id },
     });
 
     if (!adminUser || !adminUser.isAdmin) {
@@ -71,14 +71,14 @@ export async function POST(request: Request) {
     }
   );
 
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user: authUser } } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (!authUser) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
   const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
+    where: { id: authUser.id },
   });
 
   if (!user || !user.isAdmin) {

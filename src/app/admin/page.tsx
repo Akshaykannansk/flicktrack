@@ -57,19 +57,19 @@ export default function AdminPage() {
 
   useEffect(() => {
     async function loadAdminData() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        const { data: user, error: userError } = await supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile, error: userError } = await supabase
           .from('User')
           .select('isAdmin')
-          .eq('id', session.user.id)
+          .eq('id', user.id)
           .single();
 
         if (userError) {
           setError('Error fetching user data.');
-        } else if (user) {
-          setIsAdmin(user.isAdmin);
-          if(user.isAdmin){
+        } else if (profile) {
+          setIsAdmin(profile.isAdmin);
+          if(profile.isAdmin){
             try {
               const response = await fetch('/api/admin/settings');
               if (response.ok) {

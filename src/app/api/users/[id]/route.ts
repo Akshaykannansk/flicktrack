@@ -27,8 +27,8 @@ export async function GET(
     }
   );
 
-  const { data: { session } } = await supabase.auth.getSession();
-  const currentUserId = session?.user?.id;
+  const { data: { user } } = await supabase.auth.getUser();
+  const currentUserId = user?.id;
   const data = await getUserDataForProfile(params.id, currentUserId);
 
   if (!data) {

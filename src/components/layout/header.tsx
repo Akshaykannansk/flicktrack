@@ -51,15 +51,18 @@ export default function Header() {
   const supabase = createClient();
 
   React.useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+    };
+
+    fetchUser();
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
         setUser(session?.user ?? null);
         if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
             router.refresh();
         }
-    });
-    
-    supabase.auth.getSession().then(({ data: { session }}) => {
-        setUser(session?.user ?? null);
     });
 
     return () => {
