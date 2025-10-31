@@ -32,8 +32,7 @@ export default async function HomePage() {
       },
     }
   );
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user;
+  const { data: { user } } = await supabase.auth.getUser();
   
   // Fetch user-specific data first, as it's quick and needed by all carousels.
   const { watchlistIds, likedIds } = await getUserFilmSets(user?.id ?? null);

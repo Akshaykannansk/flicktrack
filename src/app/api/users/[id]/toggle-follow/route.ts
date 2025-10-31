@@ -26,8 +26,8 @@ export async function POST(
     }
   );
 
-  const { data: { session } } = await supabase.auth.getSession();
-  const currentUserId = session?.user?.id;
+  const { data: { user } } = await supabase.auth.getUser();
+  const currentUserId = user?.id;
 
   if (!currentUserId) {
     return new NextResponse('Unauthorized', { status: 401 });

@@ -26,17 +26,16 @@ export async function POST(
       } 
     }
   );
-  const { data: { session } } = await supabase.auth.getSession();
-  const newOwner = session?.user;
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (!newOwner) {
+  if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
   const listToCopyId = params.id;
 
   try {
-    const newList = await copyList(listToCopyId, newOwner.id);
+    const newList = await copyList(listToCopyId, user.id);
     if (!newList) {
         return NextResponse.json({ error: 'Could not copy list. It may not exist or you may be the owner.' }, { status: 400 });
     }

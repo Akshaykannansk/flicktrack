@@ -92,8 +92,8 @@ export async function GET(request: Request) {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         { cookies: { get: (name: string) => cookieStore.get(name)?.value } }
     );
-    const { data: { session } } = await supabase.auth.getSession();
-    const user = session?.user;
+  const { data: { user } } = await supabase.auth.getUser();
+
 
     if (!user) {
         // Return static sections for logged-out users

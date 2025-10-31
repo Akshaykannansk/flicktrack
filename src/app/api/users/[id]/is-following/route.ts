@@ -26,10 +26,9 @@ export async function GET(
     }
   );
 
-  const { data: { session } } = await supabase.auth.getSession();
-  const currentUserId = session?.user?.id;
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (!currentUserId) {
+  if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
@@ -37,7 +36,7 @@ export async function GET(
     .from('followers')
     .select('id')
     .eq('user_id', params.id)
-    .eq('follower_id', currentUserId)
+    .eq('follower_id', user.id)
     .maybeSingle();
 
   if (error) {

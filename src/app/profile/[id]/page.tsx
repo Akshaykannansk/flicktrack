@@ -25,18 +25,17 @@ export default async function OtherUserProfilePage({ params }: any) {
           },
         }
     );
-    const { data: { session } } = await supabase.auth.getSession();
-    const currentUser = session?.user;
+    const { data: { user } } = await supabase.auth.getUser();
 
-    if (!currentUser) {
+    if (!user) {
         redirect("/login");
     }
 
-    if (currentUser.id === params.id) {
+    if (user.id === params.id) {
         redirect("/profile");
     }
 
-    const userData = await getUserDataForProfile(params.id, currentUser.id);
+    const userData = await getUserDataForProfile(params.id, user.id);
 
     if (!userData) {
         notFound();

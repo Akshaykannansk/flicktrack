@@ -38,8 +38,8 @@ export default function RecommendationsPage() {
     useEffect(() => {
         const checkAuth = async () => {
             const supabase = createClient();
-            const { data: { session } } = await supabase.auth.getSession();
-            setIsAuthenticated(!!session);
+            const { data: { user } } = await supabase.auth.getUser();
+            setIsAuthenticated(!!user);
         };
         checkAuth();
     }, []);

@@ -33,16 +33,16 @@ export async function GET(request: Request) {
       } 
     }
   );
-  const { data: { session } } = await supabase.auth.getSession();
-  const authUser = session?.user;
+  const { data: { user } } = await supabase.auth.getUser();
 
-  const targetUserId = urlUserId || authUser?.id;
+
+  const targetUserId = urlUserId || user?.id;
 
   if (!targetUserId) {
     return new NextResponse('User ID must be provided or user must be authenticated', { status: 401 });
   }
 
-  if (!urlUserId && !authUser) {
+  if (!urlUserId && !user) {
      return new NextResponse('Unauthorized', { status: 401 });
   }
   
@@ -84,8 +84,7 @@ export async function POST(request: Request) {
           } 
         }
     );
-    const { data: { session } } = await supabase.auth.getSession();
-    const user = session?.user;
+  const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
       return new NextResponse('Unauthorized', { status: 401 });

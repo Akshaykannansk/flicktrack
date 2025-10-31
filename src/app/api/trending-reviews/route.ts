@@ -24,8 +24,7 @@ export async function GET() {
       } 
     }
   );
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user;
+  const { data: { user } } = await supabase.auth.getUser();
 
   try {
     const trendingReviews = await getTrendingReviews(user?.id);

@@ -66,8 +66,7 @@ export async function PUT(
       } 
     }
   );
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user;
+  const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });
@@ -113,8 +112,7 @@ export async function DELETE(
       } 
     }
   );
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user;
+  const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
       return new NextResponse('Unauthorized', { status: 401 });
@@ -152,8 +150,7 @@ export async function POST(
       } 
     }
   );
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user;
+  const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });

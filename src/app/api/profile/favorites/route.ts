@@ -28,8 +28,7 @@ export async function GET(request: Request) {
       } 
     }
   );
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user;
+  const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });
@@ -63,8 +62,7 @@ export async function POST(request: Request) {
       } 
     }
   );
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user;
+  const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
     return new NextResponse('Unauthorized', { status: 401 });
