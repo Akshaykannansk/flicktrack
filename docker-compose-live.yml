@@ -23,7 +23,7 @@ services:
       - PORT=9002
       - NEXT_DISABLE_IMAGE_OPTIMIZATION=${NEXT_DISABLE_IMAGE_OPTIMIZATION}
     env_file:
-      - .env.live
+      - .env.production
     restart: always
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:9002"]
